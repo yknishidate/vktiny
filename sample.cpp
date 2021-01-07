@@ -1,8 +1,5 @@
 
 #include <stdexcept>
-
-#include <GLFW/glfw3.h>
-
 #include "vkray.hpp"
 
 const uint32_t WIDTH = 800;

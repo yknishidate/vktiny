@@ -14,6 +14,8 @@
 #include <vulkan/vulkan.hpp>
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
+#include <GLFW/glfw3.h>
+
 namespace vkray
 {
 
@@ -32,6 +34,7 @@ namespace vkray
         vk::UniqueInstance instance;
         vk::PhysicalDevice physicalDevice;
         vk::UniqueDevice device;
+        vk::UniqueSurfaceKHR surface;
 
         bool enableValidation;
         const char* appName;
@@ -41,6 +44,8 @@ namespace vkray
         void createWindow();
         void createInstance();
         void createDebugMessenger();
+        void createSurface();
+
         bool checkValidationLayerSupport();
         std::vector<const char*> getRequiredExtensions();
 
@@ -58,6 +63,7 @@ namespace vkray
         createWindow();
         createInstance();
         createDebugMessenger();
+        createSurface();
     }
 
     inline bool Context::shouldStop()
@@ -132,7 +138,6 @@ namespace vkray
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
     }
 
-
     void Context::createDebugMessenger()
     {
         if (!enableValidation) {
@@ -151,6 +156,17 @@ namespace vkray
             {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback };
 
         debugUtilsMessenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
+    }
+
+    void Context::createSurface()
+    {
+        // glfw は生の VkSurface や VkInstance で操作する必要がある
+        VkSurfaceKHR _surface;
+        if (glfwCreateWindowSurface(VkInstance(instance.get()), window, nullptr, &_surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+        vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(instance.get());
+        surface = vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
     }
 
 
