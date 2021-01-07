@@ -18,6 +18,23 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace vkray
 {
+    struct QueueFamilyIndices
+    {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool isComplete()
+        {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
+    struct SwapChainSupportDetails
+    {
+        vk::SurfaceCapabilitiesKHR capabilities;
+        std::vector<vk::SurfaceFormatKHR> formats;
+        std::vector<vk::PresentModeKHR> presentModes;
+    };
 
     class Context
     {
@@ -32,22 +49,47 @@ namespace vkray
         uint32_t height{ 720 };
 
         vk::UniqueInstance instance;
+        vk::UniqueSurfaceKHR surface;
         vk::PhysicalDevice physicalDevice;
         vk::UniqueDevice device;
-        vk::UniqueSurfaceKHR surface;
+        vk::PhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
+        QueueFamilyIndices queueFamilyIndices;
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties{};
 
         bool enableValidation;
         const char* appName;
 
     private:
         vk::UniqueDebugUtilsMessengerEXT debugUtilsMessenger;
+
+        const std::vector<const char*> validationLayers = {
+            "VK_LAYER_KHRONOS_validation"
+        };
+        std::vector<const char*> deviceExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+            VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE3_EXTENSION_NAME,
+            VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+            VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+            VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+            VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+            VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+        };
+
         void createWindow();
         void createInstance();
         void createDebugMessenger();
         void createSurface();
+        void createLogicalDevice();
 
         bool checkValidationLayerSupport();
         std::vector<const char*> getRequiredExtensions();
+        vk::PhysicalDevice pickPhysicalDevice();
+        bool isDeviceSuitable(const vk::PhysicalDevice& device);
+        void findQueueFamilies(const vk::PhysicalDevice& device);
+        bool checkDeviceExtensionSupport(const vk::PhysicalDevice& device);
+        SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
@@ -64,6 +106,7 @@ namespace vkray
         createInstance();
         createDebugMessenger();
         createSurface();
+        createLogicalDevice();
     }
 
     inline bool Context::shouldStop()
@@ -121,9 +164,6 @@ namespace vkray
                 | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                 | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
 
-            const std::vector<const char*> validationLayers = {
-                "VK_LAYER_KHRONOS_validation"
-            };
             vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> createInfo{
                 { {}, &appInfo, validationLayers, extensions },
                 { {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback } };
@@ -169,6 +209,41 @@ namespace vkray
         surface = vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
     }
 
+    void Context::createLogicalDevice()
+    {
+        physicalDevice = pickPhysicalDevice();
+        physicalDeviceMemoryProperties = physicalDevice.getMemoryProperties();
+
+        float queuePriority = 1.0f;
+        vk::DeviceQueueCreateInfo queueCreateInfo{ {}, queueFamilyIndices.graphicsFamily.value(), 1, &queuePriority };
+
+        vk::DeviceCreateInfo deviceCreateInfo{};
+        deviceCreateInfo
+            .setQueueCreateInfos(queueCreateInfo)
+            .setPEnabledExtensionNames(deviceExtensions);
+        if (enableValidation) {
+            deviceCreateInfo.setPEnabledLayerNames(validationLayers);
+        }
+
+        vk::StructureChain<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR> deviceProperties =
+            physicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        rayTracingPipelineProperties = deviceProperties.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+
+        vk::PhysicalDeviceFeatures2 features2 = physicalDevice.getFeatures2();
+
+        vk::StructureChain<
+            vk::DeviceCreateInfo,
+            vk::PhysicalDeviceFeatures2,
+            vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures> createInfoChain{
+                { deviceCreateInfo }, { features2 }, { VK_TRUE }, { VK_TRUE }, { VK_TRUE } };
+
+        vk::UniqueDevice device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
+
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(device.get());
+    }
+
 
     VKAPI_ATTR VkBool32 VKAPI_CALL
         Context::debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -212,6 +287,97 @@ namespace vkray
         }
 
         return extensions;
+    }
+
+    inline vk::PhysicalDevice Context::pickPhysicalDevice()
+    {
+        // 全ての物理デバイスを取得
+        std::vector<vk::PhysicalDevice> devices = instance->enumeratePhysicalDevices();
+
+        // 適切な物理デバイスを選択
+        vk::PhysicalDevice physicalDevice;
+        for (const auto& device : devices) {
+            if (isDeviceSuitable(device)) {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE) {
+            throw std::runtime_error("failed to find a suitable GPU!");
+        }
+
+        return physicalDevice;
+    }
+
+    inline bool Context::isDeviceSuitable(const vk::PhysicalDevice& device)
+    {
+        findQueueFamilies(device);
+
+        bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+        bool swapChainAdequate = false;
+        if (extensionsSupported) {
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        }
+
+        return queueFamilyIndices.isComplete() && extensionsSupported && swapChainAdequate;
+    }
+
+    inline void Context::findQueueFamilies(const vk::PhysicalDevice& device)
+    {
+        std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+
+        uint32_t i = 0;
+        for (const auto& queueFamily : queueFamilies) {
+            if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+                queueFamilyIndices.graphicsFamily = i;
+            }
+
+            VkBool32 presentSupport = device.getSurfaceSupportKHR(i, surface.get());
+            if (presentSupport) {
+                queueFamilyIndices.presentFamily = i;
+            }
+
+            if (queueFamilyIndices.isComplete()) {
+                break;
+            }
+
+            i++;
+        }
+    }
+
+    inline bool Context::checkDeviceExtensionSupport(const vk::PhysicalDevice& device)
+    {
+        std::vector<vk::ExtensionProperties> availableExtensions = device.enumerateDeviceExtensionProperties();
+
+        std::set<std::string> requiredExtensions{ deviceExtensions.begin(), deviceExtensions.end() };
+
+        for (const auto& extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        if (!requiredExtensions.empty()) {
+            return false;
+        }
+
+        std::cout << "Check Device Extension Support: All OK" << std::endl;
+        for (auto& extension : deviceExtensions) {
+            std::cout << "    " << extension << std::endl;
+        }
+
+        return true;
+    }
+
+    inline SwapChainSupportDetails Context::querySwapChainSupport(vk::PhysicalDevice device)
+    {
+        SwapChainSupportDetails details;
+        details.capabilities = device.getSurfaceCapabilitiesKHR(surface.get());
+        details.formats = device.getSurfaceFormatsKHR(surface.get());
+        details.presentModes = device.getSurfacePresentModesKHR(surface.get());
+
+        return details;
     }
 
 }
