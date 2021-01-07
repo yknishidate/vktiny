@@ -55,6 +55,7 @@ namespace vkray
         vk::PhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
         QueueFamilyIndices queueFamilyIndices;
         vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties{};
+        vk::Queue graphicsQueue;
 
         bool enableValidation;
         const char* appName;
@@ -77,11 +78,13 @@ namespace vkray
             VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
         };
 
+
         void createWindow();
         void createInstance();
         void createDebugMessenger();
         void createSurface();
         void createLogicalDevice();
+        void getGraphicsQueue();
 
         bool checkValidationLayerSupport();
         std::vector<const char*> getRequiredExtensions();
@@ -242,6 +245,11 @@ namespace vkray
         vk::UniqueDevice device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device.get());
+    }
+
+    inline void Context::getGraphicsQueue()
+    {
+        graphicsQueue = device->getQueue(queueFamilyIndices.graphicsFamily.value(), 0);
     }
 
 
