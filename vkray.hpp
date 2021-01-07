@@ -110,6 +110,7 @@ namespace vkray
         createDebugMessenger();
         createSurface();
         createLogicalDevice();
+        getGraphicsQueue();
     }
 
     inline bool Context::shouldStop()
@@ -242,7 +243,7 @@ namespace vkray
             vk::PhysicalDeviceBufferDeviceAddressFeatures> createInfoChain{
                 { deviceCreateInfo }, { features2 }, { VK_TRUE }, { VK_TRUE }, { VK_TRUE } };
 
-        vk::UniqueDevice device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
+        device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device.get());
     }
