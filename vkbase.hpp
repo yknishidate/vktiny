@@ -165,6 +165,8 @@ namespace vkray
             extensions = vk::enumerateInstanceExtensionProperties();
         }
 
+        void createDebugMessenger();
+
         static void checkVulkanMinimumVersion(uint32_t minVersion)
         {
             uint32_t version = vk::enumerateInstanceVersion();
@@ -195,13 +197,29 @@ namespace vkray
 
         std::vector<vk::PhysicalDevice> physicalDevices;
         std::vector<vk::ExtensionProperties> extensions;
+
+        vk::UniqueDebugUtilsMessengerEXT messenger;
+
     };
 
 
     namespace
     {
 #if defined(_DEBUG)
-        // TODO: VulkanDebugCallback
+        VKAPI_ATTR VkBool32 VKAPI_CALL
+            debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
+        {
+            std::cerr << "messageIDName   = " << pCallbackData->pMessageIdName << "\n";
+
+            for (uint8_t i = 0; i < pCallbackData->objectCount; i++) {
+                std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)) << "\n";
+            }
+
+            std::cerr << pCallbackData->pMessage << "\n\n";
+
+            return VK_FALSE;
+        }
 #endif
 
         void glfwErrorCallback(const int error, const char* const description)
@@ -323,5 +341,25 @@ namespace vkray
 
         getVulkanDevices();
         getVulkanExtensions();
+        if (enableValidationLayers) {
+            createDebugMessenger();
+        }
     }
+
+    void Instance::createDebugMessenger()
+    {
+        vk::DebugUtilsMessageSeverityFlagsEXT severityFlags{
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError };
+
+        vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags{
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+            | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
+
+        vk::DebugUtilsMessengerCreateInfoEXT createInfo{ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback };
+
+        messenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
+    }
+
 } // vkf

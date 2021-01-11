@@ -3,16 +3,12 @@
 
 #include "vkbase.hpp"
 
-
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
-
 class Application
 {
 public:
     void run()
     {
-        window = std::make_unique<vkray::Window>("vkray", WIDTH, HEIGHT);
+        window = std::make_unique<vkray::Window>("vkray", 800, 600);
         instance = std::make_unique<vkray::Instance>(*window, true);
         window->run();
     }
