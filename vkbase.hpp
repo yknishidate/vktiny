@@ -1,0 +1,273 @@
+#pragma once
+
+#include <set>
+#include <map>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <cstdlib>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <algorithm>
+
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+
+#include <GLFW/glfw3.h>
+
+#define STBI_NO_BMP
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_GIF
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
+#include <stb_image.h>
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+namespace vkray
+{
+
+    namespace
+    {
+#if defined(_DEBUG)
+        // TODO: VulkanDebugCallback
+#endif
+
+        void glfwErrorCallback(const int error, const char* const description)
+        {
+            std::cerr << "ERROR: GLFW: " << description << " (code: " << error << ")" << std::endl;
+        }
+
+        void glfwKeyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
+        {
+            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            if (this_->onKey) {
+                this_->onKey(key, scancode, action, mods);
+            }
+        }
+
+        void glfwCursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
+        {
+            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            if (this_->onCursorPosition) {
+                this_->onCursorPosition(xpos, ypos);
+            }
+        }
+
+        void glfwMouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
+        {
+            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            if (this_->onMouseButton) {
+                this_->onMouseButton(button, action, mods);
+            }
+        }
+
+        void glfwScrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
+        {
+            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            if (this_->onScroll) {
+                this_->onScroll(xoffset, yoffset);
+            }
+        }
+
+    } // namespace
+
+    class Window final
+    {
+    public:
+        explicit Window(const std::string& title, const uint32_t width, const uint32_t height,
+            bool cursorDisabled = false, bool fullscreen = false, bool resizable = false)
+            : title(title), width(width), height(height), cursorDisabled(cursorDisabled), fullscreen(fullscreen), resizable(resizable)
+        {
+            glfwSetErrorCallback(glfwErrorCallback);
+
+            if (!glfwInit()) {
+                throw std::runtime_error("glfwInit() failed");
+            }
+
+            if (!glfwVulkanSupported()) {
+                throw std::runtime_error("glfwVulkanSupported() failed");
+            }
+
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
+
+            auto* const monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
+
+            window = glfwCreateWindow(width, height, title.c_str(), monitor, nullptr);
+            if (window == nullptr) {
+                throw std::runtime_error("failed to create window");
+            }
+
+            GLFWimage icon;
+            icon.pixels = stbi_load("../assets/textures/Vulkan.png", &icon.width, &icon.height, nullptr, 4);
+            if (icon.pixels == nullptr) {
+                throw std::runtime_error("failed to load icon");
+            }
+
+            glfwSetWindowIcon(window, 1, &icon);
+            stbi_image_free(icon.pixels);
+
+            if (cursorDisabled) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+
+            glfwSetWindowUserPointer(window, this);
+            glfwSetKeyCallback(window, glfwKeyCallback);
+            glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
+            glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
+            glfwSetScrollCallback(window, glfwScrollCallback);
+        }
+
+        ~Window()
+        {
+            if (window != nullptr) {
+                glfwDestroyWindow(window);
+                window = nullptr;
+            }
+
+            glfwTerminate();
+            glfwSetErrorCallback(nullptr);
+        }
+
+        Window(const Window&) = delete;
+        Window(Window&&) = delete;
+        Window& operator = (const Window&) = delete;
+        Window& operator = (Window&&) = delete;
+
+        GLFWwindow* getHandle() const
+        {
+            return window;
+        }
+
+        float getContentScale() const
+        {
+            float xscale;
+            float yscale;
+            glfwGetWindowContentScale(window, &xscale, &yscale);
+
+            return xscale;
+        }
+
+        vk::Extent2D getFramebufferSize() const
+        {
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
+            return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        }
+
+        vk::Extent2D getWindowSize() const
+        {
+            int width, height;
+            glfwGetWindowSize(window, &width, &height);
+            return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        }
+
+        const char* getKeyName(int key, int scancode) const
+        {
+            return glfwGetKeyName(key, scancode);
+        }
+
+        std::vector<const char*> getRequiredInstanceExtensions() const
+        {
+            uint32_t glfwExtensionCount = 0;
+            const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        }
+
+        double getTime() const
+        {
+            return glfwGetTime();
+        }
+
+        // Callbacks
+        std::function<void()> drawFrame;
+        std::function<void(int key, int scancode, int action, int mods)> onKey;
+        std::function<void(double xpos, double ypos)> onCursorPosition;
+        std::function<void(int button, int action, int mods)> onMouseButton;
+        std::function<void(double xoffset, double yoffset)> onScroll;
+
+        // Methods
+        void close()
+        {
+            glfwSetWindowShouldClose(window, 1);
+        }
+
+        bool isMinimized() const
+        {
+            const auto size = getFramebufferSize();
+            return size.height == 0 && size.width == 0;
+        }
+
+        void Run()
+        {
+            glfwSetTime(0.0);
+
+            while (!glfwWindowShouldClose(window)) {
+                glfwPollEvents();
+
+                if (drawFrame) {
+                    drawFrame();
+                }
+            }
+        }
+
+        void WaitForEvents() const
+        {
+            glfwWaitEvents();
+        }
+
+    private:
+
+        GLFWwindow* window{};
+        std::string title;
+        uint32_t width;
+        uint32_t height;
+        bool cursorDisabled;
+        bool fullscreen;
+        bool resizable;
+    };
+
+    class Instance final
+    {
+    public:
+        Instance(const Window& window, const std::vector<const char*>& validationLayers)
+            : window(window)
+            , validationLayers(validationLayers)
+        {
+        }
+        ~Instance();
+
+        Instance(const Instance&) = delete;
+        Instance(Instance&&) = delete;
+        Instance& operator = (const Instance&) = delete;
+        Instance& operator = (Instance&&) = delete;
+
+        vk::Instance getHandle() const { return *instance; }
+        const class Window& getWindow() const { return window; }
+
+        const std::vector<vk::ExtensionProperties>& getExtensions() const { return extensions; }
+        const std::vector<vk::PhysicalDevice>& getPhysicalDevices() const { return physicalDevices; }
+        const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
+
+    private:
+        void getVulkanDevices();
+        void getVulkanExtensions();
+
+        static void checkVulkanMinimumVersion(uint32_t minVersion);
+        static void checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers);
+
+        vk::UniqueInstance instance{};
+        const class Window& window;
+        const std::vector<const char*> validationLayers;
+
+        std::vector<vk::PhysicalDevice> physicalDevices;
+        std::vector<vk::ExtensionProperties> extensions;
+    };
+
+
+
+} // vkf
