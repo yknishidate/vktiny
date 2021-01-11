@@ -12,6 +12,7 @@ public:
         instance = std::make_unique<vkray::Instance>(*window, true);
 
         surface = window->createSurface(*instance);
+        physicalDevice = instance->pickSuitablePhysicalDevice();
 
         window->run();
     }
@@ -22,6 +23,7 @@ private:
     std::unique_ptr<vkray::Instance> instance;
 
     vk::UniqueSurfaceKHR surface;
+    vk::PhysicalDevice physicalDevice;
 };
 
 int main()

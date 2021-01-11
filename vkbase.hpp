@@ -157,6 +157,25 @@ namespace vkray
         const std::vector<vk::PhysicalDevice>& getPhysicalDevices() const { return physicalDevices; }
         const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
 
+        vk::PhysicalDevice pickSuitablePhysicalDevice() const
+        {
+            const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
+                // We want a device with a graphics queue.
+                const auto queueFamilies = device.getQueueFamilyProperties();
+                const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const VkQueueFamilyProperties& queueFamily) {
+                    return queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+                });
+
+                return hasGraphicsQueue != queueFamilies.end();
+            });
+
+            if (result == physicalDevices.end()) {
+                throw std::runtime_error("cannot find a suitable device");
+            }
+
+            return *result;
+        }
+
     private:
         void getVulkanDevices()
         {
@@ -411,6 +430,7 @@ namespace vkray
 
         getVulkanDevices();
         getVulkanExtensions();
+
         if (enableValidationLayers) {
             createDebugMessenger();
         }
