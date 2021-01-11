@@ -268,10 +268,44 @@ namespace vkray
 
     private:
 
-        void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const;
+        void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
+        {
+            const auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
+            std::set<std::string> requiredExtensions(requiredExtensions.begin(), requiredExtensions.end());
 
-        static const std::vector<const char*> requiredExtensions;
+            for (const auto& extension : availableExtensions) {
+                requiredExtensions.erase(extension.extensionName);
+            }
+
+            if (!requiredExtensions.empty()) {
+                bool first = true;
+                std::string extensions;
+
+                for (const auto& extension : requiredExtensions) {
+                    if (!first) {
+                        extensions += ", ";
+                    }
+
+                    extensions += extension;
+                    first = false;
+                }
+
+                throw std::runtime_error("missing required extensions: " + extensions);
+            }
+        }
+
+        const std::vector<const char*> requiredExtensions{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+            VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE3_EXTENSION_NAME,
+            VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+            VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+            VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+            VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+            VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+        };
 
         const Instance& instance;
         vk::PhysicalDevice physicalDevice;
@@ -345,6 +379,23 @@ namespace vkray
             if (this_->onScroll) {
                 this_->onScroll(xoffset, yoffset);
             }
+        }
+
+        std::vector<vk::QueueFamilyProperties>::const_iterator findQueue(
+            const std::vector<vk::QueueFamilyProperties>& queueFamilies,
+            const std::string& name,
+            const vk::QueueFlags requiredBits,
+            const vk::QueueFlags excludedBits)
+        {
+            const auto family = std::find_if(queueFamilies.begin(), queueFamilies.end(), [requiredBits, excludedBits](const vk::QueueFamilyProperties& queueFamily) {
+                return queueFamily.queueCount > 0 && queueFamily.queueFlags & requiredBits && !(queueFamily.queueFlags & excludedBits);
+            });
+
+            if (family == queueFamilies.end()) {
+                throw std::runtime_error("found no matching " + name + " queue");
+            }
+
+            return family;
         }
 
     } // namespace
@@ -456,6 +507,81 @@ namespace vkray
     {
         surface = instance.createSurface();
         physicalDevice = instance.pickSuitablePhysicalDevice();
+
+        checkRequiredExtensions(physicalDevice);
+
+        const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+
+        // Find the graphics queue.
+        const auto graphicsFamily = findQueue(queueFamilies, "graphics", vk::QueueFlagBits::eGraphics, {});
+        const auto computeFamily = findQueue(queueFamilies, "compute", vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
+        const auto transferFamily = findQueue(queueFamilies, "transfer", vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
+
+        // Find the presentation queue (usually the same as graphics queue).
+        const auto presentFamily = std::find_if(queueFamilies.begin(), queueFamilies.end(), [&](const vk::QueueFamilyProperties& queueFamily) {
+            VkBool32 presentSupport = false;
+            const uint32_t i = static_cast<uint32_t>(&*queueFamilies.cbegin() - &queueFamily);
+            presentSupport = physicalDevice.getSurfaceSupportKHR(i, *surface);
+            return queueFamily.queueCount > 0 && presentSupport;
+        });
+
+        if (presentFamily == queueFamilies.end()) {
+            throw std::runtime_error("found no presentation queue");
+        }
+
+        graphicsFamilyIndex = static_cast<uint32_t>(graphicsFamily - queueFamilies.begin());
+        computeFamilyIndex = static_cast<uint32_t>(computeFamily - queueFamilies.begin());
+        presentFamilyIndex = static_cast<uint32_t>(presentFamily - queueFamilies.begin());
+        transferFamilyIndex = static_cast<uint32_t>(transferFamily - queueFamilies.begin());
+
+        // Queues can be the same
+        const std::set<uint32_t> uniqueQueueFamilies =
+        {
+            graphicsFamilyIndex,
+            computeFamilyIndex,
+            presentFamilyIndex,
+            transferFamilyIndex
+        };
+
+        // Create queues
+        float queuePriority = 1.0f;
+        std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+
+        for (uint32_t queueFamilyIndex : uniqueQueueFamilies) {
+            vk::DeviceQueueCreateInfo queueCreateInfo = {};
+            queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
+
+        // TODO: add raytracing features
+        vk::PhysicalDeviceFeatures deviceFeatures{};
+        deviceFeatures.fillModeNonSolid = true;
+        deviceFeatures.samplerAnisotropy = true;
+
+        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
+        indexingFeatures.runtimeDescriptorArray = true;
+
+        vk::DeviceCreateInfo createInfo{};
+        createInfo.pNext = &indexingFeatures;
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
+        createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.enabledLayerCount = static_cast<uint32_t>(instance.getValidationLayers().size());
+        createInfo.ppEnabledLayerNames = instance.getValidationLayers().data();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+
+        device = physicalDevice.createDeviceUnique(createInfo);
+
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
+
+        graphicsQueue = device->getQueue(graphicsFamilyIndex, 0);
+        computeQueue = device->getQueue(computeFamilyIndex, 0);
+        presentQueue = device->getQueue(presentFamilyIndex, 0);
+        transferQueue = device->getQueue(transferFamilyIndex, 0);
     }
 
 } // vkf
