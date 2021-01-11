@@ -29,11 +29,14 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace vkray
 {
+    class Window;
+    class Instance;
+    class Device;
 
     class Window final
     {
     public:
-        explicit Window(const std::string& title, const uint32_t width, const uint32_t height,
+        Window(const std::string& title, const uint32_t width, const uint32_t height,
             bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
 
         ~Window()
@@ -121,9 +124,12 @@ namespace vkray
 
         void waitForEvents() const { glfwWaitEvents(); }
 
+        vk::UniqueSurfaceKHR createSurface(Instance& instance);
+
     private:
 
         GLFWwindow* window{};
+
         std::string title;
         uint32_t width;
         uint32_t height;
@@ -131,6 +137,7 @@ namespace vkray
         bool fullscreen;
         bool resizable;
     };
+
 
     class Instance final
     {
@@ -144,7 +151,7 @@ namespace vkray
         Instance& operator = (Instance&&) = delete;
 
         vk::Instance getHandle() const { return *instance; }
-        const class Window& getWindow() const { return window; }
+        const Window& getWindow() const { return window; }
 
         const std::vector<vk::ExtensionProperties>& getExtensions() const { return extensions; }
         const std::vector<vk::PhysicalDevice>& getPhysicalDevices() const { return physicalDevices; }
@@ -191,7 +198,7 @@ namespace vkray
         }
 
         vk::UniqueInstance instance{};
-        const class Window& window;
+        const Window& window;
         bool enableValidationLayers;
         std::vector<const char*> validationLayers;
 
@@ -200,6 +207,56 @@ namespace vkray
 
         vk::UniqueDebugUtilsMessengerEXT messenger;
 
+    };
+
+
+    class Device final
+    {
+    public:
+        explicit Device(const Instance& instance);
+        ~Device();
+
+        Device(const Device&) = delete;
+        Device(Device&&) = delete;
+        Device& operator = (const Device&) = delete;
+        Device& operator = (Device&&) = delete;
+
+        vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+        vk::SurfaceKHR getSurface() const { return *surface; }
+
+        uint32_t getGraphicsFamilyIndex() const { return graphicsFamilyIndex; }
+        uint32_t getComputeFamilyIndex() const { return computeFamilyIndex; }
+        uint32_t getPresentFamilyIndex() const { return presentFamilyIndex; }
+        uint32_t getTransferFamilyIndex() const { return transferFamilyIndex; }
+        vk::Queue getGraphicsQueue() const { return graphicsQueue; }
+        vk::Queue getComputeQueue() const { return computeQueue; }
+        vk::Queue getPresentQueue() const { return presentQueue; }
+        vk::Queue getTransferQueue() const { return transferQueue; }
+
+        void waitIdle() const;
+
+    private:
+
+        void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const;
+
+
+        static const std::vector<const char*> requiredExtensions;
+
+        const Instance& instance;
+        vk::PhysicalDevice physicalDevice;
+        vk::UniqueSurfaceKHR surface;
+
+        vk::UniqueDevice device;
+
+        uint32_t graphicsFamilyIndex{};
+        uint32_t computeFamilyIndex{};
+        uint32_t presentFamilyIndex{};
+        uint32_t transferFamilyIndex{};
+
+        vk::Queue graphicsQueue{};
+        vk::Queue computeQueue{};
+        vk::Queue presentQueue{};
+        vk::Queue transferQueue{};
     };
 
 
@@ -297,6 +354,19 @@ namespace vkray
         glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
         glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
         glfwSetScrollCallback(window, glfwScrollCallback);
+    }
+
+    vk::UniqueSurfaceKHR Window::createSurface(Instance& instance)
+    {
+        VkSurfaceKHR _surface;
+
+        if (glfwCreateWindowSurface(VkInstance(instance.getHandle()), window, nullptr, &_surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+
+        vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(instance.getHandle());
+
+        return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
     }
 
     Instance::Instance(const Window& window, const bool enableValidationLayers)
