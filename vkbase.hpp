@@ -124,8 +124,6 @@ namespace vkray
 
         void waitForEvents() const { glfwWaitEvents(); }
 
-        vk::UniqueSurfaceKHR createSurface(Instance& instance);
-
     private:
 
         GLFWwindow* window{};
@@ -157,11 +155,25 @@ namespace vkray
         const std::vector<vk::PhysicalDevice>& getPhysicalDevices() const { return physicalDevices; }
         const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
 
+        vk::UniqueSurfaceKHR createSurface() const
+        {
+            VkSurfaceKHR _surface;
+
+            if (glfwCreateWindowSurface(VkInstance(*instance), window.getHandle(), nullptr, &_surface) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create window surface!");
+            }
+
+            vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
+
+            return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
+        }
+
         vk::PhysicalDevice pickSuitablePhysicalDevice() const
         {
             const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
                 // We want a device with a graphics queue.
                 const auto queueFamilies = device.getQueueFamilyProperties();
+
                 const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const VkQueueFamilyProperties& queueFamily) {
                     return queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT;
                 });
@@ -233,7 +245,7 @@ namespace vkray
     {
     public:
         explicit Device(const Instance& instance);
-        ~Device();
+        ~Device() {}
 
         Device(const Device&) = delete;
         Device(Device&&) = delete;
@@ -375,19 +387,6 @@ namespace vkray
         glfwSetScrollCallback(window, glfwScrollCallback);
     }
 
-    vk::UniqueSurfaceKHR Window::createSurface(Instance& instance)
-    {
-        VkSurfaceKHR _surface;
-
-        if (glfwCreateWindowSurface(VkInstance(instance.getHandle()), window, nullptr, &_surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
-
-        vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(instance.getHandle());
-
-        return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
-    }
-
     Instance::Instance(const Window& window, const bool enableValidationLayers)
         : window(window)
         , enableValidationLayers(enableValidationLayers)
@@ -450,6 +449,13 @@ namespace vkray
         vk::DebugUtilsMessengerCreateInfoEXT createInfo{ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback };
 
         messenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
+    }
+
+    Device::Device(const Instance& instance)
+        : instance(instance)
+    {
+        surface = instance.createSurface();
+        physicalDevice = instance.pickSuitablePhysicalDevice();
     }
 
 } // vkf
