@@ -1,7 +1,7 @@
 
 #include <memory>
 
-#include "vkbase.hpp"
+#include "vkray.hpp"
 
 class Application
 {

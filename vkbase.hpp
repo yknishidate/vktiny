@@ -269,6 +269,8 @@ namespace vkray
 
         void waitIdle() const { device->waitIdle(); }
 
+        // TODO: other objects creation
+
     private:
 
         void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
@@ -311,10 +313,12 @@ namespace vkray
         };
 
         const Instance& instance;
-        vk::PhysicalDevice physicalDevice;
-        vk::UniqueSurfaceKHR surface;
 
         vk::UniqueDevice device;
+
+        vk::PhysicalDevice physicalDevice;
+        vk::UniqueSurfaceKHR surface;
+        vk::UniqueCommandPool commandPool;
 
         uint32_t graphicsFamilyIndex{};
         uint32_t computeFamilyIndex{};
@@ -376,6 +380,68 @@ namespace vkray
         std::vector<vk::UniqueImageView> imageViews;
     };
 
+
+    class DeviceMemory final
+    {
+    public:
+
+        DeviceMemory(const DeviceMemory&) = delete;
+        DeviceMemory& operator = (const DeviceMemory&) = delete;
+        DeviceMemory& operator = (DeviceMemory&&) = delete;
+
+        DeviceMemory(const Device& device, size_t size, uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties);
+        DeviceMemory(DeviceMemory&& other) noexcept;
+
+        const Device& getDevice() const { return device; }
+
+        void* map(size_t offset, size_t size);
+        void unmap();
+
+    private:
+
+        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
+        const class Device& device;
+
+        vk::UniqueDeviceMemory memory;
+    };
+
+
+    class Image final
+    {
+    public:
+        Image(const Image&) = delete;
+        Image& operator = (const Image&) = delete;
+        Image& operator = (Image&&) = delete;
+
+        Image(const Device& device, vk::Extent2D extent, vk::Format format);
+        Image(const Device& device, vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage);
+        Image(Image&& other) noexcept;
+        ~Image();
+
+        const class Device& getDevice() const { return device; }
+        vk::Extent2D getExtent() const { return extent; }
+        vk::Format getFormat() const { return format; }
+
+        void allocateMemory(vk::MemoryPropertyFlags properties) const;
+        //vk::MemoryRequirements getMemoryRequirements() const;
+
+        //void transitionImageLayout(CommandPool& commandPool, vk::ImageLayout newLayout);
+        //void CopyFrom(CommandPool& commandPool, const Buffer& buffer);
+
+    private:
+
+        const class Device& device;
+
+        vk::UniqueImage image;
+        vk::UniqueImageView view; // additional
+        vk::UniqueDeviceMemory memory; // additional
+
+        const vk::Extent2D extent;
+        const vk::Format format;
+        vk::ImageLayout imageLayout;
+
+    };
 
     namespace
     {
@@ -456,6 +522,7 @@ namespace vkray
     // implementation //
     ////////////////////
 
+    // Window
     Window::Window(const std::string& title, const uint32_t width, const uint32_t height, bool cursorDisabled, bool fullscreen, bool resizable)
         : title(title), width(width), height(height), cursorDisabled(cursorDisabled), fullscreen(fullscreen), resizable(resizable)
     {
@@ -490,6 +557,7 @@ namespace vkray
         glfwSetScrollCallback(window, glfwScrollCallback);
     }
 
+    // Instance
     Instance::Instance(const Window& window, const bool enableValidationLayers)
         : window(window)
         , enableValidationLayers(enableValidationLayers)
@@ -554,6 +622,7 @@ namespace vkray
         messenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
     }
 
+    // Device
     Device::Device(const Instance& instance)
         : instance(instance)
     {
@@ -636,6 +705,7 @@ namespace vkray
         transferQueue = device->getQueue(transferFamilyIndex, 0);
     }
 
+    // SwapChain
     SwapChain::SwapChain(const Device& device)
         : device(device)
         , physicalDevice(device.getPhysicalDevice())
@@ -757,4 +827,102 @@ namespace vkray
 
         return imageCount;
     }
-} // vkf
+
+    // DeviceMemory
+    DeviceMemory::DeviceMemory(const Device& device, const size_t size, const uint32_t memoryTypeBits, const vk::MemoryPropertyFlags properties)
+        : device(device)
+    {
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = size;
+        allocInfo.memoryTypeIndex = findMemoryType(memoryTypeBits, properties);
+
+        memory = device.getHandle().allocateMemoryUnique(allocInfo);
+    }
+
+    DeviceMemory::DeviceMemory(DeviceMemory&& other) noexcept
+        : device(other.device), memory(std::move(other.memory))
+    {
+        other.memory.release();
+    }
+
+    void* DeviceMemory::map(const size_t offset, const size_t size)
+    {
+        void* data = device.getHandle().mapMemory(*memory, offset, size);
+        return data;
+    }
+
+    void DeviceMemory::unmap()
+    {
+        device.getHandle().unmapMemory(*memory);
+    }
+
+    uint32_t DeviceMemory::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
+    {
+        vk::PhysicalDeviceMemoryProperties memProperties = device.getPhysicalDevice().getMemoryProperties();
+
+        for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                return i;
+            }
+        }
+
+        throw std::runtime_error("failed to find suitable memory type");
+    }
+
+    // Image
+    Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format)
+        : Image(device, extent, format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
+    {
+    }
+
+    Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format,
+        const vk::ImageTiling tiling, const vk::ImageUsageFlags usage)
+        : device(device), extent(extent), format(format), imageLayout(vk::ImageLayout::eUndefined)
+    {
+        vk::ImageCreateInfo imageInfo = {};
+        imageInfo.imageType = vk::ImageType::e2D;
+        imageInfo.extent.width = extent.width;
+        imageInfo.extent.height = extent.height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = tiling;
+        imageInfo.initialLayout = imageLayout;
+        imageInfo.usage = usage;
+        imageInfo.sharingMode = vk::SharingMode::eExclusive;
+        imageInfo.samples = vk::SampleCountFlagBits::e1;
+
+        image = device.getHandle().createImageUnique(imageInfo);
+    }
+
+    Image::Image(Image&& other) noexcept
+        : device(other.device), extent(other.extent), format(other.format), imageLayout(other.imageLayout), image(std::move(other.image))
+    {
+        other.image.release();
+    }
+
+    void Image::allocateMemory(const vk::MemoryPropertyFlags properties) const
+    {
+        const auto requirements = device.getHandle().getImageMemoryRequirements(*image);
+
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = requirements.size;
+        //allocInfo.memoryTypeIndex = requirements.size;
+
+        //memory = device.getHandle().allocateMemoryUnique(
+        //    vk::MemoryAllocateInfo{}
+        //    .setAllocationSize(memoryRequirements.size)
+        //    .setMemoryTypeIndex(vkutils::getMemoryType(
+        //        memoryRequirements, vk::MemoryPropertyFlagBits::eDeviceLocal))
+        //);
+
+        //DeviceMemory memory(device_, requirements.size, requirements.memoryTypeBits, properties);
+
+        //Check(vkBindImageMemory(device_.Handle(), image_, memory.Handle(), 0),
+        //    "bind image memory");
+
+        //return memory;
+    }
+
+} // vkray
