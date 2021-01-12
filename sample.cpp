@@ -12,6 +12,7 @@ public:
         instance = std::make_unique<vkr::Instance>(*window, true);
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device);
+
         outputImage = swapChain->createOutputImage();
 
         window->run();

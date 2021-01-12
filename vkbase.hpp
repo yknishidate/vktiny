@@ -464,6 +464,7 @@ namespace vkr
         vk::Buffer getHandle() const { return *buffer; }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
+        void allocateMemory(vk::MemoryPropertyFlags properties, vk::MemoryAllocateFlagsInfo flagsInfo);
         vk::MemoryRequirements getMemoryRequirements() const
         {
             return device.getHandle().getBufferMemoryRequirements(*buffer);
@@ -994,12 +995,6 @@ namespace vkr
         other.view.release();
     }
 
-    //Image& Image::operator = (Image&& other)
-    //{
-    //    device = std::move(other.device);
-    //}
-
-
     void Image::allocateMemory(const vk::MemoryPropertyFlags properties)
     {
         const auto requirements = device.getHandle().getImageMemoryRequirements(*image);
@@ -1026,7 +1021,6 @@ namespace vkr
 
         view = device.getHandle().createImageViewUnique(createInfo);
     }
-
 
     void Image::transitionImageLayout(vk::ImageLayout newLayout)
     {
@@ -1111,6 +1105,20 @@ namespace vkr
 
         device.getHandle().bindBufferMemory(*buffer, *memory, 0);
     }
+
+    void Buffer::allocateMemory(vk::MemoryPropertyFlags properties, vk::MemoryAllocateFlagsInfo flagsInfo)
+    {
+        const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
+
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = requirements.size;
+        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
+        allocInfo.pNext = &flagsInfo;
+        memory = device.getHandle().allocateMemoryUnique(allocInfo);
+
+        device.getHandle().bindBufferMemory(*buffer, *memory, 0);
+    }
+
 
     void Buffer::copyFrom(const Buffer& src)
     {
