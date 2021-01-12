@@ -388,24 +388,6 @@ namespace vkr
     };
 
 
-    //class DeviceMemory final
-    //{
-    //public:
-    //    DeviceMemory(const DeviceMemory&) = delete;
-    //    DeviceMemory& operator = (const DeviceMemory&) = delete;
-    //    DeviceMemory& operator = (DeviceMemory&&) = delete;
-    //    DeviceMemory(const Device& device, size_t size, uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties);
-    //    DeviceMemory(DeviceMemory&& other) noexcept;
-    //    const vk::DeviceMemory& getDevice() const { return *memory; }
-    //    void* map(size_t offset, size_t size);
-    //    void unmap();
-    //private:
-    //    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
-    //    const class Device& device;
-    //    vk::UniqueDeviceMemory memory;
-    //};
-
-
     class Image final
     {
     public:
@@ -938,45 +920,6 @@ namespace vkr
         image->addImageView(vk::ImageAspectFlagBits::eColor);
         return image;
     }
-
-
-    // DeviceMemory
-    //DeviceMemory::DeviceMemory(const Device& device, const size_t size, const uint32_t memoryTypeBits, const vk::MemoryPropertyFlags properties)
-    //    : device(device)
-    //{
-    //    vk::MemoryAllocateInfo allocInfo{};
-    //    allocInfo.allocationSize = size;
-    //    allocInfo.memoryTypeIndex = findMemoryType(memoryTypeBits, properties);
-    //    memory = device.getHandle().allocateMemoryUnique(allocInfo);
-    //}
-
-    //DeviceMemory::DeviceMemory(DeviceMemory&& other) noexcept
-    //    : device(other.device), memory(std::move(other.memory))
-    //{
-    //    other.memory.release();
-    //}
-
-    //void* DeviceMemory::map(const size_t offset, const size_t size)
-    //{
-    //    void* data = device.getHandle().mapMemory(*memory, offset, size);
-    //    return data;
-    //}
-
-    //void DeviceMemory::unmap()
-    //{
-    //    device.getHandle().unmapMemory(*memory);
-    //}
-
-    //uint32_t DeviceMemory::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
-    //{
-    //    vk::PhysicalDeviceMemoryProperties memProperties = device.getPhysicalDevice().getMemoryProperties();
-    //    for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {
-    //        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-    //            return i;
-    //        }
-    //    }
-    //    throw std::runtime_error("failed to find suitable memory type");
-    //}
 
     // Image
     Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format)

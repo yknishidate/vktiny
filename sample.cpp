@@ -3,12 +3,10 @@
 
 #include "vkray.hpp"
 
-template<typename T>
-using unique_vector = std::vector<std::unique_ptr<T>>;
-
 class Application
 {
 public:
+
     void run()
     {
         window = std::make_unique<vkr::Window>("vkray", 800, 600);
@@ -30,15 +28,13 @@ public:
     }
 
 private:
-    // vkray object
+
     std::unique_ptr<vkr::Window> window;
     std::unique_ptr<vkr::Instance> instance;
     std::unique_ptr<vkr::Device> device;
     std::unique_ptr<vkr::SwapChain> swapChain;
     std::unique_ptr<vkr::Image> outputImage;
     std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
-
-
 
 };
 
