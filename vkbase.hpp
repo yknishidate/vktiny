@@ -27,11 +27,13 @@
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-namespace vkray
+namespace vkr
 {
     class Window;
     class Instance;
     class Device;
+    class Image;
+    class Buffer;
 
     class Window final
     {
@@ -355,6 +357,8 @@ namespace vkray
         vk::Format getFormat() const { return format; }
         vk::PresentModeKHR getPresentMode() const { return presentMode; }
 
+        std::unique_ptr<Image> createOutputImage() const;
+
     private:
 
         struct SupportDetails
@@ -407,18 +411,20 @@ namespace vkray
     public:
         Image(const Image&) = delete;
         Image& operator = (const Image&) = delete;
-        Image& operator = (Image&&) = delete;
+        Image& operator = (Image&& other) = delete;
 
         Image(const Device& device, vk::Extent2D extent, vk::Format format);
         Image(const Device& device, vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage);
         Image(Image&& other) noexcept;
-        ~Image();
+        ~Image() {}
+
 
         const class Device& getDevice() const { return device; }
         vk::Extent2D getExtent() const { return extent; }
         vk::Format getFormat() const { return format; }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
+        void addImageView(vk::ImageAspectFlags aspectFlags);
         vk::MemoryRequirements getMemoryRequirements() const
         {
             return device.getHandle().getImageMemoryRequirements(*image);
@@ -906,6 +912,15 @@ namespace vkray
         return imageCount;
     }
 
+    std::unique_ptr<Image> SwapChain::createOutputImage() const
+    {
+        auto image = std::make_unique<Image>(device, extent, format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
+        image->allocateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal);
+        image->addImageView(vk::ImageAspectFlagBits::eColor);
+        return image;
+    }
+
+
     // DeviceMemory
     //DeviceMemory::DeviceMemory(const Device& device, const size_t size, const uint32_t memoryTypeBits, const vk::MemoryPropertyFlags properties)
     //    : device(device)
@@ -972,10 +987,18 @@ namespace vkray
     }
 
     Image::Image(Image&& other) noexcept
-        : device(other.device), extent(other.extent), format(other.format), imageLayout(other.imageLayout), image(std::move(other.image))
+        : device(other.device), extent(other.extent), format(other.format), imageLayout(other.imageLayout)
+        , image(std::move(other.image)), view(std::move(other.view))
     {
         other.image.release();
+        other.view.release();
     }
+
+    //Image& Image::operator = (Image&& other)
+    //{
+    //    device = std::move(other.device);
+    //}
+
 
     void Image::allocateMemory(const vk::MemoryPropertyFlags properties)
     {
@@ -988,6 +1011,22 @@ namespace vkray
 
         device.getHandle().bindImageMemory(*image, *memory, 0);
     }
+
+    void Image::addImageView(vk::ImageAspectFlags aspectFlags)
+    {
+        vk::ImageViewCreateInfo createInfo{};
+        createInfo.image = *image;
+        createInfo.viewType = vk::ImageViewType::e2D;
+        createInfo.format = format;
+        createInfo.subresourceRange.aspectMask = aspectFlags;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+
+        view = device.getHandle().createImageViewUnique(createInfo);
+    }
+
 
     void Image::transitionImageLayout(vk::ImageLayout newLayout)
     {

@@ -6,23 +6,24 @@
 class Application
 {
 public:
-    Application()
-        : window{ "vkray", 800, 600 }
-        , instance{ window, true }
-        , device{ instance }
-        , swapChain{ device }
-    { }
-
     void run()
     {
-        window.run();
+        window = std::make_unique<vkr::Window>("vkray", 800, 600);
+        instance = std::make_unique<vkr::Instance>(*window, true);
+        device = std::make_unique<vkr::Device>(*instance);
+        swapChain = std::make_unique<vkr::SwapChain>(*device);
+        outputImage = swapChain->createOutputImage();
+
+        window->run();
     }
 
 private:
-    vkray::Window window;
-    vkray::Instance instance;
-    vkray::Device device;
-    vkray::SwapChain swapChain;
+    // vkray object
+    std::unique_ptr<vkr::Window> window;
+    std::unique_ptr<vkr::Instance> instance;
+    std::unique_ptr<vkr::Device> device;
+    std::unique_ptr<vkr::SwapChain> swapChain;
+    std::unique_ptr<vkr::Image> outputImage;
 
 };
 
