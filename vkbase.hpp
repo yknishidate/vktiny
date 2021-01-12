@@ -269,8 +269,9 @@ namespace vkray
 
         void waitIdle() const { device->waitIdle(); }
 
-        // TODO: other objects creation
+        // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
+        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin);
 
     private:
 
@@ -417,10 +418,13 @@ namespace vkray
         vk::Format getFormat() const { return format; }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
-        //vk::MemoryRequirements getMemoryRequirements() const;
+        vk::MemoryRequirements getMemoryRequirements() const
+        {
+            return device.getHandle().getImageMemoryRequirements(*image);
+        }
 
-        //void transitionImageLayout(CommandPool& commandPool, vk::ImageLayout newLayout);
-        //void CopyFrom(CommandPool& commandPool, const Buffer& buffer);
+        void transitionImageLayout(vk::CommandPool& commandPool, vk::ImageLayout newLayout);
+        //void copyFrom(CommandPool& commandPool, const Buffer& buffer);
 
     private:
 
@@ -696,6 +700,11 @@ namespace vkray
         computeQueue = device->getQueue(computeFamilyIndex, 0);
         presentQueue = device->getQueue(presentFamilyIndex, 0);
         transferQueue = device->getQueue(transferFamilyIndex, 0);
+
+        vk::CommandPoolCreateInfo commandPoolCreateInfo{};
+        commandPoolCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
+        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        commandPool = device->createCommandPoolUnique(commandPoolCreateInfo);
     }
 
     uint32_t Device::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
@@ -709,6 +718,24 @@ namespace vkray
         }
 
         throw std::runtime_error("failed to find suitable memory type");
+    }
+
+    vk::UniqueCommandBuffer Device::createCommandBuffer(vk::CommandBufferLevel level, bool begin)
+    {
+        assert(commandPool);
+
+        vk::CommandBufferAllocateInfo allocateInfo{};
+        allocateInfo.commandPool = *commandPool;
+        allocateInfo.level = level;
+        allocateInfo.commandBufferCount = 1;
+
+        vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique(allocateInfo).front());
+
+        if (begin) {
+            commandBuffer->begin({});
+        }
+
+        return commandBuffer;
     }
 
     // SwapChain
@@ -916,5 +943,7 @@ namespace vkray
 
         device.getHandle().bindImageMemory(*image, *memory, 0);
     }
+
+
 
 } // vkray
