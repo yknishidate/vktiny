@@ -425,7 +425,7 @@ namespace vkray
         }
 
         void transitionImageLayout(vk::ImageLayout newLayout);
-        //void copyFrom(CommandPool& commandPool, const Buffer& buffer);
+        //void copyFrom(const Buffer& buffer);
 
     private:
 
@@ -440,6 +440,39 @@ namespace vkray
         vk::ImageLayout imageLayout;
 
     };
+
+
+    class Buffer final
+    {
+    public:
+        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
+        ~Buffer();
+
+        Buffer(const Buffer&) = delete;
+        Buffer(Buffer&&) = delete;
+        Buffer& operator = (const Buffer&) = delete;
+        Buffer& operator = (Buffer&&) = delete;
+
+        const Device& getDevice() const { return device; }
+        vk::DeviceSize getSize() const { return size; }
+        vk::Buffer getHandle() const { return *buffer; }
+
+        void allocateMemory(vk::MemoryPropertyFlags properties);
+        vk::MemoryRequirements getMemoryRequirements() const
+        {
+            return device.getHandle().getBufferMemoryRequirements(*buffer);
+        }
+
+        void copyFrom(const Buffer& src);
+
+    private:
+        const Device& device;
+
+        vk::UniqueBuffer buffer;
+        vk::UniqueDeviceMemory memory;
+        vk::DeviceSize size;
+    };
+
 
     namespace
     {
@@ -1012,6 +1045,44 @@ namespace vkray
         );
 
         imageLayout = newLayout;
+
+        device.submitCommandBuffer(*commandBuffer);
+    }
+
+    // Buffer
+    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage)
+        : device(device), size(size)
+    {
+        vk::BufferCreateInfo bufferInfo;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+        buffer = device.getHandle().createBufferUnique(bufferInfo);
+    }
+
+    void Buffer::allocateMemory(vk::MemoryPropertyFlags properties)
+    {
+        const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
+
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = requirements.size;
+        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
+        memory = device.getHandle().allocateMemoryUnique(allocInfo);
+
+        device.getHandle().bindBufferMemory(*buffer, *memory, 0);
+    }
+
+    void Buffer::copyFrom(const Buffer& src)
+    {
+        auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+
+        vk::BufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = src.getSize();
+
+        commandBuffer->copyBuffer(src.getHandle(), *buffer, copyRegion);
 
         device.submitCommandBuffer(*commandBuffer);
     }
