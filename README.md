@@ -7,14 +7,14 @@ A small library for Vulkan Ray Tracing
 -   Header only
 -   Use `vulkan.hpp` (C++ binding)
 -   Less external dependency
--   glTF loader
+-   Include glTF loader
 
 # Requirements
 
 ## Environment
 
 -   Vulkan SDK 1.2.162.0
--   GPU that support Vulkan Ray Tracing
+-   GPU that support Vulkan Ray Tracing Final Specification
 -   Driver that support Vulkan Ray Tracing Final Specification
 
 ## Libraries

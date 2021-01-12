@@ -435,7 +435,7 @@ namespace vkr
 
     private:
 
-        const class Device& device;
+        const Device& device;
 
         vk::UniqueImage image;
         vk::UniqueImageView view; // additional
@@ -452,7 +452,9 @@ namespace vkr
     {
     public:
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
-        ~Buffer();
+        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+            vk::MemoryPropertyFlags properties, void* data = nullptr);
+        ~Buffer() {}
 
         Buffer(const Buffer&) = delete;
         Buffer(Buffer&&) = delete;
@@ -462,6 +464,12 @@ namespace vkr
         const Device& getDevice() const { return device; }
         vk::DeviceSize getSize() const { return size; }
         vk::Buffer getHandle() const { return *buffer; }
+
+        uint64_t getDeviceAddress()
+        {
+            vk::BufferDeviceAddressInfoKHR bufferDeviceAI{ *buffer };
+            return device.getHandle().getBufferAddressKHR(&bufferDeviceAI);
+        }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
         void allocateMemory(vk::MemoryPropertyFlags properties, vk::MemoryAllocateFlagsInfo flagsInfo);
@@ -716,12 +724,22 @@ namespace vkr
         }
 
         // TODO: add raytracing features
+
         vk::PhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.fillModeNonSolid = true;
         deviceFeatures.samplerAnisotropy = true;
 
+        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{ true };
+
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{ true };
+        rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
+
+        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{ true };
+        bufferDeviceAddressFeatures.pNext = &rayTracingPipelineFeatures;
+
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
         indexingFeatures.runtimeDescriptorArray = true;
+        indexingFeatures.pNext = &bufferDeviceAddressFeatures;
 
         vk::DeviceCreateInfo createInfo{};
         createInfo.pNext = &indexingFeatures;
@@ -773,7 +791,7 @@ namespace vkr
         vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique(allocateInfo).front());
 
         if (begin) {
-            commandBuffer->begin({});
+            commandBuffer->begin(vk::CommandBufferBeginInfo{});
         }
 
         return commandBuffer;
@@ -1092,6 +1110,38 @@ namespace vkr
         bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
         buffer = device.getHandle().createBufferUnique(bufferInfo);
+    }
+
+    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data /*= nullptr*/)
+        : device(device), size(size)
+    {
+        vk::BufferCreateInfo bufferInfo;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+        buffer = device.getHandle().createBufferUnique(bufferInfo);
+
+        const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
+
+        vk::MemoryAllocateFlagsInfo flagsInfo{};
+        if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
+            flagsInfo.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
+        }
+
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.allocationSize = requirements.size;
+        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
+        allocInfo.pNext = &flagsInfo;
+        memory = device.getHandle().allocateMemoryUnique(allocInfo);
+
+        device.getHandle().bindBufferMemory(*buffer, *memory, 0);
+
+        if (data) {
+            void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
+            memcpy(dataPtr, data, static_cast<size_t>(size));
+            device.getHandle().unmapMemory(*memory);
+        }
     }
 
     void Buffer::allocateMemory(vk::MemoryPropertyFlags properties)
