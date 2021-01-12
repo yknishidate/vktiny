@@ -270,6 +270,7 @@ namespace vkray
         void waitIdle() const { device->waitIdle(); }
 
         // TODO: other objects creation
+        uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
 
     private:
 
@@ -381,30 +382,22 @@ namespace vkray
     };
 
 
-    class DeviceMemory final
-    {
-    public:
-
-        DeviceMemory(const DeviceMemory&) = delete;
-        DeviceMemory& operator = (const DeviceMemory&) = delete;
-        DeviceMemory& operator = (DeviceMemory&&) = delete;
-
-        DeviceMemory(const Device& device, size_t size, uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties);
-        DeviceMemory(DeviceMemory&& other) noexcept;
-
-        const Device& getDevice() const { return device; }
-
-        void* map(size_t offset, size_t size);
-        void unmap();
-
-    private:
-
-        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
-
-        const class Device& device;
-
-        vk::UniqueDeviceMemory memory;
-    };
+    //class DeviceMemory final
+    //{
+    //public:
+    //    DeviceMemory(const DeviceMemory&) = delete;
+    //    DeviceMemory& operator = (const DeviceMemory&) = delete;
+    //    DeviceMemory& operator = (DeviceMemory&&) = delete;
+    //    DeviceMemory(const Device& device, size_t size, uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties);
+    //    DeviceMemory(DeviceMemory&& other) noexcept;
+    //    const vk::DeviceMemory& getDevice() const { return *memory; }
+    //    void* map(size_t offset, size_t size);
+    //    void unmap();
+    //private:
+    //    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+    //    const class Device& device;
+    //    vk::UniqueDeviceMemory memory;
+    //};
 
 
     class Image final
@@ -423,7 +416,7 @@ namespace vkray
         vk::Extent2D getExtent() const { return extent; }
         vk::Format getFormat() const { return format; }
 
-        void allocateMemory(vk::MemoryPropertyFlags properties) const;
+        void allocateMemory(vk::MemoryPropertyFlags properties);
         //vk::MemoryRequirements getMemoryRequirements() const;
 
         //void transitionImageLayout(CommandPool& commandPool, vk::ImageLayout newLayout);
@@ -705,6 +698,19 @@ namespace vkray
         transferQueue = device->getQueue(transferFamilyIndex, 0);
     }
 
+    uint32_t Device::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
+    {
+        vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
+
+        for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                return i;
+            }
+        }
+
+        throw std::runtime_error("failed to find suitable memory type");
+    }
+
     // SwapChain
     SwapChain::SwapChain(const Device& device)
         : device(device)
@@ -829,45 +835,42 @@ namespace vkray
     }
 
     // DeviceMemory
-    DeviceMemory::DeviceMemory(const Device& device, const size_t size, const uint32_t memoryTypeBits, const vk::MemoryPropertyFlags properties)
-        : device(device)
-    {
-        vk::MemoryAllocateInfo allocInfo{};
-        allocInfo.allocationSize = size;
-        allocInfo.memoryTypeIndex = findMemoryType(memoryTypeBits, properties);
+    //DeviceMemory::DeviceMemory(const Device& device, const size_t size, const uint32_t memoryTypeBits, const vk::MemoryPropertyFlags properties)
+    //    : device(device)
+    //{
+    //    vk::MemoryAllocateInfo allocInfo{};
+    //    allocInfo.allocationSize = size;
+    //    allocInfo.memoryTypeIndex = findMemoryType(memoryTypeBits, properties);
+    //    memory = device.getHandle().allocateMemoryUnique(allocInfo);
+    //}
 
-        memory = device.getHandle().allocateMemoryUnique(allocInfo);
-    }
+    //DeviceMemory::DeviceMemory(DeviceMemory&& other) noexcept
+    //    : device(other.device), memory(std::move(other.memory))
+    //{
+    //    other.memory.release();
+    //}
 
-    DeviceMemory::DeviceMemory(DeviceMemory&& other) noexcept
-        : device(other.device), memory(std::move(other.memory))
-    {
-        other.memory.release();
-    }
+    //void* DeviceMemory::map(const size_t offset, const size_t size)
+    //{
+    //    void* data = device.getHandle().mapMemory(*memory, offset, size);
+    //    return data;
+    //}
 
-    void* DeviceMemory::map(const size_t offset, const size_t size)
-    {
-        void* data = device.getHandle().mapMemory(*memory, offset, size);
-        return data;
-    }
+    //void DeviceMemory::unmap()
+    //{
+    //    device.getHandle().unmapMemory(*memory);
+    //}
 
-    void DeviceMemory::unmap()
-    {
-        device.getHandle().unmapMemory(*memory);
-    }
-
-    uint32_t DeviceMemory::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
-    {
-        vk::PhysicalDeviceMemoryProperties memProperties = device.getPhysicalDevice().getMemoryProperties();
-
-        for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                return i;
-            }
-        }
-
-        throw std::runtime_error("failed to find suitable memory type");
-    }
+    //uint32_t DeviceMemory::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
+    //{
+    //    vk::PhysicalDeviceMemoryProperties memProperties = device.getPhysicalDevice().getMemoryProperties();
+    //    for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {
+    //        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+    //            return i;
+    //        }
+    //    }
+    //    throw std::runtime_error("failed to find suitable memory type");
+    //}
 
     // Image
     Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format)
@@ -902,27 +905,16 @@ namespace vkray
         other.image.release();
     }
 
-    void Image::allocateMemory(const vk::MemoryPropertyFlags properties) const
+    void Image::allocateMemory(const vk::MemoryPropertyFlags properties)
     {
         const auto requirements = device.getHandle().getImageMemoryRequirements(*image);
 
         vk::MemoryAllocateInfo allocInfo{};
         allocInfo.allocationSize = requirements.size;
-        //allocInfo.memoryTypeIndex = requirements.size;
+        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
+        memory = device.getHandle().allocateMemoryUnique(allocInfo);
 
-        //memory = device.getHandle().allocateMemoryUnique(
-        //    vk::MemoryAllocateInfo{}
-        //    .setAllocationSize(memoryRequirements.size)
-        //    .setMemoryTypeIndex(vkutils::getMemoryType(
-        //        memoryRequirements, vk::MemoryPropertyFlagBits::eDeviceLocal))
-        //);
-
-        //DeviceMemory memory(device_, requirements.size, requirements.memoryTypeBits, properties);
-
-        //Check(vkBindImageMemory(device_.Handle(), image_, memory.Handle(), 0),
-        //    "bind image memory");
-
-        //return memory;
+        device.getHandle().bindImageMemory(*image, *memory, 0);
     }
 
 } // vkray
