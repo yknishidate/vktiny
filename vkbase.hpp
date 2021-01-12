@@ -272,7 +272,7 @@ namespace vkray
         // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
         vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin) const;
-        void submitCommandBuffer(vk::CommandBuffer& commandBuffer);
+        void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
     private:
 
@@ -739,7 +739,7 @@ namespace vkray
         return commandBuffer;
     }
 
-    void Device::submitCommandBuffer(vk::CommandBuffer& commandBuffer)
+    void Device::submitCommandBuffer(vk::CommandBuffer& commandBuffer) const
     {
         commandBuffer.end();
 
@@ -960,54 +960,60 @@ namespace vkray
     {
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
 
-        //VkImageMemoryBarrier barrier = {};
-        //barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        //barrier.oldLayout = imageLayout_;
-        //barrier.newLayout = newLayout;
-        //barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        //barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        //barrier.image = image_;
-        //barrier.subresourceRange.baseMipLevel = 0;
-        //barrier.subresourceRange.levelCount = 1;
-        //barrier.subresourceRange.baseArrayLayer = 0;
-        //barrier.subresourceRange.layerCount = 1;
+        vk::ImageMemoryBarrier barrier{};
+        barrier.oldLayout = imageLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = *image;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
 
-        //if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        //    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+            barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+        } else {
+            barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+        }
 
-        //    if (DepthBuffer::HasStencilComponent(format_)) {
-        //        barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        //    }
-        //} else {
-        //    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //}
+        vk::PipelineStageFlags sourceStage;
+        vk::PipelineStageFlags destinationStage;
 
-        //VkPipelineStageFlags sourceStage;
-        //VkPipelineStageFlags destinationStage;
+        if (imageLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+            barrier.srcAccessMask = {};
+            barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 
-        //if (imageLayout_ == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        //    barrier.srcAccessMask = 0;
-        //    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+            destinationStage = vk::PipelineStageFlagBits::eTransfer;
+        } else if (imageLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+            barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+            barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-        //    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        //    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        //} else if (imageLayout_ == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        //    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        //    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            sourceStage = vk::PipelineStageFlagBits::eTransfer;
+            destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+        } else if (imageLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+            barrier.srcAccessMask = {};
+            barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
-        //    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        //    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        //} else if (imageLayout_ == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        //    barrier.srcAccessMask = 0;
-        //    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+            destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+        } else {
+            throw std::invalid_argument("unsupported layout transition");
+        }
 
-        //    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        //    destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        //} else {
-        //    Throw(std::invalid_argument("unsupported layout transition"));
-        //}
+        commandBuffer->pipelineBarrier(
+            sourceStage,       // srcStageMask
+            destinationStage,  // dstStageMask
+            {},                // dependencyFlags
+            {},                // memoryBarriers
+            {},                // bufferMemoryBarriers
+            barrier            // imageMemoryBarriers
+        );
 
-        //vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        imageLayout = newLayout;
+
+        device.submitCommandBuffer(*commandBuffer);
     }
 
 
