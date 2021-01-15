@@ -684,28 +684,17 @@ namespace vkr
         validationLayers = enableValidationLayers ? std::vector<const char*>{"VK_LAYER_KHRONOS_validation"} : std::vector<const char*>();
 
         const uint32_t version = VK_API_VERSION_1_2;
-
         checkVulkanMinimumVersion(version);
 
         auto extensions = window.getRequiredInstanceExtensions();
 
         checkVulkanValidationLayerSupport(validationLayers);
-
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
         vk::ApplicationInfo appInfo{ window.getTitle().c_str() , 0, "No Engine", 0, VK_API_VERSION_1_2 };
-
-        vk::InstanceCreateInfo createInfo{};
-        createInfo.pApplicationInfo = &appInfo;
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-
-        instance = vk::createInstanceUnique(createInfo);
-
+        instance = vk::createInstanceUnique({ {}, &appInfo, validationLayers, extensions });
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 
         getPhysicalDevices();
