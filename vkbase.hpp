@@ -532,15 +532,28 @@ namespace vkr
     class DescriptorSetBindings final
     {
     public:
-        DescriptorSetBindings() = default;
-        DescriptorSetBindings(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
-            : bindings(bindings)
+        DescriptorSetBindings(const Device& device)
+            : device(device)
         {
         }
 
+        DescriptorSetBindings(const Device& device, const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
+            : device(device), bindings(bindings)
+        {
+        }
+
+        void addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
+            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
+
+        vk::UniqueDescriptorSetLayout createLayout(vk::DescriptorSetLayoutCreateFlags flags = {}) const;
+
+        vk::UniqueDescriptorPool createPool(uint32_t maxSets = 1) const;
+
+        void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const;
 
 
     private:
+        const Device& device;
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
     };
 
@@ -682,12 +695,7 @@ namespace vkr
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-        vk::ApplicationInfo appInfo{};
-        appInfo.pApplicationName = window.getTitle().c_str();
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_2;
+        vk::ApplicationInfo appInfo{ window.getTitle().c_str() , 0, "No Engine", 0, VK_API_VERSION_1_2 };
 
         vk::InstanceCreateInfo createInfo{};
         createInfo.pApplicationInfo = &appInfo;
@@ -1218,6 +1226,43 @@ namespace vkr
         device.submitCommandBuffer(*commandBuffer);
     }
 
+    void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
+        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
+    {
+        bindings.emplace_back(binding, type, count, stageFlags, pImmutableSampler);
+    }
+
+    vk::UniqueDescriptorSetLayout DescriptorSetBindings::createLayout(vk::DescriptorSetLayoutCreateFlags flags) const
+    {
+        return device.getHandle().createDescriptorSetLayoutUnique({ flags, bindings });
+    }
+
+    vk::UniqueDescriptorPool DescriptorSetBindings::createPool(uint32_t maxSets /*= 1*/) const
+    {
+        std::vector<vk::DescriptorPoolSize> poolSizes;
+        addRequiredPoolSizes(poolSizes, maxSets);
+        return device.getHandle().createDescriptorPoolUnique({ {}, maxSets, poolSizes });
+    }
+
+    void DescriptorSetBindings::addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const
+    {
+        for (auto it = bindings.cbegin(); it != bindings.cend(); ++it) {
+            bool found = false;
+            for (auto itpool = poolSizes.begin(); itpool != poolSizes.end(); ++itpool) {
+                if (itpool->type == it->descriptorType) {
+                    itpool->descriptorCount += it->descriptorCount * numSets;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                vk::DescriptorPoolSize poolSize;
+                poolSize.type = it->descriptorType;
+                poolSize.descriptorCount = it->descriptorCount * numSets;
+                poolSizes.push_back(poolSize);
+            }
+        }
+    }
 
 
 } // vkray
