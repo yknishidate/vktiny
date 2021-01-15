@@ -1,10 +1,9 @@
 # quick-vkray
 
-A small library for Vulkan Ray Tracing
+Header only library for Vulkan Ray Tracing
 
 # Features
 
--   Header only
 -   Use `vulkan.hpp` (C++ binding)
 -   Less external dependency
 -   Include glTF loader

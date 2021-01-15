@@ -21,8 +21,8 @@ public:
         vertices.push_back(vkr::Vertex{ {-1.0f, 1.0f, 0.0f} });
         vertices.push_back(vkr::Vertex{ {0.0f, -1.0f, 0.0f} });
         std::vector<uint32_t> indices = { 0, 1, 2 };
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
 
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
 
         window->run();
     }

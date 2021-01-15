@@ -25,7 +25,14 @@
 #define STBI_NO_PNM
 #include <stb_image.h>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 
 namespace vkr
 {
@@ -34,6 +41,27 @@ namespace vkr
     class Device;
     class Image;
     class Buffer;
+    struct Vertex
+    {
+        glm::vec3 pos;
+        glm::vec3 normal;
+        glm::vec2 uv;
+        glm::vec4 color;
+        glm::vec4 joint0;
+        glm::vec4 weight0;
+        glm::vec4 tangent;
+        //static VkVertexInputBindingDescription vertexInputBindingDescription;
+        //static std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+        //static VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo;
+        //static VkVertexInputBindingDescription inputBindingDescription(uint32_t binding);
+        //static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
+        //static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> components);
+        ///** @brief Returns the default pipeline vertex input state create info structure for the requested vertex components */
+        //static VkPipelineVertexInputStateCreateInfo* getPipelineVertexInputState(const std::vector<VertexComponent> components);
+    };
+    class VertexBuffer;
+    class IndexBuffer;
+
 
     class Window final
     {
@@ -191,7 +219,7 @@ namespace vkr
         }
 
     private:
-        void getVulkanDevices()
+        void getPhysicalDevices()
         {
             physicalDevices = instance->enumeratePhysicalDevices();
 
@@ -200,7 +228,7 @@ namespace vkr
             }
         }
 
-        void getVulkanExtensions()
+        void getInstanceExtensions()
         {
             extensions = vk::enumerateInstanceExtensionProperties();
         }
@@ -275,6 +303,8 @@ namespace vkr
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
         vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin) const;
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
+        std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const;
+        std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const;
 
     private:
 
@@ -420,8 +450,8 @@ namespace vkr
         const Device& device;
 
         vk::UniqueImage image;
-        vk::UniqueImageView view; // additional
-        vk::UniqueDeviceMemory memory; // additional
+        vk::UniqueImageView view;
+        vk::UniqueDeviceMemory memory;
 
         const vk::Extent2D extent;
         const vk::Format format;
@@ -430,12 +460,11 @@ namespace vkr
     };
 
 
-    class Buffer final
+    class Buffer
     {
     public:
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
-        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
-            vk::MemoryPropertyFlags properties, void* data = nullptr);
+        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data = nullptr);
         ~Buffer() {}
 
         Buffer(const Buffer&) = delete;
@@ -468,6 +497,36 @@ namespace vkr
         vk::UniqueBuffer buffer;
         vk::UniqueDeviceMemory memory;
         vk::DeviceSize size;
+    };
+
+
+    class VertexBuffer final : public Buffer
+    {
+    public:
+        VertexBuffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+            vk::MemoryPropertyFlags properties, std::vector<Vertex>& vertices)
+            : Buffer(device, size, usage, properties, vertices.data())
+        {
+            verticesCount = vertices.size();
+        }
+
+    private:
+        uint32_t verticesCount;
+    };
+
+
+    class IndexBuffer final : public Buffer
+    {
+    public:
+        IndexBuffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+            vk::MemoryPropertyFlags properties, std::vector<uint32_t>& indices)
+            : Buffer(device, size, usage, properties, indices.data())
+        {
+            indicesCount = indices.size();
+        }
+
+    private:
+        uint32_t indicesCount;
     };
 
 
@@ -626,8 +685,8 @@ namespace vkr
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 
-        getVulkanDevices();
-        getVulkanExtensions();
+        getPhysicalDevices();
+        getInstanceExtensions();
 
         if (enableValidationLayers) {
             createDebugMessenger();
@@ -705,22 +764,18 @@ namespace vkr
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        // TODO: add raytracing features
-
         vk::PhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.fillModeNonSolid = true;
         deviceFeatures.samplerAnisotropy = true;
 
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{ true };
-
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{ true };
-        rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
-
         vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{ true };
-        bufferDeviceAddressFeatures.pNext = &rayTracingPipelineFeatures;
-
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
         indexingFeatures.runtimeDescriptorArray = true;
+
+        rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
+        bufferDeviceAddressFeatures.pNext = &rayTracingPipelineFeatures;
         indexingFeatures.pNext = &bufferDeviceAddressFeatures;
 
         vk::DeviceCreateInfo createInfo{};
@@ -788,6 +843,53 @@ namespace vkr
         graphicsQueue.submit(vk::SubmitInfo{}.setCommandBuffers(commandBuffer), fence.get());
 
         device->waitForFences(fence.get(), true, std::numeric_limits<uint64_t>::max());
+    }
+
+    std::unique_ptr<VertexBuffer> Device::createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const
+    {
+        auto vertexBufferSize = vertices.size() * sizeof(Vertex);
+
+        vk::BufferUsageFlags bufferUsage;
+        vk::MemoryPropertyFlags memoryProperty;
+
+        // TODO: デバイスに送れるようにする
+        //if (onDevice) {
+        //    bufferUsage = vk::BufferUsageFlagBits::eVertexBuffer
+        //                | vk::BufferUsageFlagBits::eStorageBuffer
+        //                | vk::BufferUsageFlagBits::eTransferDst
+        //                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        //} else {
+        //    bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+        //                | vk::BufferUsageFlagBits::eTransferSrc;
+        //}
+
+        bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+            | vk::BufferUsageFlagBits::eStorageBuffer
+            | vk::BufferUsageFlagBits::eVertexBuffer
+            | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
+            | vk::MemoryPropertyFlagBits::eHostCoherent;
+
+        return std::make_unique<VertexBuffer>(*this, vertexBufferSize, bufferUsage, memoryProperty, vertices);
+    }
+
+    std::unique_ptr<IndexBuffer> Device::createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const
+    {
+        auto indexBufferSize = indices.size() * sizeof(uint32_t);
+
+        vk::BufferUsageFlags bufferUsage;
+        vk::MemoryPropertyFlags memoryProperty;
+
+        // TODO: デバイスに送れるようにする
+
+        bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+            | vk::BufferUsageFlagBits::eStorageBuffer
+            | vk::BufferUsageFlagBits::eIndexBuffer
+            | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
+            | vk::MemoryPropertyFlagBits::eHostCoherent;
+
+        return std::make_unique<IndexBuffer>(*this, indexBufferSize, bufferUsage, memoryProperty, indices);
     }
 
     // SwapChain
@@ -1112,7 +1214,6 @@ namespace vkr
         device.getHandle().bindBufferMemory(*buffer, *memory, 0);
     }
 
-
     void Buffer::copyFrom(const Buffer& src)
     {
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
@@ -1126,6 +1227,7 @@ namespace vkr
 
         device.submitCommandBuffer(*commandBuffer);
     }
+
 
 
 } // vkray

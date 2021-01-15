@@ -1,11 +1,7 @@
 #pragma once
 #include "vkbase.hpp"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+
 
 //#define TINYGLTF_NO_STB_IMAGE_WRITE
 //#ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -15,24 +11,6 @@
 
 namespace vkr
 {
-    struct Vertex
-    {
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec2 uv;
-        glm::vec4 color;
-        glm::vec4 joint0;
-        glm::vec4 weight0;
-        glm::vec4 tangent;
-        //static VkVertexInputBindingDescription vertexInputBindingDescription;
-        //static std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-        //static VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo;
-        //static VkVertexInputBindingDescription inputBindingDescription(uint32_t binding);
-        //static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
-        //static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> components);
-        ///** @brief Returns the default pipeline vertex input state create info structure for the requested vertex components */
-        //static VkPipelineVertexInputStateCreateInfo* getPipelineVertexInputState(const std::vector<VertexComponent> components);
-    };
 
     class AccelerationStructure
     {
@@ -67,6 +45,8 @@ namespace vkr
     {
     public:
         BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
+        //BottomLevelAccelerationStructure(const Device& device, const Buffer& vertexBuffer, const Buffer& indexBuffer);
+
         BottomLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
         BottomLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
         BottomLevelAccelerationStructure& operator = (BottomLevelAccelerationStructure&&) = delete;
@@ -85,8 +65,7 @@ namespace vkr
 
 
     void AccelerationStructure::build(vk::AccelerationStructureGeometryKHR& geometry,
-        const vk::AccelerationStructureTypeKHR& asType,
-        uint32_t primitiveCount)
+        const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount)
     {
         vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
         buildGeometryInfo
@@ -142,26 +121,17 @@ namespace vkr
     BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
         : AccelerationStructure(device)
     {
-        auto vertexBufferSize = vertices.size() * sizeof(Vertex);
-        auto indexBufferSize = indices.size() * sizeof(uint32_t);
-        vk::BufferUsageFlags bufferUsage{ vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
-                                        | vk::BufferUsageFlagBits::eShaderDeviceAddress
-                                        | vk::BufferUsageFlagBits::eStorageBuffer };
-
-        Buffer vertexBuffer{ device, vertexBufferSize, bufferUsage,
-            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, vertices.data() };
-
-        Buffer indexBuffer{ device, vertexBufferSize, bufferUsage,
-            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, indices.data() };
+        auto vertexBuffer = device.createVertexBuffer(vertices, false);
+        auto indexBuffer = device.createIndexBuffer(indices, false);
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
         triangleData
             .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-            .setVertexData(vertexBuffer.getDeviceAddress())
+            .setVertexData(vertexBuffer->getDeviceAddress())
             .setVertexStride(sizeof(Vertex))
             .setMaxVertex(vertices.size())
             .setIndexType(vk::IndexType::eUint32)
-            .setIndexData(indexBuffer.getDeviceAddress());
+            .setIndexData(indexBuffer->getDeviceAddress());
 
         vk::AccelerationStructureGeometryKHR geometry{};
         geometry
@@ -172,6 +142,27 @@ namespace vkr
         build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
 
     }
+
+    //BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, Buffer& vertexBuffer, Buffer& indexBuffer)
+    //    : AccelerationStructure(device)
+    //{
+    //    vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
+    //    triangleData
+    //        .setVertexFormat(vk::Format::eR32G32B32Sfloat)
+    //        .setVertexData(vertexBuffer.getDeviceAddress())
+    //        .setVertexStride(sizeof(Vertex))
+    //        .setMaxVertex(vertices.size())
+    //        .setIndexType(vk::IndexType::eUint32)
+    //        .setIndexData(indexBuffer.getDeviceAddress());
+    //
+    //    vk::AccelerationStructureGeometryKHR geometry{};
+    //    geometry
+    //        .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+    //        .setGeometry({ triangleData })
+    //        .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+    //
+    //    build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
+    //}
 
 
 } // vkr
