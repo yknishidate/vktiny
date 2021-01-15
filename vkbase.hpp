@@ -716,9 +716,7 @@ namespace vkr
             | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
             | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
 
-        vk::DebugUtilsMessengerCreateInfoEXT createInfo{ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback };
-
-        messenger = instance->createDebugUtilsMessengerEXTUnique(createInfo);
+        messenger = instance->createDebugUtilsMessengerEXTUnique({ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback });
     }
 
     // Device
@@ -732,7 +730,7 @@ namespace vkr
 
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
-        // Find the graphics queue.
+        // Find the graphics queue
         const auto graphicsFamily = findQueue(queueFamilies, "graphics", vk::QueueFlagBits::eGraphics, {});
         const auto computeFamily = findQueue(queueFamilies, "compute", vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
         const auto transferFamily = findQueue(queueFamilies, "transfer", vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
@@ -755,8 +753,7 @@ namespace vkr
         transferFamilyIndex = static_cast<uint32_t>(transferFamily - queueFamilies.begin());
 
         // Queues can be the same
-        const std::set<uint32_t> uniqueQueueFamilies =
-        {
+        const std::set<uint32_t> uniqueQueueFamilies{
             graphicsFamilyIndex,
             computeFamilyIndex,
             presentFamilyIndex,
@@ -766,41 +763,24 @@ namespace vkr
         // Create queues
         float queuePriority = 1.0f;
         std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-
         for (uint32_t queueFamilyIndex : uniqueQueueFamilies) {
-            vk::DeviceQueueCreateInfo queueCreateInfo = {};
-            queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
-            queueCreateInfo.queueCount = 1;
-            queueCreateInfo.pQueuePriorities = &queuePriority;
-
-            queueCreateInfos.push_back(queueCreateInfo);
+            queueCreateInfos.push_back({ {}, queueFamilyIndex, 1, &queuePriority });
         }
 
         vk::PhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.fillModeNonSolid = true;
         deviceFeatures.samplerAnisotropy = true;
 
-        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{ true };
-        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{ true };
-        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{ true };
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
         indexingFeatures.runtimeDescriptorArray = true;
 
-        rayTracingPipelineFeatures.pNext = &accelerationStructureFeatures;
-        bufferDeviceAddressFeatures.pNext = &rayTracingPipelineFeatures;
-        indexingFeatures.pNext = &bufferDeviceAddressFeatures;
+        vk::DeviceCreateInfo createInfo{ {}, queueCreateInfos, instance.getValidationLayers(), requiredExtensions, &deviceFeatures };
 
-        vk::DeviceCreateInfo createInfo{};
-        createInfo.pNext = &indexingFeatures;
-        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledLayerCount = static_cast<uint32_t>(instance.getValidationLayers().size());
-        createInfo.ppEnabledLayerNames = instance.getValidationLayers().data();
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-        createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+        vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceDescriptorIndexingFeaturesEXT,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures, vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR> createInfoChain{ createInfo, indexingFeatures, {true}, {true}, {true} };
 
-        device = physicalDevice.createDeviceUnique(createInfo);
+        device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
 
@@ -809,10 +789,7 @@ namespace vkr
         presentQueue = device->getQueue(presentFamilyIndex, 0);
         transferQueue = device->getQueue(transferFamilyIndex, 0);
 
-        vk::CommandPoolCreateInfo commandPoolCreateInfo{};
-        commandPoolCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
-        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-        commandPool = device->createCommandPoolUnique(commandPoolCreateInfo);
+        commandPool = device->createCommandPoolUnique({ vk::CommandPoolCreateFlagBits::eResetCommandBuffer, graphicsFamilyIndex });
     }
 
     uint32_t Device::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
