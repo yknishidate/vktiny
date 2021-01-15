@@ -16,13 +16,16 @@ public:
 
         outputImage = swapChain->createOutputImage();
 
-        std::vector<vkr::Vertex> vertices;
-        vertices.push_back(vkr::Vertex{ {1.0f, 1.0f, 0.0f} });
-        vertices.push_back(vkr::Vertex{ {-1.0f, 1.0f, 0.0f} });
-        vertices.push_back(vkr::Vertex{ {0.0f, -1.0f, 0.0f} });
+        std::vector<vkr::Vertex> vertices{
+            { {1.0f, 1.0f, 0.0f} },
+            { {-1.0f, 1.0f, 0.0f} },
+            { {0.0f, -1.0f, 0.0f} } };
         std::vector<uint32_t> indices = { 0, 1, 2 };
 
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
+
+        vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
+        tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
         window->run();
     }
@@ -35,6 +38,7 @@ private:
     std::unique_ptr<vkr::SwapChain> swapChain;
     std::unique_ptr<vkr::Image> outputImage;
     std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
+    std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
 
 };
 

@@ -865,7 +865,7 @@ namespace vkr
 
         bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
             | vk::BufferUsageFlagBits::eStorageBuffer
-            | vk::BufferUsageFlagBits::eVertexBuffer
+            //| vk::BufferUsageFlagBits::eVertexBuffer
             | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;
@@ -884,7 +884,7 @@ namespace vkr
 
         bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
             | vk::BufferUsageFlagBits::eStorageBuffer
-            | vk::BufferUsageFlagBits::eIndexBuffer
+            //| vk::BufferUsageFlagBits::eIndexBuffer
             | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;

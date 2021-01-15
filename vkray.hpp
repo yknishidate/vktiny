@@ -11,6 +11,23 @@
 
 namespace vkr
 {
+    struct AccelerationStructureInstance
+    {
+        uint32_t modelIndex;
+        glm::mat4 transformMatrix;
+        uint32_t textureOffset;
+    };
+
+    namespace
+    {
+        vk::TransformMatrixKHR toVkMatrix(const glm::mat4 transformMatrix)
+        {
+            const glm::mat4 transposedMatrix = glm::transpose(transformMatrix);
+            std::array<std::array<float, 4>, 3> data;
+            std::memcpy(&data, &transposedMatrix, sizeof(vk::TransformMatrixKHR));
+            return vk::TransformMatrixKHR(data);
+        }
+    }
 
     class AccelerationStructure
     {
@@ -23,6 +40,7 @@ namespace vkr
         AccelerationStructure(AccelerationStructure&& other) noexcept;
 
         const Device& getDevice() const { return device; }
+        const uint64_t getDeviceAddress() const { return deviceAddress; }
 
     protected:
         void build(vk::AccelerationStructureGeometryKHR& geometry, const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
@@ -59,6 +77,25 @@ namespace vkr
     };
 
 
+    class TopLevelAccelerationStructure final : public AccelerationStructure
+    {
+    public:
+        // TODO: vector input
+        //TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances);
+        TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
+        //TopLevelAccelerationStructure(const Device& device, const Buffer& vertexBuffer, const Buffer& indexBuffer);
+
+        TopLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
+        TopLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
+        TopLevelAccelerationStructure& operator = (BottomLevelAccelerationStructure&&) = delete;
+
+        TopLevelAccelerationStructure(BottomLevelAccelerationStructure&& other) noexcept;
+
+    private:
+        //std::vector<VkGeometryNV> geometries_;
+    };
+
+
     ////////////////////
     // implementation //
     ////////////////////
@@ -68,10 +105,9 @@ namespace vkr
         const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount)
     {
         vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
-        buildGeometryInfo
-            .setType(asType)
-            .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
-            .setGeometries(geometry);
+        buildGeometryInfo.setType(asType);
+        buildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+        buildGeometryInfo.setGeometries(geometry);
 
         auto buildSizesInfo = device.getHandle().getAccelerationStructureBuildSizesKHR(
             vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, primitiveCount);
@@ -90,16 +126,15 @@ namespace vkr
             vk::MemoryPropertyFlagBits::eDeviceLocal };
 
         vk::AccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
-        accelerationBuildGeometryInfo
-            .setType(asType)
-            .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace)
-            .setDstAccelerationStructure(*accelerationStructure)
-            .setGeometries(geometry)
-            .setScratchData(scratchBuffer.getDeviceAddress());
+        accelerationBuildGeometryInfo.setType(asType);
+        accelerationBuildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+        accelerationBuildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
+        accelerationBuildGeometryInfo.setGeometries(geometry);
+        accelerationBuildGeometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
 
         vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
         accelerationStructureBuildRangeInfo
-            .setPrimitiveCount(1) // TODO: primitiveCount ?
+            .setPrimitiveCount(primitiveCount) // TODO: primitiveCount ?
             .setPrimitiveOffset(0)
             .setFirstVertex(0)
             .setTransformOffset(0);
@@ -115,6 +150,7 @@ namespace vkr
     {
         auto size = buildSizesInfo.accelerationStructureSize;
         auto usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        // TODO: onDevice
         buffer = std::make_unique<Buffer>(device, size, usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
     }
 
@@ -125,21 +161,20 @@ namespace vkr
         auto indexBuffer = device.createIndexBuffer(indices, false);
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
-        triangleData
-            .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-            .setVertexData(vertexBuffer->getDeviceAddress())
-            .setVertexStride(sizeof(Vertex))
-            .setMaxVertex(vertices.size())
-            .setIndexType(vk::IndexType::eUint32)
-            .setIndexData(indexBuffer->getDeviceAddress());
+        triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
+        triangleData.setVertexData(vertexBuffer->getDeviceAddress());
+        triangleData.setVertexStride(sizeof(Vertex));
+        triangleData.setMaxVertex(vertices.size());
+        triangleData.setIndexType(vk::IndexType::eUint32);
+        triangleData.setIndexData(indexBuffer->getDeviceAddress());
 
         vk::AccelerationStructureGeometryKHR geometry{};
-        geometry
-            .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-            .setGeometry({ triangleData })
-            .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+        geometry.setGeometryType(vk::GeometryTypeKHR::eTriangles);
+        geometry.setGeometry({ triangleData });
+        geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
 
-        build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
+        uint32_t triangleCount = indices.size() / 3;
+        build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
 
     }
 
@@ -164,5 +199,93 @@ namespace vkr
     //    build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
     //}
 
+    // TODO: これは実験用にしておく
+    TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance)
+        : AccelerationStructure(device)
+    {
+        vk::AccelerationStructureInstanceKHR asInstance{};
+        asInstance.setTransform(toVkMatrix(instance.transformMatrix));
+        asInstance.setInstanceCustomIndex(instance.modelIndex);
+        asInstance.setMask(0xFF);
+        asInstance.setInstanceShaderBindingTableRecordOffset(0);
+        asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+        asInstance.setAccelerationStructureReference(blas.getDeviceAddress());
+
+        vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) };
+        Buffer instancesBuffer{ device, size,
+            vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
+
+        vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
+        instancesData.setArrayOfPointers(false);
+        instancesData.setData(instancesBuffer.getDeviceAddress());
+
+        vk::AccelerationStructureGeometryKHR geometry{};
+        geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+        geometry.setGeometry({ instancesData });
+        geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        uint32_t instanceCount = 1;
+        build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
+    }
+
+
+    //TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances)
+    //    : AccelerationStructure(device)
+    //{
+
+        //std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
+
+        //for (const auto& instance : instances) {
+
+        //    vk::AccelerationStructureInstanceKHR asInstance{};
+        //    asInstance.setTransform(toVkMatrix(instance.transformMatrix));
+        //    asInstance.setInstanceCustomIndex(0);
+        //    asInstance.setMask(0xFF);
+        //    asInstance.setInstanceShaderBindingTableRecordOffset(0);
+        //    asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+        //    asInstance.setAccelerationStructureReference(blas.buffer.deviceAddress);
+        //}
+
+        //vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) * instances.size() };
+        //Buffer instancesBuffer{ device, size,
+        //    vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+        //    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
+
+
+        //// Bottom Level ASを入力としてセットする
+        //vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
+        //instancesData
+        //    .setArrayOfPointers(false)
+        //    .setData(instancesBuffer.deviceAddress);
+
+        //vk::AccelerationStructureGeometryKHR geometry{};
+        //geometry
+        //    .setGeometryType(vk::GeometryTypeKHR::eInstances)
+        //    .setGeometry({ instancesData })
+        //    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        //auto vertexBuffer = device.createVertexBuffer(vertices, false);
+        //auto indexBuffer = device.createIndexBuffer(indices, false);
+
+        //vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
+        //triangleData
+        //    .setVertexFormat(vk::Format::eR32G32B32Sfloat)
+        //    .setVertexData(vertexBuffer->getDeviceAddress())
+        //    .setVertexStride(sizeof(Vertex))
+        //    .setMaxVertex(vertices.size())
+        //    .setIndexType(vk::IndexType::eUint32)
+        //    .setIndexData(indexBuffer->getDeviceAddress());
+
+        //vk::AccelerationStructureGeometryKHR geometry{};
+        //geometry
+        //    .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+        //    .setGeometry({ triangleData })
+        //    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        //uint32_t triangleCount = indices.size() / 3;
+        //build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
+
+    //}
 
 } // vkr
