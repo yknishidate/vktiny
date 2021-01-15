@@ -924,8 +924,9 @@ namespace vkr
         imageViews.reserve(images.size());
 
         for (const auto image : images) {
-            imageViews.push_back(device.getHandle().createImageViewUnique(
-                { {}, image, vk::ImageViewType::e2D, format, {}, { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } }));
+            vk::ImageViewCreateInfo viewInfo{ {}, image, vk::ImageViewType::e2D, format };
+            viewInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+            imageViews.push_back(device.getHandle().createImageViewUnique(viewInfo));
         }
     }
 
@@ -1035,27 +1036,16 @@ namespace vkr
     void Image::allocateMemory(const vk::MemoryPropertyFlags properties)
     {
         const auto requirements = device.getHandle().getImageMemoryRequirements(*image);
-
-        vk::MemoryAllocateInfo allocInfo{};
-        allocInfo.allocationSize = requirements.size;
-        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
-        memory = device.getHandle().allocateMemoryUnique(allocInfo);
+        auto memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
+        memory = device.getHandle().allocateMemoryUnique({ requirements.size, memoryTypeIndex });
 
         device.getHandle().bindImageMemory(*image, *memory, 0);
     }
 
     void Image::addImageView(vk::ImageAspectFlags aspectFlags)
     {
-        vk::ImageViewCreateInfo createInfo{};
-        createInfo.image = *image;
-        createInfo.viewType = vk::ImageViewType::e2D;
-        createInfo.format = format;
-        createInfo.subresourceRange.aspectMask = aspectFlags;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-
+        vk::ImageViewCreateInfo createInfo{ {}, *image, vk::ImageViewType::e2D, format };
+        createInfo.subresourceRange = { aspectFlags , 0, 1, 0, 1 };
         view = device.getHandle().createImageViewUnique(createInfo);
     }
 
@@ -1105,14 +1095,7 @@ namespace vkr
             throw std::invalid_argument("unsupported layout transition");
         }
 
-        commandBuffer->pipelineBarrier(
-            sourceStage,       // srcStageMask
-            destinationStage,  // dstStageMask
-            {},                // dependencyFlags
-            {},                // memoryBarriers
-            {},                // bufferMemoryBarriers
-            barrier            // imageMemoryBarriers
-        );
+        commandBuffer->pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, barrier);
 
         imageLayout = newLayout;
 
@@ -1123,23 +1106,13 @@ namespace vkr
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage)
         : device(device), size(size)
     {
-        vk::BufferCreateInfo bufferInfo;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-        buffer = device.getHandle().createBufferUnique(bufferInfo);
+        buffer = device.getHandle().createBufferUnique({ {}, size, usage, vk::SharingMode::eExclusive });
     }
 
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data /*= nullptr*/)
         : device(device), size(size)
     {
-        vk::BufferCreateInfo bufferInfo;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-        buffer = device.getHandle().createBufferUnique(bufferInfo);
+        buffer = device.getHandle().createBufferUnique({ {}, size, usage, vk::SharingMode::eExclusive });
 
         const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
 
