@@ -809,12 +809,7 @@ namespace vkr
     {
         assert(commandPool);
 
-        vk::CommandBufferAllocateInfo allocateInfo{};
-        allocateInfo.commandPool = *commandPool;
-        allocateInfo.level = level;
-        allocateInfo.commandBufferCount = 1;
-
-        vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique(allocateInfo).front());
+        vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique({ *commandPool , level, 1 }).front());
 
         if (begin) {
             commandBuffer->begin(vk::CommandBufferBeginInfo{});
@@ -907,21 +902,16 @@ namespace vkr
         createInfo.imageExtent = swapExtent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
+        createInfo.imageSharingMode = vk::SharingMode::eExclusive;
         createInfo.preTransform = details.capabilities.currentTransform;
-        createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
         createInfo.presentMode = actualPresentMode;
-        createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = nullptr;
+        createInfo.clipped = true;
 
         if (device.getGraphicsFamilyIndex() != device.getPresentFamilyIndex()) {
             uint32_t queueFamilyIndices[] = { device.getGraphicsFamilyIndex(), device.getPresentFamilyIndex() };
             createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        } else {
-            createInfo.imageSharingMode = vk::SharingMode::eExclusive;
-            createInfo.queueFamilyIndexCount = 0; // Optional
-            createInfo.pQueueFamilyIndices = nullptr; // Optional
         }
 
         swapChain = device.getHandle().createSwapchainKHRUnique(createInfo);
@@ -934,13 +924,8 @@ namespace vkr
         imageViews.reserve(images.size());
 
         for (const auto image : images) {
-            vk::ImageViewCreateInfo createInfo{};
-            createInfo.image = image;
-            createInfo.viewType = vk::ImageViewType::e2D;
-            createInfo.format = format;
-            createInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-
-            imageViews.push_back(device.getHandle().createImageViewUnique(createInfo));
+            imageViews.push_back(device.getHandle().createImageViewUnique(
+                { {}, image, vk::ImageViewType::e2D, format, {}, { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } }));
         }
     }
 
