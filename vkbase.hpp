@@ -139,6 +139,7 @@ namespace vkr
             return size.height == 0 && size.width == 0;
         }
 
+        // TODO: 制御を返す
         void run()
         {
             glfwSetTime(0.0);
@@ -418,7 +419,7 @@ namespace vkr
     };
 
 
-    class Image final
+    class Image
     {
     public:
         Image(const Image&) = delete;
@@ -482,8 +483,6 @@ namespace vkr
             return device.getHandle().getBufferAddressKHR(&bufferDeviceAI);
         }
 
-        void allocateMemory(vk::MemoryPropertyFlags properties);
-        void allocateMemory(vk::MemoryPropertyFlags properties, vk::MemoryAllocateFlagsInfo flagsInfo);
         vk::MemoryRequirements getMemoryRequirements() const
         {
             return device.getHandle().getBufferMemoryRequirements(*buffer);
@@ -527,6 +526,22 @@ namespace vkr
 
     private:
         uint32_t indicesCount;
+    };
+
+
+    class DescriptorSetBindings final
+    {
+    public:
+        DescriptorSetBindings() = default;
+        DescriptorSetBindings(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
+            : bindings(bindings)
+        {
+        }
+
+
+
+    private:
+        std::vector<vk::DescriptorSetLayoutBinding> bindings;
     };
 
 
@@ -1187,31 +1202,6 @@ namespace vkr
             memcpy(dataPtr, data, static_cast<size_t>(size));
             device.getHandle().unmapMemory(*memory);
         }
-    }
-
-    void Buffer::allocateMemory(vk::MemoryPropertyFlags properties)
-    {
-        const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
-
-        vk::MemoryAllocateInfo allocInfo{};
-        allocInfo.allocationSize = requirements.size;
-        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
-        memory = device.getHandle().allocateMemoryUnique(allocInfo);
-
-        device.getHandle().bindBufferMemory(*buffer, *memory, 0);
-    }
-
-    void Buffer::allocateMemory(vk::MemoryPropertyFlags properties, vk::MemoryAllocateFlagsInfo flagsInfo)
-    {
-        const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
-
-        vk::MemoryAllocateInfo allocInfo{};
-        allocInfo.allocationSize = requirements.size;
-        allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
-        allocInfo.pNext = &flagsInfo;
-        memory = device.getHandle().allocateMemoryUnique(allocInfo);
-
-        device.getHandle().bindBufferMemory(*buffer, *memory, 0);
     }
 
     void Buffer::copyFrom(const Buffer& src)

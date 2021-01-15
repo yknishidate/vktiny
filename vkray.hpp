@@ -70,10 +70,6 @@ namespace vkr
         BottomLevelAccelerationStructure& operator = (BottomLevelAccelerationStructure&&) = delete;
 
         BottomLevelAccelerationStructure(BottomLevelAccelerationStructure&& other) noexcept;
-
-    private:
-
-        //std::vector<VkGeometryNV> geometries_;
     };
 
 
@@ -83,7 +79,6 @@ namespace vkr
         // TODO: vector input
         //TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances);
         TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
-        //TopLevelAccelerationStructure(const Device& device, const Buffer& vertexBuffer, const Buffer& indexBuffer);
 
         TopLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
         TopLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
@@ -91,8 +86,6 @@ namespace vkr
 
         TopLevelAccelerationStructure(BottomLevelAccelerationStructure&& other) noexcept;
 
-    private:
-        //std::vector<VkGeometryNV> geometries_;
     };
 
 
@@ -230,62 +223,5 @@ namespace vkr
     }
 
 
-    //TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances)
-    //    : AccelerationStructure(device)
-    //{
-
-        //std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
-
-        //for (const auto& instance : instances) {
-
-        //    vk::AccelerationStructureInstanceKHR asInstance{};
-        //    asInstance.setTransform(toVkMatrix(instance.transformMatrix));
-        //    asInstance.setInstanceCustomIndex(0);
-        //    asInstance.setMask(0xFF);
-        //    asInstance.setInstanceShaderBindingTableRecordOffset(0);
-        //    asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
-        //    asInstance.setAccelerationStructureReference(blas.buffer.deviceAddress);
-        //}
-
-        //vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) * instances.size() };
-        //Buffer instancesBuffer{ device, size,
-        //    vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-        //    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
-
-
-        //// Bottom Level ASを入力としてセットする
-        //vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
-        //instancesData
-        //    .setArrayOfPointers(false)
-        //    .setData(instancesBuffer.deviceAddress);
-
-        //vk::AccelerationStructureGeometryKHR geometry{};
-        //geometry
-        //    .setGeometryType(vk::GeometryTypeKHR::eInstances)
-        //    .setGeometry({ instancesData })
-        //    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-
-        //auto vertexBuffer = device.createVertexBuffer(vertices, false);
-        //auto indexBuffer = device.createIndexBuffer(indices, false);
-
-        //vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
-        //triangleData
-        //    .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-        //    .setVertexData(vertexBuffer->getDeviceAddress())
-        //    .setVertexStride(sizeof(Vertex))
-        //    .setMaxVertex(vertices.size())
-        //    .setIndexType(vk::IndexType::eUint32)
-        //    .setIndexData(indexBuffer->getDeviceAddress());
-
-        //vk::AccelerationStructureGeometryKHR geometry{};
-        //geometry
-        //    .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-        //    .setGeometry({ triangleData })
-        //    .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-
-        //uint32_t triangleCount = indices.size() / 3;
-        //build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
-
-    //}
 
 } // vkr

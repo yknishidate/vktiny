@@ -21,13 +21,12 @@ public:
             { {-1.0f, 1.0f, 0.0f} },
             { {0.0f, -1.0f, 0.0f} } };
         std::vector<uint32_t> indices = { 0, 1, 2 };
-
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
 
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
-        window->run();
+        window->run(); // TODO: 制御取る
     }
 
 private:
