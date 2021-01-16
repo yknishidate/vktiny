@@ -33,7 +33,10 @@ public:
         descSets->addBindging(0, 1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
 
         // Load shaders
-
+        shaderManager = std::make_unique<vkr::ShaderManager>(*device);
+        shaderManager->addShader("samples/shaders/raygen.rgen.spv", vk::ShaderStageFlagBits::eRaygenKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
+        shaderManager->addShader("samples/shaders/miss.rmiss.spv", vk::ShaderStageFlagBits::eMissKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
+        shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vk::ShaderStageFlagBits::eClosestHitKHR, "main", vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup);
 
         window->run(); // TODO: 制御取る
     }
