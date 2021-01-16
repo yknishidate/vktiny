@@ -61,6 +61,8 @@ namespace vkr
     };
     class VertexBuffer;
     class IndexBuffer;
+    class DescriptorSets;
+    class ShaderManager;
 
 
     class Window final
@@ -306,7 +308,7 @@ namespace vkr
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
         std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const;
         std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const;
-        vk::UniqueShaderModule createShaderModule(const std::string& filename);
+        vk::UniquePipeline createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth);
 
     private:
 
@@ -565,7 +567,7 @@ namespace vkr
         DescriptorSets& operator = (const DescriptorSets&) = delete;
         DescriptorSets& operator = (DescriptorSets&&) = delete;
 
-        vk::PipelineLayout getPipelineLayout() { return *pipeLayout; }
+        vk::PipelineLayout getPipelineLayout() const { return *pipeLayout; }
 
         void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
@@ -588,7 +590,6 @@ namespace vkr
 
     class ShaderManager final
     {
-
     public:
         ShaderManager(const Device& device) : device(device) {}
 
@@ -597,12 +598,14 @@ namespace vkr
         ShaderManager& operator = (const ShaderManager&) = delete;
         ShaderManager& operator = (ShaderManager&&) = delete;
 
-        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& pName,
+        auto getStages() const { return stages; }
+        auto getRayTracingGroups() const { return rtGroups; }
+
+        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
             vk::RayTracingShaderGroupTypeKHR groupType);
 
         void addShader(uint32_t moduleIndex, vk::ShaderStageFlagBits stage, const std::string& pName,
             vk::RayTracingShaderGroupTypeKHR groupType);
-
 
     private:
         vk::UniqueShaderModule createShaderModule(const std::string& filename);
@@ -611,8 +614,7 @@ namespace vkr
 
         std::vector<vk::UniqueShaderModule> modules;
         std::vector<vk::PipelineShaderStageCreateInfo> stages;
-        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtShaderGroups;
-
+        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtGroups;
     };
 
 
@@ -952,6 +954,23 @@ namespace vkr
 
         return std::make_unique<IndexBuffer>(*this, indexBufferSize, bufferUsage, memoryProperty, indices);
     }
+
+    vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth)
+    {
+        auto result = device->createRayTracingPipelineKHRUnique(nullptr, nullptr,
+            vk::RayTracingPipelineCreateInfoKHR{}
+            .setStages(shaderManager.getStages())
+            .setGroups(shaderManager.getRayTracingGroups())
+            .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
+            .setLayout(descSets.getPipelineLayout())
+        );
+        if (result.result == vk::Result::eSuccess) {
+            return std::move(result.value);
+        } else {
+            throw std::runtime_error("failed to create ray tracing pipeline.");
+        }
+    }
+
 
     // SwapChain
     SwapChain::SwapChain(const Device& device)
@@ -1313,11 +1332,11 @@ namespace vkr
         return device.getHandle().createShaderModuleUnique({ {}, code.size(), reinterpret_cast<const uint32_t*>(code.data()) });
     }
 
-    void ShaderManager::addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& pName,
+    void ShaderManager::addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
         vk::RayTracingShaderGroupTypeKHR groupType)
     {
         modules.push_back(createShaderModule(filename));
-        stages.push_back({ {}, stage, *modules.back(), pName.c_str() });
+        stages.push_back({ {}, stage, *modules.back(), pName });
 
         vk::RayTracingShaderGroupCreateInfoKHR groupInfo{ groupType,
             VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR };
@@ -1334,7 +1353,7 @@ namespace vkr
             default:
                 break;
         }
-        rtShaderGroups.push_back(groupInfo);
+        rtGroups.push_back(groupInfo);
     }
 
 } // vkray

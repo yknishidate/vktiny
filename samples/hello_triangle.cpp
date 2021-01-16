@@ -31,12 +31,16 @@ public:
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
         descSets->addBindging(0, 0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR);
         descSets->addBindging(0, 1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        descSets->initPipelineLayout();
 
         // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
         shaderManager->addShader("samples/shaders/raygen.rgen.spv", vk::ShaderStageFlagBits::eRaygenKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
         shaderManager->addShader("samples/shaders/miss.rmiss.spv", vk::ShaderStageFlagBits::eMissKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
         shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vk::ShaderStageFlagBits::eClosestHitKHR, "main", vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup);
+
+        // Create Ray Tracing Pipeline
+        pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
 
         window->run(); // TODO: 制御取る
     }
@@ -54,6 +58,8 @@ private:
 
     std::unique_ptr<vkr::DescriptorSets> descSets;
     std::unique_ptr<vkr::ShaderManager> shaderManager;
+
+    vk::UniquePipeline pipeline;
 
 };
 
