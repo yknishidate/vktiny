@@ -42,6 +42,9 @@ public:
         // Create Ray Tracing Pipeline
         pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
 
+        // Init Shader Binding Table
+        shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
+
         window->run(); // TODO: 制御取る
     }
 

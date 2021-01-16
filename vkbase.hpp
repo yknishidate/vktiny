@@ -573,7 +573,6 @@ namespace vkr
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         void initPipelineLayout();
-        vk::PipelineLayout createPipelineLayout();
 
     private:
         const Device& device;
@@ -607,6 +606,8 @@ namespace vkr
         void addShader(uint32_t moduleIndex, vk::ShaderStageFlagBits stage, const std::string& pName,
             vk::RayTracingShaderGroupTypeKHR groupType);
 
+        void initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
+
     private:
         vk::UniqueShaderModule createShaderModule(const std::string& filename);
 
@@ -615,6 +616,10 @@ namespace vkr
         std::vector<vk::UniqueShaderModule> modules;
         std::vector<vk::PipelineShaderStageCreateInfo> stages;
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtGroups;
+
+        std::unique_ptr<Buffer> raygenShaderBindingTable;
+        std::unique_ptr<Buffer> missShaderBindingTable;
+        std::unique_ptr<Buffer> hitShaderBindingTable;
     };
 
 
@@ -1308,22 +1313,6 @@ namespace vkr
         pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
     }
 
-    vk::PipelineLayout DescriptorSets::createPipelineLayout()
-    {
-        for (auto& bindings : bindingsArray) {
-            descSetLayouts.push_back(bindings->createLayout());
-        }
-
-        // Get raw handles (not unique handle)
-        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
-        for (auto& layout : descSetLayouts) {
-            rawDescSetLayouts.push_back(*layout);
-        }
-
-        pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
-        return *pipeLayout;
-    }
-
     // ShaderManager
     vk::UniqueShaderModule ShaderManager::createShaderModule(const std::string& filename)
     {
@@ -1355,5 +1344,39 @@ namespace vkr
         }
         rtGroups.push_back(groupInfo);
     }
+
+    void ShaderManager::initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset)
+    {
+        // Get Ray Tracing Properties
+        auto properties = device.getPhysicalDevice().getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        auto rtProperties = properties.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+
+        // Calc SBT size
+        const uint32_t handleSize = rtProperties.shaderGroupHandleSize;
+        const uint32_t handleSizeAligned = rtProperties.shaderGroupHandleAlignment;
+        const uint32_t groupCount = static_cast<uint32_t>(rtGroups.size());
+        const uint32_t sbtSize = groupCount * handleSizeAligned;
+
+        using vkbu = vk::BufferUsageFlagBits;
+        using vkmp = vk::MemoryPropertyFlagBits;
+        const vk::BufferUsageFlags usage = vkbu::eShaderBindingTableKHR | vkbu::eTransferSrc | vkbu::eShaderDeviceAddress;
+        const vk::MemoryPropertyFlags memoryProperty = vkmp::eHostVisible | vkmp::eHostCoherent;
+
+        // Get shader group handles
+        std::vector<uint8_t> shaderHandleStorage(sbtSize);
+        auto result = device.getHandle().getRayTracingShaderGroupHandlesKHR(pipeline, 0, groupCount, static_cast<size_t>(sbtSize), shaderHandleStorage.data());
+        if (result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to get ray tracing shader group handles.");
+        }
+
+        // Create SBT Buffers
+        raygenShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
+        missShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + missOffset * handleSizeAligned);
+        hitShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+    }
+
 
 } // vkray
