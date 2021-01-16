@@ -1180,7 +1180,7 @@ namespace vkr
     void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
         vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
     {
-        bindings.emplace_back(binding, type, count, stageFlags, pImmutableSampler);
+        bindings.push_back({ binding, type, count, stageFlags, pImmutableSampler });
     }
 
     vk::UniqueDescriptorSetLayout DescriptorSetBindings::createLayout(vk::DescriptorSetLayoutCreateFlags flags) const
@@ -1213,13 +1213,13 @@ namespace vkr
         assert(numSets > 0);
 
         for (int i = 0; i < numSets; i++) {
-            bindingsArray.emplace_back(device);
+            bindingsArray.push_back(std::make_unique<DescriptorSetBindings>(device));
         }
     }
 
 
     void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
-        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr)
+        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler /*= nullptr*/)
     {
         assert(setIndex < numSets);
 

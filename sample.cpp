@@ -28,13 +28,9 @@ public:
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
-        //// Create DescriptorSetLayout
-        //bindings = std::make_unique<vkr::DescriptorSetBindings>(*device);
-        //bindings->addBindging(0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR);
-        //bindings->addBindging(1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
-        //descriptorSetLayout = bindings->createLayout();
+        // Create Pipeline Layout
+        descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
 
-        //pipelineLayout = device->getHandle().createPipelineLayoutUnique({ {}, *descriptorSetLayout });
 
         window->run(); // TODO: 制御取る
     }
@@ -50,11 +46,7 @@ private:
     std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
     std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
 
-    //std::unique_ptr<vkr::DescriptorSetBindings> bindings;
-
-    //vk::UniquePipeline pipeline;
-    //vk::UniquePipelineLayout pipelineLayout;
-    //vk::UniqueDescriptorSetLayout descriptorSetLayout;
+    std::unique_ptr<vkr::DescriptorSets> descSets;
 
 };
 
