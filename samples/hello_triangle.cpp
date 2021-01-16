@@ -13,7 +13,7 @@ public:
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device);
 
-        outputImage = swapChain->createOutputImage();
+        outputImage = swapChain->createStorageImage();
 
         // Create BLAS
         std::vector<vkr::Vertex> vertices{
@@ -27,23 +27,31 @@ public:
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
-        // Create Descriptor Set Layout
+        // Init Pipeline Layout
+        using vkss = vk::ShaderStageFlagBits;
+        using vkdt = vk::DescriptorType;
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-        descSets->addBindging(0, 0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR);
-        descSets->addBindging(0, 1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
+        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
         descSets->initPipelineLayout();
 
         // Load shaders
+        using vksgt = vk::RayTracingShaderGroupTypeKHR;
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/shaders/raygen.rgen.spv", vk::ShaderStageFlagBits::eRaygenKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
-        shaderManager->addShader("samples/shaders/miss.rmiss.spv", vk::ShaderStageFlagBits::eMissKHR, "main", vk::RayTracingShaderGroupTypeKHR::eGeneral);
-        shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vk::ShaderStageFlagBits::eClosestHitKHR, "main", vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup);
+        shaderManager->addShader("samples/shaders/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/shaders/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Ray Tracing Pipeline
         pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
 
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
+
+        // Create desc sets
+        descSets->allocate();
+
+
 
         window->run(); // TODO: 制御取る
     }

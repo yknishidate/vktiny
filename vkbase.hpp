@@ -391,7 +391,7 @@ namespace vkr
         vk::Format getFormat() const { return format; }
         vk::PresentModeKHR getPresentMode() const { return presentMode; }
 
-        std::unique_ptr<Image> createOutputImage() const;
+        std::unique_ptr<Image> createStorageImage() const;
 
     private:
 
@@ -550,7 +550,7 @@ namespace vkr
 
         vk::UniqueDescriptorSetLayout createLayout(vk::DescriptorSetLayoutCreateFlags flags = {}) const;
 
-        void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const;
+        void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes) const;
 
     private:
         const Device& device;
@@ -573,6 +573,8 @@ namespace vkr
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         void initPipelineLayout();
+
+        void allocate();
 
     private:
         const Device& device;
@@ -1091,7 +1093,7 @@ namespace vkr
         return imageCount;
     }
 
-    std::unique_ptr<Image> SwapChain::createOutputImage() const
+    std::unique_ptr<Image> SwapChain::createStorageImage() const
     {
         auto image = std::make_unique<Image>(device, extent, format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
         image->allocateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal);
@@ -1262,19 +1264,19 @@ namespace vkr
         return device.getHandle().createDescriptorSetLayoutUnique({ flags, bindings });
     }
 
-    void DescriptorSetBindings::addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const
+    void DescriptorSetBindings::addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes) const
     {
         for (auto it = bindings.cbegin(); it != bindings.cend(); ++it) {
             bool found = false;
             for (auto itpool = poolSizes.begin(); itpool != poolSizes.end(); ++itpool) {
                 if (itpool->type == it->descriptorType) {
-                    itpool->descriptorCount += it->descriptorCount * numSets;
+                    itpool->descriptorCount += it->descriptorCount;
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                poolSizes.push_back({ it->descriptorType, it->descriptorCount * numSets });
+                poolSizes.push_back({ it->descriptorType, it->descriptorCount });
             }
         }
     }
@@ -1311,6 +1313,27 @@ namespace vkr
         }
 
         pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
+    }
+
+    void DescriptorSets::allocate()
+    {
+        assert(!descSetLayouts.empty());
+
+        // Create Desc Pool
+        std::vector<vk::DescriptorPoolSize> poolSizes;
+        for (const auto& bindings : bindingsArray) {
+            bindings->addRequiredPoolSizes(poolSizes);
+        }
+        descPool = device.getHandle().createDescriptorPoolUnique({ {}, numSets, poolSizes });
+
+        // Get raw handles
+        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
+        for (auto& layout : descSetLayouts) {
+            rawDescSetLayouts.push_back(*layout);
+        }
+
+        // Allocate Desc Sets
+        descSets = device.getHandle().allocateDescriptorSetsUnique({ *descPool, rawDescSetLayouts });
     }
 
     // ShaderManager
