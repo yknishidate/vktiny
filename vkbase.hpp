@@ -537,24 +537,51 @@ namespace vkr
         {
         }
 
-        DescriptorSetBindings(const Device& device, const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
-            : device(device), bindings(bindings)
-        {
-        }
+        DescriptorSetBindings(const DescriptorSetBindings&) = delete;
+        DescriptorSetBindings(DescriptorSetBindings&&) = delete;
+        DescriptorSetBindings& operator = (const DescriptorSetBindings&) = delete;
+        DescriptorSetBindings& operator = (DescriptorSetBindings&&) = delete;
 
         void addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         vk::UniqueDescriptorSetLayout createLayout(vk::DescriptorSetLayoutCreateFlags flags = {}) const;
 
-        vk::UniqueDescriptorPool createPool(uint32_t maxSets = 1) const;
-
         void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const;
-
 
     private:
         const Device& device;
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
+    };
+
+    class DescriptorSets final
+    {
+    public:
+        DescriptorSets(const Device& device, uint32_t numSets = 1);
+
+        DescriptorSets(const DescriptorSets&) = delete;
+        DescriptorSets(DescriptorSets&&) = delete;
+        DescriptorSets& operator = (const DescriptorSets&) = delete;
+        DescriptorSets& operator = (DescriptorSets&&) = delete;
+
+        vk::PipelineLayout getPipelineLayout() { return *pipeLayout; }
+
+        void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
+            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
+
+        void initPipelineLayout();
+
+    private:
+        const Device& device;
+        const uint32_t numSets;
+
+        vk::UniqueDescriptorPool descPool;
+        vk::UniquePipelineLayout pipeLayout;
+
+        std::vector<vk::UniqueDescriptorSet> descSets;
+        std::vector<vk::UniqueDescriptorSetLayout> descSetLayouts;
+
+        std::vector<std::unique_ptr<DescriptorSetBindings>> bindingsArray;
     };
 
 
@@ -1161,12 +1188,6 @@ namespace vkr
         return device.getHandle().createDescriptorSetLayoutUnique({ flags, bindings });
     }
 
-    vk::UniqueDescriptorPool DescriptorSetBindings::createPool(uint32_t maxSets /*= 1*/) const
-    {
-        std::vector<vk::DescriptorPoolSize> poolSizes;
-        addRequiredPoolSizes(poolSizes, maxSets);
-        return device.getHandle().createDescriptorPoolUnique({ {}, maxSets, poolSizes });
-    }
 
     void DescriptorSetBindings::addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const
     {
@@ -1180,12 +1201,44 @@ namespace vkr
                 }
             }
             if (!found) {
-                vk::DescriptorPoolSize poolSize;
-                poolSize.type = it->descriptorType;
-                poolSize.descriptorCount = it->descriptorCount * numSets;
-                poolSizes.push_back(poolSize);
+                poolSizes.push_back({ it->descriptorType, it->descriptorCount * numSets });
             }
         }
+    }
+
+    DescriptorSets::DescriptorSets(const Device& device, uint32_t numSets /*= 1*/)
+        : device(device)
+        , numSets(numSets)
+    {
+        assert(numSets > 0);
+
+        for (int i = 0; i < numSets; i++) {
+            bindingsArray.emplace_back(device);
+        }
+    }
+
+
+    void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
+        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr)
+    {
+        assert(setIndex < numSets);
+
+        bindingsArray[setIndex]->addBindging(binding, type, count, stageFlags, pImmutableSampler);
+    }
+
+    void DescriptorSets::initPipelineLayout()
+    {
+        for (auto& bindings : bindingsArray) {
+            descSetLayouts.push_back(bindings->createLayout());
+        }
+
+        // Get raw handles (not unique handle)
+        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
+        for (auto& layout : descSetLayouts) {
+            rawDescSetLayouts.push_back(*layout);
+        }
+
+        pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
     }
 
 

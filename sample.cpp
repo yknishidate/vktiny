@@ -16,6 +16,7 @@ public:
 
         outputImage = swapChain->createOutputImage();
 
+        // Create BLAS
         std::vector<vkr::Vertex> vertices{
             { {1.0f, 1.0f, 0.0f} },
             { {-1.0f, 1.0f, 0.0f} },
@@ -23,8 +24,17 @@ public:
         std::vector<uint32_t> indices = { 0, 1, 2 };
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
 
+        // Create TLAS
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
+
+        //// Create DescriptorSetLayout
+        //bindings = std::make_unique<vkr::DescriptorSetBindings>(*device);
+        //bindings->addBindging(0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        //bindings->addBindging(1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        //descriptorSetLayout = bindings->createLayout();
+
+        //pipelineLayout = device->getHandle().createPipelineLayoutUnique({ {}, *descriptorSetLayout });
 
         window->run(); // TODO: 制御取る
     }
@@ -35,9 +45,16 @@ private:
     std::unique_ptr<vkr::Instance> instance;
     std::unique_ptr<vkr::Device> device;
     std::unique_ptr<vkr::SwapChain> swapChain;
+
     std::unique_ptr<vkr::Image> outputImage;
     std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
     std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
+
+    //std::unique_ptr<vkr::DescriptorSetBindings> bindings;
+
+    //vk::UniquePipeline pipeline;
+    //vk::UniquePipelineLayout pipelineLayout;
+    //vk::UniqueDescriptorSetLayout descriptorSetLayout;
 
 };
 
