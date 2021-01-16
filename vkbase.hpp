@@ -306,6 +306,7 @@ namespace vkr
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
         std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const;
         std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const;
+        vk::UniqueShaderModule createShaderModule(const std::string& filename);
 
     private:
 
@@ -570,6 +571,7 @@ namespace vkr
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         void initPipelineLayout();
+        vk::PipelineLayout createPipelineLayout();
 
     private:
         const Device& device;
@@ -582,6 +584,35 @@ namespace vkr
         std::vector<vk::UniqueDescriptorSetLayout> descSetLayouts;
 
         std::vector<std::unique_ptr<DescriptorSetBindings>> bindingsArray;
+    };
+
+    class ShaderManager final
+    {
+
+    public:
+        ShaderManager(const Device& device) : device(device) {}
+
+        ShaderManager(const ShaderManager&) = delete;
+        ShaderManager(ShaderManager&&) = delete;
+        ShaderManager& operator = (const ShaderManager&) = delete;
+        ShaderManager& operator = (ShaderManager&&) = delete;
+
+        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& pName,
+            vk::RayTracingShaderGroupTypeKHR groupType);
+
+        void addShader(uint32_t moduleIndex, vk::ShaderStageFlagBits stage, const std::string& pName,
+            vk::RayTracingShaderGroupTypeKHR groupType);
+
+
+    private:
+        vk::UniqueShaderModule createShaderModule(const std::string& filename);
+
+        const Device& device;
+
+        std::vector<vk::UniqueShaderModule> modules;
+        std::vector<vk::PipelineShaderStageCreateInfo> stages;
+        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtShaderGroups;
+
     };
 
 
@@ -656,6 +687,25 @@ namespace vkr
             }
 
             return family;
+        }
+
+        std::vector<char> readFile(const std::string& filename)
+        {
+            std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+            if (!file.is_open()) {
+                throw std::runtime_error("failed to open file!");
+            }
+
+            size_t fileSize = (size_t)file.tellg();
+            std::vector<char> buffer(fileSize);
+
+            file.seekg(0);
+            file.read(buffer.data(), fileSize);
+
+            file.close();
+
+            return buffer;
         }
 
     } // namespace
@@ -1188,7 +1238,6 @@ namespace vkr
         return device.getHandle().createDescriptorSetLayoutUnique({ flags, bindings });
     }
 
-
     void DescriptorSetBindings::addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t numSets) const
     {
         for (auto it = bindings.cbegin(); it != bindings.cend(); ++it) {
@@ -1217,7 +1266,6 @@ namespace vkr
         }
     }
 
-
     void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
         vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler /*= nullptr*/)
     {
@@ -1241,5 +1289,52 @@ namespace vkr
         pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
     }
 
+    vk::PipelineLayout DescriptorSets::createPipelineLayout()
+    {
+        for (auto& bindings : bindingsArray) {
+            descSetLayouts.push_back(bindings->createLayout());
+        }
+
+        // Get raw handles (not unique handle)
+        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
+        for (auto& layout : descSetLayouts) {
+            rawDescSetLayouts.push_back(*layout);
+        }
+
+        pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
+        return *pipeLayout;
+    }
+
+    // ShaderManager
+    vk::UniqueShaderModule ShaderManager::createShaderModule(const std::string& filename)
+    {
+        const std::vector<char> code = readFile(filename);
+
+        return device.getHandle().createShaderModuleUnique({ {}, code.size(), reinterpret_cast<const uint32_t*>(code.data()) });
+    }
+
+    void ShaderManager::addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const std::string& pName,
+        vk::RayTracingShaderGroupTypeKHR groupType)
+    {
+        modules.push_back(createShaderModule(filename));
+        stages.push_back({ {}, stage, *modules.back(), pName.c_str() });
+
+        vk::RayTracingShaderGroupCreateInfoKHR groupInfo{ groupType,
+            VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR };
+        uint32_t index = static_cast<uint32_t>(stages.size() - 1);
+        switch (groupType) {
+            case vk::RayTracingShaderGroupTypeKHR::eGeneral:
+                groupInfo.generalShader = index;
+                break;
+            case vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup:
+                groupInfo.closestHitShader = index;
+                break;
+            case vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup:
+                break;
+            default:
+                break;
+        }
+        rtShaderGroups.push_back(groupInfo);
+    }
 
 } // vkray
