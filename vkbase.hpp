@@ -552,6 +552,15 @@ namespace vkr
 
         void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes) const;
 
+        vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+            const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement = 0) const;
+
+        vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+            const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const;
+
+        vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+            const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const;
+
     private:
         const Device& device;
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
@@ -1277,6 +1286,49 @@ namespace vkr
             }
             if (!found) {
                 poolSizes.push_back({ it->descriptorType, it->descriptorCount });
+            }
+        }
+    }
+
+    vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+        const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement = 0) const
+    {
+        for (const auto& binding : bindings) {
+            if (binding.binding == dstBinding) {
+                vk::WriteDescriptorSet write{ dstSet, dstBinding, arrayElement,
+                    binding.descriptorCount, binding.descriptorType };
+                write.pImageInfo = pImageInfo;
+
+                return write;
+            }
+        }
+    }
+
+
+    vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+        const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const
+    {
+        for (const auto& binding : bindings) {
+            if (binding.binding == dstBinding) {
+                vk::WriteDescriptorSet write{ dstSet, dstBinding, arrayElement,
+                    binding.descriptorCount, binding.descriptorType };
+                write.pBufferInfo = pBufferInfo;
+
+                return write;
+            }
+        }
+    }
+
+    vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
+        const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const
+    {
+        for (const auto& binding : bindings) {
+            if (binding.binding == dstBinding) {
+                vk::WriteDescriptorSet write{ dstSet, dstBinding, arrayElement,
+                    binding.descriptorCount, binding.descriptorType };
+                write.pNext = pASInfo;
+
+                return write;
             }
         }
     }

@@ -2,6 +2,10 @@
 
 #include "../vkray.hpp"
 
+using vkss = vk::ShaderStageFlagBits;
+using vkdt = vk::DescriptorType;
+using vksgt = vk::RayTracingShaderGroupTypeKHR;
+
 class Application
 {
 public:
@@ -13,7 +17,8 @@ public:
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device);
 
-        outputImage = swapChain->createStorageImage();
+        // Create storage image
+        storageImage = swapChain->createStorageImage();
 
         // Create BLAS
         std::vector<vkr::Vertex> vertices{
@@ -28,15 +33,12 @@ public:
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
         // Init Pipeline Layout
-        using vkss = vk::ShaderStageFlagBits;
-        using vkdt = vk::DescriptorType;
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
         descSets->initPipelineLayout();
 
         // Load shaders
-        using vksgt = vk::RayTracingShaderGroupTypeKHR;
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
         shaderManager->addShader("samples/shaders/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
         shaderManager->addShader("samples/shaders/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
@@ -63,7 +65,7 @@ private:
     std::unique_ptr<vkr::Device> device;
     std::unique_ptr<vkr::SwapChain> swapChain;
 
-    std::unique_ptr<vkr::Image> outputImage;
+    std::unique_ptr<vkr::Image> storageImage;
     std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
     std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
 
