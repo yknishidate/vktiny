@@ -1324,7 +1324,7 @@ namespace vkr
         for (const auto& bindings : bindingsArray) {
             bindings->addRequiredPoolSizes(poolSizes);
         }
-        descPool = device.getHandle().createDescriptorPoolUnique({ {}, numSets, poolSizes });
+        descPool = device.getHandle().createDescriptorPoolUnique({ vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, numSets, poolSizes });
 
         // Get raw handles
         std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
