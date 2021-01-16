@@ -1,7 +1,6 @@
 
-#include <memory>
 
-#include "vkray.hpp"
+#include "../vkray.hpp"
 
 class Application
 {
@@ -30,7 +29,9 @@ public:
 
         // Create Pipeline Layout
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-
+        descSets->addBindging(0, 0, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        descSets->addBindging(0, 1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eRaygenKHR);
+        descSets->initPipelineLayout();
 
         window->run(); // TODO: 制御取る
     }
