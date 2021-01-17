@@ -141,6 +141,16 @@ namespace vkr
             return size.height == 0 && size.width == 0;
         }
 
+        bool shouldClose()
+        {
+            return glfwWindowShouldClose(window);
+        }
+
+        void pollEvents()
+        {
+            glfwPollEvents();
+        }
+
         // TODO: 制御を返す
         void run()
         {
@@ -535,10 +545,7 @@ namespace vkr
     class DescriptorSetBindings final
     {
     public:
-        DescriptorSetBindings(const Device& device)
-            : device(device)
-        {
-        }
+        DescriptorSetBindings(const Device& device) : device(device) {}
 
         DescriptorSetBindings(const DescriptorSetBindings&) = delete;
         DescriptorSetBindings(DescriptorSetBindings&&) = delete;
@@ -582,6 +589,7 @@ namespace vkr
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         void initPipelineLayout();
+        vk::PipelineLayout createPipelineLayout();
 
         void allocate();
 
@@ -1304,7 +1312,6 @@ namespace vkr
         }
     }
 
-
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
         const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const
     {
@@ -1366,6 +1373,13 @@ namespace vkr
 
         pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
     }
+
+    vk::PipelineLayout DescriptorSets::createPipelineLayout()
+    {
+        initPipelineLayout();
+        return *pipeLayout;
+    }
+
 
     void DescriptorSets::allocate()
     {

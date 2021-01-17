@@ -53,9 +53,10 @@ public:
         // Create desc sets
         descSets->allocate();
 
-
-
-        window->run(); // TODO: 制御取る
+        // Main loop
+        while (!window->shouldClose()) {
+            window->pollEvents();
+        }
     }
 
 private:

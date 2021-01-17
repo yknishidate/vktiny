@@ -1,22 +1,23 @@
 # quick-vkray
 
-Header only library for Vulkan Ray Tracing
+A header only library to make Vulkan Ray Tracing easy to use.
 
-# Features
+## Features
 
--   Use `vulkan.hpp` (C++ binding)
+-   Use `vulkan.hpp` (Vulkan C++ binding)
 -   Less external dependency
 -   Include glTF loader
+-   Support Vulkan Ray Tracing Final Specification (Released in November 2020)
 
-# Requirements
+## Requirements
 
-## Environment
+### Environment
 
 -   Vulkan SDK 1.2.162.0
 -   GPU that support Vulkan Ray Tracing Final Specification
 -   Driver that support Vulkan Ray Tracing Final Specification
 
-## Libraries
+### Libraries
 
 -   vulkan.hpp (included in the SDK)
 -   GLFW
