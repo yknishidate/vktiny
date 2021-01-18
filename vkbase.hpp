@@ -607,9 +607,10 @@ namespace vkr
         }
 
         void allocate();
+
         void update()
         {
-
+            device.getHandle().updateDescriptorSets(writeDescSets, 0);
         }
 
     private:

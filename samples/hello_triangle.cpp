@@ -46,10 +46,9 @@ public:
         descSets->initPipelineLayout();
         //// Write Descs
         descSets->allocate();
-        descSets->addWriteInfo(0, 0,
-            vk::WriteDescriptorSetAccelerationStructureKHR{ tlas->getHandle() });
-        descSets->addWriteInfo(0, 1,
-            vk::DescriptorImageInfo{ {}, storageImage->getView(), vk::ImageLayout::eGeneral });
+        descSets->addWriteInfo(0, 0, { tlas->getHandle() });
+        descSets->addWriteInfo(0, 1, { {}, storageImage->getView(), vk::ImageLayout::eGeneral });
+        descSets->update();
 
         // Create Ray Tracing Pipeline
         pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
