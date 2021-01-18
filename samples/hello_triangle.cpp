@@ -40,11 +40,11 @@ public:
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-        //// Binding and Layout
+        //// Create layout
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
         descSets->initPipelineLayout();
-        //// Write Descs
+        //// Update
         descSets->allocate();
         descSets->addWriteInfo(0, 0, { tlas->getHandle() });
         descSets->addWriteInfo(0, 1, { {}, storageImage->getView(), vk::ImageLayout::eGeneral });

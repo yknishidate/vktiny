@@ -313,7 +313,8 @@ namespace vkr
 
         // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
-        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin) const;
+        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin,
+            vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
         std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const;
         std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const;
@@ -611,6 +612,7 @@ namespace vkr
         void update()
         {
             device.getHandle().updateDescriptorSets(writeDescSets, 0);
+            // TODO: Clear Write Descs?
         }
 
     private:
@@ -640,6 +642,9 @@ namespace vkr
 
         auto getStages() const { return stages; }
         auto getRayTracingGroups() const { return rtGroups; }
+        auto getRaygenRegion() const { return raygenRegion; }
+        auto getMissRegion() const { return missRegion; }
+        auto getHitRegion() const { return hitRegion; }
 
         void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
             vk::RayTracingShaderGroupTypeKHR groupType);
@@ -661,6 +666,10 @@ namespace vkr
         std::unique_ptr<Buffer> raygenShaderBindingTable;
         std::unique_ptr<Buffer> missShaderBindingTable;
         std::unique_ptr<Buffer> hitShaderBindingTable;
+
+        vk::StridedDeviceAddressRegionKHR raygenRegion;
+        vk::StridedDeviceAddressRegionKHR missRegion;
+        vk::StridedDeviceAddressRegionKHR hitRegion;
     };
 
 
@@ -930,14 +939,14 @@ namespace vkr
         throw std::runtime_error("failed to find suitable memory type");
     }
 
-    vk::UniqueCommandBuffer Device::createCommandBuffer(vk::CommandBufferLevel level, bool begin) const
+    vk::UniqueCommandBuffer Device::createCommandBuffer(vk::CommandBufferLevel level, bool begin, vk::CommandBufferUsageFlags usage) const
     {
         assert(commandPool);
 
         vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique({ *commandPool , level, 1 }).front());
 
         if (begin) {
-            commandBuffer->begin(vk::CommandBufferBeginInfo{});
+            commandBuffer->begin({ usage });
         }
 
         return commandBuffer;
@@ -1487,6 +1496,18 @@ namespace vkr
             shaderHandleStorage.data() + missOffset * handleSizeAligned);
         hitShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
             shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+
+        raygenRegion.setDeviceAddress(raygenShaderBindingTable->getDeviceAddress());
+        raygenRegion.setStride(handleSizeAligned);
+        raygenRegion.setSize(handleSizeAligned);
+
+        missRegion.setDeviceAddress(missShaderBindingTable->getDeviceAddress());
+        missRegion.setStride(handleSizeAligned);
+        missRegion.setSize(handleSizeAligned);
+
+        hitRegion.setDeviceAddress(hitShaderBindingTable->getDeviceAddress());
+        hitRegion.setStride(handleSizeAligned);
+        hitRegion.setSize(handleSizeAligned);
     }
 
 
