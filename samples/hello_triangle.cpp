@@ -56,7 +56,8 @@ public:
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
 
-
+        // Init Draw Command Buffers
+        swapChain->initDrawCommandBuffers(*pipeline, *descSets, *shaderManager, *storageImage);
 
         // Main loop
         while (!window->shouldClose()) {

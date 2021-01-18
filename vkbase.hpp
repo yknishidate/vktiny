@@ -403,6 +403,59 @@ namespace vkr
 
         std::unique_ptr<Image> createStorageImage() const;
 
+        void initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage);
+
+        void transitionImageLayout(uint32_t index, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+        {
+            vk::ImageMemoryBarrier barrier{};
+            barrier.oldLayout = oldLayout;
+            barrier.newLayout = newLayout;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image = image;
+            barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1 };
+
+            if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+                barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+            } else {
+                barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+            }
+
+            vk::PipelineStageFlags sourceStage;
+            vk::PipelineStageFlags destinationStage;
+
+            if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+                barrier.srcAccessMask = {};
+                barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+                sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage = vk::PipelineStageFlagBits::eTransfer;
+            } else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+                barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+                barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+                sourceStage = vk::PipelineStageFlagBits::eTransfer;
+                destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+            } else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+                barrier.srcAccessMask = {};
+                barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+                sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+                destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            } else {
+                throw std::invalid_argument("unsupported layout transition");
+            }
+
+            drawCmdBufs[index]->pipelineBarrier(
+                sourceStage,       // srcStageMask
+                destinationStage,  // dstStageMask
+                {},                // dependencyFlags
+                {},                // memoryBarriers
+                {},                // bufferMemoryBarriers
+                barrier            // imageMemoryBarriers
+            );
+        }
+
     private:
 
         struct SupportDetails
@@ -429,6 +482,8 @@ namespace vkr
         vk::Extent2D extent{};
         std::vector<vk::Image> images;
         std::vector<vk::UniqueImageView> imageViews;
+
+        std::vector<vk::UniqueCommandBuffer> drawCmdBufs;
     };
 
 
@@ -448,6 +503,7 @@ namespace vkr
         vk::Extent2D getExtent() const { return extent; }
         vk::Format getFormat() const { return format; }
         vk::ImageView getView() const { return *view; }
+        vk::Image getHandle() const { return *image; }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
         void addImageView(vk::ImageAspectFlags aspectFlags);
@@ -1163,6 +1219,57 @@ namespace vkr
         image->allocateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal);
         image->addImageView(vk::ImageAspectFlagBits::eColor);
         return image;
+    }
+
+    void SwapChain::initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage)
+    {
+
+        for (int32_t i = 0; i < drawCmdBufs.size(); ++i) {
+            drawCmdBufs[i]->begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+            drawCmdBufs[i]->bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, pipeline);
+
+            drawCmdBufs[i]->bindDescriptorSets(
+                vk::PipelineBindPoint::eRayTracingKHR, // pipelineBindPoint
+                descSets.getPipelineLayout(),          // layout
+                0,                                     // firstSet
+                descSets.getDescriptorSets(),          // descriptorSets
+                nullptr                                // dynamicOffsets
+            );
+
+            drawCmdBufs[i]->traceRaysKHR(
+                shaderManager.getRaygenRegion(), // raygenShaderBindingTable
+                shaderManager.getMissRegion(),   // missShaderBindingTable
+                shaderManager.getHitRegion(),    // hitShaderBindingTable
+                {},            // callableShaderBindingTable
+                extent.width,  // width
+                extent.height, // height
+                1              // depth
+            );
+
+            transitionImageLayout(i, images[i], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+            transitionImageLayout(i, storageImage.getHandle(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal);
+
+            vk::ImageCopy copyRegion{};
+            copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+            copyRegion.setSrcOffset({ 0, 0, 0 });
+            copyRegion.setDstSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+            copyRegion.setDstOffset({ 0, 0, 0 });
+            copyRegion.setExtent({ extent.width, extent.height, 1 });
+
+            drawCmdBufs[i]->copyImage(
+                storageImage.getHandle(),             // srcImage
+                vk::ImageLayout::eTransferSrcOptimal, // srcImageLayout
+                images[i],                            // dstImage
+                vk::ImageLayout::eTransferDstOptimal, // dstImageLayout
+                copyRegion                            // regions
+            );
+
+            transitionImageLayout(i, images[i], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR);
+            transitionImageLayout(i, storageImage.getHandle(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral);
+
+            drawCmdBufs[i]->end();
+        }
     }
 
     // Image
