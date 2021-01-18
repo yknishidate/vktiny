@@ -126,7 +126,7 @@ namespace vkr
         std::string getTitle() const { return title; }
 
         // Callbacks
-        std::function<void()> drawFrame;
+        //std::function<void()> drawFrame;
         std::function<void(int key, int scancode, int action, int mods)> onKey;
         std::function<void(double xpos, double ypos)> onCursorPosition;
         std::function<void(int button, int action, int mods)> onMouseButton;
@@ -151,19 +151,18 @@ namespace vkr
             glfwPollEvents();
         }
 
-        // TODO: 制御を返す
-        void run()
-        {
-            glfwSetTime(0.0);
+        //void run()
+        //{
+        //    glfwSetTime(0.0);
 
-            while (!glfwWindowShouldClose(window)) {
-                glfwPollEvents();
+        //    while (!glfwWindowShouldClose(window)) {
+        //        glfwPollEvents();
 
-                if (drawFrame) {
-                    drawFrame();
-                }
-            }
-        }
+        //        if (drawFrame) {
+        //            drawFrame();
+        //        }
+        //    }
+        //}
 
         void waitForEvents() const { glfwWaitEvents(); }
 
@@ -444,10 +443,10 @@ namespace vkr
         Image(Image&& other) noexcept;
         ~Image() {}
 
-
         const class Device& getDevice() const { return device; }
         vk::Extent2D getExtent() const { return extent; }
         vk::Format getFormat() const { return format; }
+        vk::ImageView getView() const { return *view; }
 
         void allocateMemory(vk::MemoryPropertyFlags properties);
         void addImageView(vk::ImageAspectFlags aspectFlags);
@@ -573,6 +572,7 @@ namespace vkr
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
     };
 
+
     class DescriptorSets final
     {
     public:
@@ -592,6 +592,10 @@ namespace vkr
         vk::PipelineLayout createPipelineLayout();
 
         void allocate();
+        void update()
+        {
+
+        }
 
     private:
         const Device& device;
@@ -605,6 +609,7 @@ namespace vkr
 
         std::vector<std::unique_ptr<DescriptorSetBindings>> bindingsArray;
     };
+
 
     class ShaderManager final
     {
@@ -1299,7 +1304,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement = 0) const
+        const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -1313,7 +1318,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const
+        const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -1327,7 +1332,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const
+        const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {

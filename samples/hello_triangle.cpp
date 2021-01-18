@@ -32,17 +32,17 @@ public:
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
-        // Init Pipeline Layout
-        descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
-        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
-        descSets->initPipelineLayout();
-
         // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
         shaderManager->addShader("samples/shaders/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
         shaderManager->addShader("samples/shaders/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
         shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+
+        // Init Pipeline Layout
+        descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
+        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
+        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
+        descSets->initPipelineLayout();
 
         // Create Ray Tracing Pipeline
         pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
@@ -50,13 +50,18 @@ public:
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
 
-        // Create desc sets
-        descSets->allocate();
+        // Allocate desc sets
+        //descSets->allocate();
+
+        // Update desc sets
+        vk::WriteDescriptorSetAccelerationStructureKHR asInfo{ tlas->getHandle() };
+        vk::DescriptorImageInfo imageInfo{ {}, storageImage->getView(), vk::ImageLayout::eGeneral };
 
         // Main loop
         while (!window->shouldClose()) {
             window->pollEvents();
         }
+
     }
 
 private:

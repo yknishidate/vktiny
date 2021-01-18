@@ -42,6 +42,8 @@ namespace vkr
         const Device& getDevice() const { return device; }
         const uint64_t getDeviceAddress() const { return deviceAddress; }
 
+        vk::AccelerationStructureKHR& getHandle() { return *accelerationStructure; }
+
     protected:
         void build(vk::AccelerationStructureGeometryKHR& geometry, const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
 
