@@ -585,6 +585,22 @@ namespace vkr
         DescriptorSets& operator = (DescriptorSets&&) = delete;
 
         vk::PipelineLayout getPipelineLayout() const { return *pipeLayout; }
+        std::vector<vk::DescriptorSet> getDescriptorSets() const
+        {
+            std::vector<vk::DescriptorSet> rawDescSets;
+            for (auto& descSet : descSets) {
+                rawDescSets.push_back(*descSet);
+            }
+            return rawDescSets;
+        }
+        std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const
+        {
+            std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
+            for (auto& descSetLayout : descSetLayouts) {
+                rawDescSetLayouts.push_back(*descSetLayout);
+            }
+            return rawDescSetLayouts;
+        }
 
         void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
@@ -1396,13 +1412,7 @@ namespace vkr
             descSetLayouts.push_back(bindings->createLayout());
         }
 
-        // Get raw handles (not unique handle)
-        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
-        for (auto& layout : descSetLayouts) {
-            rawDescSetLayouts.push_back(*layout);
-        }
-
-        pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, rawDescSetLayouts });
+        pipeLayout = device.getHandle().createPipelineLayoutUnique({ {}, getDescriptorSetLayouts() });
     }
 
     vk::PipelineLayout DescriptorSets::createPipelineLayout()
@@ -1423,14 +1433,8 @@ namespace vkr
         }
         descPool = device.getHandle().createDescriptorPoolUnique({ vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, numSets, poolSizes });
 
-        // Get raw handles
-        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
-        for (auto& layout : descSetLayouts) {
-            rawDescSetLayouts.push_back(*layout);
-        }
-
         // Allocate Desc Sets
-        descSets = device.getHandle().allocateDescriptorSetsUnique({ *descPool, rawDescSetLayouts });
+        descSets = device.getHandle().allocateDescriptorSetsUnique({ *descPool, getDescriptorSetLayouts() });
     }
 
     // ShaderManager
