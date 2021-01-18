@@ -209,7 +209,7 @@ namespace vkr
         vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) };
         Buffer instancesBuffer{ device, size,
             vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
+            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, &asInstance };
 
         vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
         instancesData.setArrayOfPointers(false);
@@ -223,7 +223,6 @@ namespace vkr
         uint32_t instanceCount = 1;
         build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
-
 
 
 } // vkr

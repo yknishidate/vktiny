@@ -62,7 +62,7 @@ public:
         // Main loop
         while (!window->shouldClose()) {
             window->pollEvents();
-            //swapChain->draw();
+            swapChain->draw();
         }
 
         device->waitIdle();

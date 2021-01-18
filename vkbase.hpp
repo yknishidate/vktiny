@@ -427,8 +427,6 @@ namespace vkr
                 throw std::runtime_error("failed to acquire next image!");
             }
 
-            std::cout << imageIndex << std::endl;
-
             if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
                 device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
             }
@@ -1356,26 +1354,26 @@ namespace vkr
                 1              // depth
             );
 
-            //transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-            //transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal);
+            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal);
 
-            //vk::ImageCopy copyRegion{};
-            //copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
-            //copyRegion.setSrcOffset({ 0, 0, 0 });
-            //copyRegion.setDstSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
-            //copyRegion.setDstOffset({ 0, 0, 0 });
-            //copyRegion.setExtent({ extent.width, extent.height, 1 });
+            vk::ImageCopy copyRegion{};
+            copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+            copyRegion.setSrcOffset({ 0, 0, 0 });
+            copyRegion.setDstSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+            copyRegion.setDstOffset({ 0, 0, 0 });
+            copyRegion.setExtent({ extent.width, extent.height, 1 });
 
-            //drawCmdBufs[i]->copyImage(
-            //    storageImage.getHandle(),             // srcImage
-            //    vk::ImageLayout::eTransferSrcOptimal, // srcImageLayout
-            //    images[i],                            // dstImage
-            //    vk::ImageLayout::eTransferDstOptimal, // dstImageLayout
-            //    copyRegion                            // regions
-            //);
+            drawCmdBufs[i]->copyImage(
+                storageImage.getHandle(),             // srcImage
+                vk::ImageLayout::eTransferSrcOptimal, // srcImageLayout
+                images[i],                            // dstImage
+                vk::ImageLayout::eTransferDstOptimal, // dstImageLayout
+                copyRegion                            // regions
+            );
 
-            //transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR);
-            //transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral);
+            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR);
+            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral);
 
             drawCmdBufs[i]->end();
         }
