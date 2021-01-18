@@ -62,8 +62,10 @@ public:
         // Main loop
         while (!window->shouldClose()) {
             window->pollEvents();
-
+            //swapChain->draw();
         }
+
+        device->waitIdle();
 
     }
 

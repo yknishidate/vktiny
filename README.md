@@ -32,3 +32,4 @@ A header only library to make Vulkan Ray Tracing easy to use.
 -   Sync
 -   UBO
 -   Push Constant
+-   Window resize
