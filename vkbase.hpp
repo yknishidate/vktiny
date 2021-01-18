@@ -456,6 +456,11 @@ namespace vkr
             );
         }
 
+        void draw()
+        {
+
+        }
+
     private:
 
         struct SupportDetails
@@ -479,11 +484,14 @@ namespace vkr
         uint32_t minImageCount;
         vk::PresentModeKHR presentMode;
         vk::Format format;
-        vk::Extent2D extent{};
+        vk::Extent2D extent;
         std::vector<vk::Image> images;
         std::vector<vk::UniqueImageView> imageViews;
 
         std::vector<vk::UniqueCommandBuffer> drawCmdBufs;
+
+        std::vector<vk::UniqueSemaphore> imageAvailableSemaphores;
+        std::vector<vk::UniqueSemaphore> renderFinishedSemaphores;
     };
 
 
@@ -1150,6 +1158,13 @@ namespace vkr
             vk::ImageViewCreateInfo viewInfo{ {}, image, vk::ImageViewType::e2D, format };
             viewInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
             imageViews.push_back(device.getHandle().createImageViewUnique(viewInfo));
+        }
+
+        imageAvailableSemaphores.reserve(images.size());
+        renderFinishedSemaphores.reserve(images.size());
+        for (size_t i = 0; i < images.size(); i++) {
+            imageAvailableSemaphores.push_back(device.getHandle().createSemaphoreUnique({}));
+            renderFinishedSemaphores.push_back(device.getHandle().createSemaphoreUnique({}));
         }
     }
 

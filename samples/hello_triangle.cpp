@@ -44,7 +44,7 @@ public:
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
         descSets->initPipelineLayout();
-        //// Update
+        //// Update descs
         descSets->allocate();
         descSets->addWriteInfo(0, 0, { tlas->getHandle() });
         descSets->addWriteInfo(0, 1, { {}, storageImage->getView(), vk::ImageLayout::eGeneral });
@@ -62,6 +62,7 @@ public:
         // Main loop
         while (!window->shouldClose()) {
             window->pollEvents();
+
         }
 
     }
