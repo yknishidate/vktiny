@@ -24,3 +24,11 @@ A header only library to make Vulkan Ray Tracing easy to use.
 -   GLM
 -   [tinygltf](https://github.com/syoyo/tinygltf)
 -   (stb_image)
+
+## TODO
+
+-   glTF loader
+-   Support VMA
+-   Sync
+-   UBO
+-   Push Constant
