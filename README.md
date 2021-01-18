@@ -1,6 +1,6 @@
 # quick-vkray
 
-A header only library to make Vulkan Ray Tracing easy to use.
+A header only library to use Vulkan Ray Tracing quickly.
 
 ## Features
 
