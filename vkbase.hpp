@@ -591,6 +591,21 @@ namespace vkr
         void initPipelineLayout();
         vk::PipelineLayout createPipelineLayout();
 
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::WriteDescriptorSetAccelerationStructureKHR& writeInfo)
+        {
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
+        }
+
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::DescriptorImageInfo& writeInfo)
+        {
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
+        }
+
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::DescriptorBufferInfo& writeInfo)
+        {
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
+        }
+
         void allocate();
         void update()
         {
@@ -608,6 +623,7 @@ namespace vkr
         std::vector<vk::UniqueDescriptorSetLayout> descSetLayouts;
 
         std::vector<std::unique_ptr<DescriptorSetBindings>> bindingsArray;
+        std::vector<vk::WriteDescriptorSet> writeDescSets;
     };
 
 

@@ -38,11 +38,18 @@ public:
         shaderManager->addShader("samples/shaders/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
         shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
-        // Init Pipeline Layout
+        // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
+        //// Binding and Layout
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
         descSets->initPipelineLayout();
+        //// Write Descs
+        descSets->allocate();
+        descSets->addWriteInfo(0, 0,
+            vk::WriteDescriptorSetAccelerationStructureKHR{ tlas->getHandle() });
+        descSets->addWriteInfo(0, 1,
+            vk::DescriptorImageInfo{ {}, storageImage->getView(), vk::ImageLayout::eGeneral });
 
         // Create Ray Tracing Pipeline
         pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
@@ -50,12 +57,7 @@ public:
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
 
-        // Allocate desc sets
-        //descSets->allocate();
 
-        // Update desc sets
-        vk::WriteDescriptorSetAccelerationStructureKHR asInfo{ tlas->getHandle() };
-        vk::DescriptorImageInfo imageInfo{ {}, storageImage->getView(), vk::ImageLayout::eGeneral };
 
         // Main loop
         while (!window->shouldClose()) {
