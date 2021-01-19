@@ -42,14 +42,23 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace vkr
 {
     class Window;
+
     class Instance;
+
     class Device;
+
     class Image;
+
     class Buffer;
+
     class VertexBuffer;
+
     class IndexBuffer;
+
     class DescriptorSets;
+
     class ShaderManager;
+
 
     struct Vertex
     {
@@ -188,7 +197,7 @@ namespace vkr
 
     private:
 
-        GLFWwindow* window{};
+        GLFWwindow* window;
 
         std::string title;
 
@@ -224,8 +233,10 @@ namespace vkr
 
         const Window& getWindow() const { return window; }
 
-        const std::vector<vk::ExtensionProperties>& getExtensions() const { return extensions; }
+        const std::vector<vk::ExtensionProperties>& getExtensionProperties() const { return extensionProperties; }
+
         const std::vector<vk::PhysicalDevice>& getPhysicalDevices() const { return physicalDevices; }
+
         const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
 
         vk::UniqueSurfaceKHR createSurface() const
@@ -242,11 +253,10 @@ namespace vkr
         vk::PhysicalDevice pickSuitablePhysicalDevice() const
         {
             const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
-                // We want a device with a graphics queue.
                 const auto queueFamilies = device.getQueueFamilyProperties();
 
-                const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const VkQueueFamilyProperties& queueFamily) {
-                    return queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+                const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const vk::QueueFamilyProperties& queueFamily) {
+                    return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
                 });
 
                 return hasGraphicsQueue != queueFamilies.end();
@@ -260,25 +270,13 @@ namespace vkr
         }
 
     private:
-        void getPhysicalDevices()
-        {
-            physicalDevices = instance->enumeratePhysicalDevices();
-
-            if (physicalDevices.empty()) {
-                throw std::runtime_error("found no Vulkan physical devices");
-            }
-        }
-
-        void getInstanceExtensions()
-        {
-            extensions = vk::enumerateInstanceExtensionProperties();
-        }
 
         void createDebugMessenger();
 
         static void checkVulkanMinimumVersion(uint32_t minVersion)
         {
             uint32_t version = vk::enumerateInstanceVersion();
+
             if (minVersion > version) {
                 throw std::runtime_error("minimum required version not found");
             }
@@ -289,7 +287,7 @@ namespace vkr
             const auto availableLayers = vk::enumerateInstanceLayerProperties();
 
             for (const char* layer : validationLayers) {
-                auto result = std::find_if(availableLayers.begin(), availableLayers.end(), [layer](const VkLayerProperties& layerProperties) {
+                auto result = std::find_if(availableLayers.begin(), availableLayers.end(), [layer](const vk::LayerProperties& layerProperties) {
                     return strcmp(layer, layerProperties.layerName) == 0;
                 });
 
@@ -299,16 +297,19 @@ namespace vkr
             }
         }
 
-        vk::UniqueInstance instance{};
-        const Window& window;
-        bool enableValidationLayers;
-        std::vector<const char*> validationLayers;
-
-        std::vector<vk::PhysicalDevice> physicalDevices;
-        std::vector<vk::ExtensionProperties> extensions;
+        vk::UniqueInstance instance;
 
         vk::UniqueDebugUtilsMessengerEXT messenger;
 
+        const Window& window;
+
+        std::vector<const char*> validationLayers;
+
+        std::vector<vk::PhysicalDevice> physicalDevices;
+
+        std::vector<vk::ExtensionProperties> extensionProperties;
+
+        bool enableValidationLayers;
     };
 
 
@@ -1090,12 +1091,14 @@ namespace vkr
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-        vk::ApplicationInfo appInfo{ window.getTitle().c_str() , 0, "No Engine", 0, VK_API_VERSION_1_2 };
+        vk::ApplicationInfo appInfo{ window.getTitle().c_str() , 0, "No Engine", 0, version };
+
         instance = vk::createInstanceUnique({ {}, &appInfo, validationLayers, extensions });
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 
-        getPhysicalDevices();
-        getInstanceExtensions();
+        physicalDevices = instance->enumeratePhysicalDevices();
+
+        extensionProperties = vk::enumerateInstanceExtensionProperties();
 
         if (enableValidationLayers) {
             createDebugMessenger();
