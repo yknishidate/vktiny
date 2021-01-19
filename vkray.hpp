@@ -239,63 +239,17 @@ namespace vkr
 
         const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
 
-        vk::UniqueSurfaceKHR createSurface() const
-        {
-            VkSurfaceKHR _surface;
+        vk::UniqueSurfaceKHR createSurface() const;
 
-            window.createWindowSurface(VkInstance(*instance), _surface);
-
-            vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
-
-            return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
-        }
-
-        vk::PhysicalDevice pickSuitablePhysicalDevice() const
-        {
-            const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
-                const auto queueFamilies = device.getQueueFamilyProperties();
-
-                const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const vk::QueueFamilyProperties& queueFamily) {
-                    return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
-                });
-
-                return hasGraphicsQueue != queueFamilies.end();
-            });
-
-            if (result == physicalDevices.end()) {
-                throw std::runtime_error("cannot find a suitable device");
-            }
-
-            return *result;
-        }
+        vk::PhysicalDevice pickSuitablePhysicalDevice() const;
 
     private:
 
         void createDebugMessenger();
 
-        static void checkVulkanMinimumVersion(uint32_t minVersion)
-        {
-            uint32_t version = vk::enumerateInstanceVersion();
+        static void checkVulkanMinimumVersion(uint32_t minVersion);
 
-            if (minVersion > version) {
-                throw std::runtime_error("minimum required version not found");
-            }
-        }
-
-        static void checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers)
-        {
-            const auto availableLayers = vk::enumerateInstanceLayerProperties();
-
-            for (const char* layer : validationLayers) {
-                auto result = std::find_if(availableLayers.begin(), availableLayers.end(), [layer](const vk::LayerProperties& layerProperties) {
-                    return strcmp(layer, layerProperties.layerName) == 0;
-                });
-
-                if (result == availableLayers.end()) {
-                    throw std::runtime_error("could not find the requested validation layer: '" + std::string(layer) + "'");
-                }
-            }
-        }
+        static void checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers);
 
         vk::UniqueInstance instance;
 
@@ -1079,15 +1033,15 @@ namespace vkr
         auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-        validationLayers = enableValidationLayers ? std::vector<const char*>{"VK_LAYER_KHRONOS_validation"} : std::vector<const char*>();
-
         const uint32_t version = VK_API_VERSION_1_2;
         checkVulkanMinimumVersion(version);
 
         auto extensions = window.getRequiredInstanceExtensions();
 
-        checkVulkanValidationLayerSupport(validationLayers);
         if (enableValidationLayers) {
+            validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+            checkVulkanValidationLayerSupport(validationLayers);
+
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
@@ -1105,6 +1059,36 @@ namespace vkr
         }
     }
 
+    vk::UniqueSurfaceKHR Instance::createSurface() const
+    {
+        VkSurfaceKHR _surface;
+
+        window.createWindowSurface(VkInstance(*instance), _surface);
+
+        vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
+
+        return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
+    }
+
+    vk::PhysicalDevice Instance::pickSuitablePhysicalDevice() const
+    {
+        const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
+            const auto queueFamilies = device.getQueueFamilyProperties();
+
+            const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const vk::QueueFamilyProperties& queueFamily) {
+                return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
+            });
+
+            return hasGraphicsQueue != queueFamilies.end();
+        });
+
+        if (result == physicalDevices.end()) {
+            throw std::runtime_error("cannot find a suitable device");
+        }
+
+        return *result;
+    }
+
     void Instance::createDebugMessenger()
     {
         vk::DebugUtilsMessageSeverityFlagsEXT severityFlags{
@@ -1117,6 +1101,30 @@ namespace vkr
             | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
 
         messenger = instance->createDebugUtilsMessengerEXTUnique({ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback });
+    }
+
+    void Instance::checkVulkanMinimumVersion(uint32_t minVersion)
+    {
+        uint32_t version = vk::enumerateInstanceVersion();
+
+        if (minVersion > version) {
+            throw std::runtime_error("minimum required version not found");
+        }
+    }
+
+    void Instance::checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers)
+    {
+        const auto availableLayers = vk::enumerateInstanceLayerProperties();
+
+        for (const char* layer : validationLayers) {
+            auto result = std::find_if(availableLayers.begin(), availableLayers.end(), [layer](const vk::LayerProperties& layerProperties) {
+                return strcmp(layer, layerProperties.layerName) == 0;
+            });
+
+            if (result == availableLayers.end()) {
+                throw std::runtime_error("could not find the requested validation layer: '" + std::string(layer) + "'");
+            }
+        }
     }
 
     // Device
