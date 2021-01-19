@@ -41,40 +41,38 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace vkr
 {
-
-
     class Window;
     class Instance;
     class Device;
     class Image;
     class Buffer;
-    struct Vertex
-    {
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec2 uv;
-        glm::vec4 color;
-        glm::vec4 joint0;
-        glm::vec4 weight0;
-        glm::vec4 tangent;
-        //static VkVertexInputBindingDescription vertexInputBindingDescription;
-        //static std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-        //static VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo;
-        //static VkVertexInputBindingDescription inputBindingDescription(uint32_t binding);
-        //static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
-        //static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> components);
-        ///** @brief Returns the default pipeline vertex input state create info structure for the requested vertex components */
-        //static VkPipelineVertexInputStateCreateInfo* getPipelineVertexInputState(const std::vector<VertexComponent> components);
-    };
     class VertexBuffer;
     class IndexBuffer;
     class DescriptorSets;
     class ShaderManager;
 
+    struct Vertex
+    {
+        glm::vec3 pos;
+
+        glm::vec3 normal;
+
+        glm::vec2 uv;
+
+        glm::vec4 color;
+
+        glm::vec4 joint0;
+
+        glm::vec4 weight0;
+
+        glm::vec4 tangent;
+    };
+
 
     class Window final
     {
     public:
+
         Window(const std::string& title, const uint32_t width, const uint32_t height,
             bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
 
@@ -90,16 +88,21 @@ namespace vkr
         }
 
         Window(const Window&) = delete;
+
         Window(Window&&) = delete;
+
         Window& operator = (const Window&) = delete;
+
         Window& operator = (Window&&) = delete;
 
         GLFWwindow* getHandle() const { return window; }
 
+        std::string getTitle() const { return title; }
+
         float getContentScale() const
         {
-            float xscale;
-            float yscale;
+            float xscale, yscale;
+
             glfwGetWindowContentScale(window, &xscale, &yscale);
 
             return xscale;
@@ -108,39 +111,52 @@ namespace vkr
         vk::Extent2D getFramebufferSize() const
         {
             int width, height;
+
             glfwGetFramebufferSize(window, &width, &height);
+
             return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         }
 
         vk::Extent2D getWindowSize() const
         {
             int width, height;
+
             glfwGetWindowSize(window, &width, &height);
+
             return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         }
 
-        const char* getKeyName(int key, int scancode) const { return glfwGetKeyName(key, scancode); }
+        const char* getKeyName(int key, int scancode) const
+        {
+            return glfwGetKeyName(key, scancode);
+        }
 
         std::vector<const char*> getRequiredInstanceExtensions() const
         {
             uint32_t glfwExtensionCount = 0;
+
             const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
             return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
         }
 
-        double getTime() const { return glfwGetTime(); }
+        double getTime() const
+        {
+            return glfwGetTime();
+        }
 
-        std::string getTitle() const { return title; }
-
-        // Callbacks
-        //std::function<void()> drawFrame;
         std::function<void(int key, int scancode, int action, int mods)> onKey;
+
         std::function<void(double xpos, double ypos)> onCursorPosition;
+
         std::function<void(int button, int action, int mods)> onMouseButton;
+
         std::function<void(double xoffset, double yoffset)> onScroll;
 
-        // Methods
-        void close() { glfwSetWindowShouldClose(window, 1); }
+        void close()
+        {
+            glfwSetWindowShouldClose(window, 1);
+        }
 
         bool isMinimized() const
         {
@@ -148,40 +164,35 @@ namespace vkr
             return size.height == 0 && size.width == 0;
         }
 
-        bool shouldClose()
+        bool shouldClose() const
         {
             return glfwWindowShouldClose(window);
         }
 
-        void pollEvents()
+        void pollEvents() const
         {
             glfwPollEvents();
         }
 
-        //void run()
-        //{
-        //    glfwSetTime(0.0);
-
-        //    while (!glfwWindowShouldClose(window)) {
-        //        glfwPollEvents();
-
-        //        if (drawFrame) {
-        //            drawFrame();
-        //        }
-        //    }
-        //}
-
-        void waitForEvents() const { glfwWaitEvents(); }
+        void waitForEvents() const
+        {
+            glfwWaitEvents();
+        }
 
     private:
 
         GLFWwindow* window{};
 
         std::string title;
+
         uint32_t width;
+
         uint32_t height;
+
         bool cursorDisabled;
+
         bool fullscreen;
+
         bool resizable;
     };
 
@@ -769,6 +780,7 @@ namespace vkr
     {
     public:
         AccelerationStructure(const Device& device) : device(device) {}
+
         AccelerationStructure(const AccelerationStructure&) = delete;
         AccelerationStructure& operator = (const AccelerationStructure&) = delete;
         AccelerationStructure& operator = (AccelerationStructure&&) = delete;
@@ -1565,6 +1577,8 @@ namespace vkr
         device.submitCommandBuffer(*commandBuffer);
     }
 
+
+    // DescriptorSetBindings
     void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
         vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
     {
@@ -1635,6 +1649,7 @@ namespace vkr
         }
     }
 
+    // DescriptorSets
     DescriptorSets::DescriptorSets(const Device& device, uint32_t numSets /*= 1*/)
         : device(device)
         , numSets(numSets)
@@ -1668,7 +1683,6 @@ namespace vkr
         initPipelineLayout();
         return *pipeLayout;
     }
-
 
     void DescriptorSets::allocate()
     {
@@ -1762,8 +1776,7 @@ namespace vkr
         hitRegion.setSize(handleSizeAligned);
     }
 
-
-
+    // AccelerationStructure
     void AccelerationStructure::build(vk::AccelerationStructureGeometryKHR& geometry,
         const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount)
     {
@@ -1817,6 +1830,7 @@ namespace vkr
         buffer = std::make_unique<Buffer>(device, size, usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
     }
 
+    // BottomLevelAccelerationStructure
     BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
         : AccelerationStructure(device)
     {
@@ -1862,6 +1876,7 @@ namespace vkr
     //    build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
     //}
 
+    // TopLevelAccelerationStructure
     // TODO: これは実験用にしておく
     TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance)
         : AccelerationStructure(device)
