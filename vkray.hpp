@@ -270,69 +270,64 @@ namespace vkr
     class Device final
     {
     public:
+
         explicit Device(const Instance& instance);
+
         ~Device() {}
 
         Device(const Device&) = delete;
+
         Device(Device&&) = delete;
+
         Device& operator = (const Device&) = delete;
+
         Device& operator = (Device&&) = delete;
 
         vk::Device getHandle() const { return *device; }
 
-        vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
-        vk::SurfaceKHR getSurface() const { return *surface; }
         const Instance& getInstance() const { return instance; }
 
+        vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+
+        vk::SurfaceKHR getSurface() const { return *surface; }
+
         uint32_t getGraphicsFamilyIndex() const { return graphicsFamilyIndex; }
+
         uint32_t getComputeFamilyIndex() const { return computeFamilyIndex; }
+
         uint32_t getPresentFamilyIndex() const { return presentFamilyIndex; }
+
         uint32_t getTransferFamilyIndex() const { return transferFamilyIndex; }
+
         vk::Queue getGraphicsQueue() const { return graphicsQueue; }
+
         vk::Queue getComputeQueue() const { return computeQueue; }
+
         vk::Queue getPresentQueue() const { return presentQueue; }
+
         vk::Queue getTransferQueue() const { return transferQueue; }
+
         vk::CommandPool getCommandPool() const { return *commandPool; }
 
         void waitIdle() const { device->waitIdle(); }
 
         // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
+
         vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin,
             vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
+
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
+
         std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const;
+
         std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t>& indices, bool onDevice) const;
+
         vk::UniquePipeline createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth);
 
     private:
 
-        void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
-        {
-            const auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
-
-            std::set<std::string> requiredExtensions(requiredExtensions.begin(), requiredExtensions.end());
-
-            for (const auto& extension : availableExtensions) {
-                requiredExtensions.erase(extension.extensionName);
-            }
-
-            if (!requiredExtensions.empty()) {
-                bool first = true;
-                std::string extensions;
-
-                for (const auto& extension : requiredExtensions) {
-                    if (!first) {
-                        extensions += ", ";
-                    }
-
-                    extensions += extension;
-                    first = false;
-                }
-
-                throw std::runtime_error("missing required extensions: " + extensions);
-            }
-        }
+        void checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const;
 
         const std::vector<const char*> requiredExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -351,17 +346,25 @@ namespace vkr
         vk::UniqueDevice device;
 
         vk::PhysicalDevice physicalDevice;
+
         vk::UniqueSurfaceKHR surface;
+
         vk::UniqueCommandPool commandPool;
 
         uint32_t graphicsFamilyIndex{};
+
         uint32_t computeFamilyIndex{};
+
         uint32_t presentFamilyIndex{};
+
         uint32_t transferFamilyIndex{};
 
         vk::Queue graphicsQueue{};
+
         vk::Queue computeQueue{};
+
         vk::Queue presentQueue{};
+
         vk::Queue transferQueue{};
     };
 
@@ -1138,7 +1141,7 @@ namespace vkr
 
         const auto queueFamilies = physicalDevice.getQueueFamilyProperties();
 
-        // Find the graphics queue
+        // Find queues
         const auto graphicsFamily = findQueue(queueFamilies, "graphics", vk::QueueFlagBits::eGraphics, {});
         const auto computeFamily = findQueue(queueFamilies, "compute", vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
         const auto transferFamily = findQueue(queueFamilies, "transfer", vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
@@ -1297,6 +1300,33 @@ namespace vkr
             return std::move(result.value);
         } else {
             throw std::runtime_error("failed to create ray tracing pipeline.");
+        }
+    }
+
+    void Device::checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
+    {
+        const auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+
+        std::set<std::string> requiredExtensions(requiredExtensions.begin(), requiredExtensions.end());
+
+        for (const auto& extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        if (!requiredExtensions.empty()) {
+            bool first = true;
+            std::string extensions;
+
+            for (const auto& extension : requiredExtensions) {
+                if (!first) {
+                    extensions += ", ";
+                }
+
+                extensions += extension;
+                first = false;
+            }
+
+            throw std::runtime_error("missing required extensions: " + extensions);
         }
     }
 
