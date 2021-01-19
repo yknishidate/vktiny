@@ -179,6 +179,13 @@ namespace vkr
             glfwWaitEvents();
         }
 
+        void createWindowSurface(VkInstance instance, VkSurfaceKHR& surface) const
+        {
+            if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create window surface!");
+            }
+        }
+
     private:
 
         GLFWwindow* window{};
@@ -219,9 +226,7 @@ namespace vkr
         {
             VkSurfaceKHR _surface;
 
-            if (glfwCreateWindowSurface(VkInstance(*instance), window.getHandle(), nullptr, &_surface) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create window surface!");
-            }
+            window.createWindowSurface(VkInstance(*instance), _surface);
 
             vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
 
