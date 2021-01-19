@@ -95,7 +95,7 @@ namespace vkr
 
         Window& operator = (Window&&) = delete;
 
-        GLFWwindow* getHandle() const { return window; }
+        const GLFWwindow* getHandle() const { return window; }
 
         std::string getTitle() const { return title; }
 
@@ -207,15 +207,21 @@ namespace vkr
     class Instance final
     {
     public:
+
         Instance(const Window& window, const bool enableValidationLayers);
+
         ~Instance() {}
 
         Instance(const Instance&) = delete;
+
         Instance(Instance&&) = delete;
+
         Instance& operator = (const Instance&) = delete;
+
         Instance& operator = (Instance&&) = delete;
 
         vk::Instance getHandle() const { return *instance; }
+
         const Window& getWindow() const { return window; }
 
         const std::vector<vk::ExtensionProperties>& getExtensions() const { return extensions; }
