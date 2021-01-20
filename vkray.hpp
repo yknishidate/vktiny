@@ -102,13 +102,12 @@ namespace vkr
 
         Window(const std::string& title, const uint32_t width, const uint32_t height);
 
-        Window(const WindowConfig& config);
+        explicit Window(const WindowConfig& config);
 
         ~Window()
         {
             if (window != nullptr) {
                 glfwDestroyWindow(window);
-                window = nullptr;
             }
 
             glfwTerminate();
@@ -173,14 +172,6 @@ namespace vkr
             return glfwGetTime();
         }
 
-        std::function<void(int key, int scancode, int action, int mods)> onKey;
-
-        std::function<void(double xpos, double ypos)> onCursorPosition;
-
-        std::function<void(int button, int action, int mods)> onMouseButton;
-
-        std::function<void(double xoffset, double yoffset)> onScroll;
-
         void close()
         {
             glfwSetWindowShouldClose(window, 1);
@@ -213,6 +204,14 @@ namespace vkr
                 throw std::runtime_error("failed to create window surface!");
             }
         }
+
+        std::function<void(int key, int scancode, int action, int mods)> onKey;
+
+        std::function<void(double xpos, double ypos)> onCursorPosition;
+
+        std::function<void(int button, int action, int mods)> onMouseButton;
+
+        std::function<void(double xoffset, double yoffset)> onScroll;
 
     private:
 
@@ -248,9 +247,9 @@ namespace vkr
 
         Instance& operator = (Instance&&) = delete;
 
-        vk::Instance getHandle() const { return *instance; }
-
         const Window& getWindow() const { return window; }
+
+        vk::Instance getHandle() const { return *instance; }
 
         const std::vector<vk::ExtensionProperties>& getExtensionProperties() const { return extensionProperties; }
 
@@ -270,11 +269,11 @@ namespace vkr
 
         static void checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers);
 
+        const Window& window;
+
         vk::UniqueInstance instance;
 
         vk::UniqueDebugUtilsMessengerEXT messenger;
-
-        const Window& window;
 
         std::vector<const char*> validationLayers;
 
@@ -391,7 +390,9 @@ namespace vkr
     class SwapChain final
     {
     public:
+
         explicit SwapChain(const Device& device);
+
         ~SwapChain()
         {
             for (size_t i = 0; i < maxFramesInFlight; i++) {
@@ -400,72 +401,47 @@ namespace vkr
         }
 
         SwapChain(const SwapChain&) = delete;
+
         SwapChain(SwapChain&&) = delete;
+
         SwapChain& operator = (const SwapChain&) = delete;
+
         SwapChain& operator = (SwapChain&&) = delete;
 
-        vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
         const Device& getDevice() const { return device; }
+
+        vk::SwapchainKHR getSwapChain() const { return *swapChain; }
+
+        vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+
         uint32_t getMinImageCount() const { return minImageCount; }
+
         const std::vector<vk::Image>& getImages() const { return images; }
+
         const std::vector<vk::UniqueImageView>& getImageViews() const { return imageViews; }
+
         const vk::Extent2D& getExtent() const { return extent; }
+
         vk::Format getFormat() const { return format; }
+
         vk::PresentModeKHR getPresentMode() const { return presentMode; }
 
         std::unique_ptr<Image> createStorageImage() const;
 
         void initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage);
 
-        void draw()
-        {
-            device.getHandle().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+        uint32_t acquireNextImage();
 
-            auto result = device.getHandle().acquireNextImageKHR(
-                swapChain.get(),                             // swapchain
-                std::numeric_limits<uint64_t>::max(),        // timeout
-                imageAvailableSemaphores[currentFrame].get() // semaphore
-            );
-            uint32_t imageIndex;
-            if (result.result == vk::Result::eSuccess) {
-                imageIndex = result.value;
-            } else {
-                throw std::runtime_error("failed to acquire next image!");
-            }
-
-            if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-                device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
-            }
-            imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-            device.getHandle().resetFences(inFlightFences[currentFrame]);
-
-            vk::PipelineStageFlags waitStage{ vk::PipelineStageFlagBits::eRayTracingShaderKHR };
-            device.getGraphicsQueue().submit(
-                vk::SubmitInfo{}
-                .setWaitSemaphores(imageAvailableSemaphores[currentFrame].get())
-                .setWaitDstStageMask(waitStage)
-                .setCommandBuffers(drawCmdBufs[imageIndex].get())
-                .setSignalSemaphores(renderFinishedSemaphores[currentFrame].get()),
-                inFlightFences[currentFrame]
-            );
-
-            device.getGraphicsQueue().presentKHR(
-                vk::PresentInfoKHR{}
-                .setWaitSemaphores(renderFinishedSemaphores[currentFrame].get())
-                .setSwapchains(swapChain.get())
-                .setImageIndices(imageIndex)
-            );
-
-            currentFrame = (currentFrame + 1) % maxFramesInFlight;
-        }
+        void draw();
 
     private:
 
         struct SupportDetails
         {
-            vk::SurfaceCapabilitiesKHR capabilities{};
+            vk::SurfaceCapabilitiesKHR capabilities;
+
             std::vector<vk::SurfaceFormatKHR> formats;
+
             std::vector<vk::PresentModeKHR> presentModes;
         };
 
@@ -1577,6 +1553,54 @@ namespace vkr
 
             drawCmdBufs[i]->end();
         }
+    }
+
+    uint32_t SwapChain::acquireNextImage()
+    {
+        auto result = device.getHandle().acquireNextImageKHR(
+            swapChain.get(),                             // swapchain
+            std::numeric_limits<uint64_t>::max(),        // timeout
+            imageAvailableSemaphores[currentFrame].get() // semaphore
+        );
+
+        if (result.result == vk::Result::eSuccess) {
+            return result.value;
+        }
+
+        throw std::runtime_error("failed to acquire next image!");
+    }
+
+    void SwapChain::draw()
+    {
+        device.getHandle().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+
+        uint32_t imageIndex = acquireNextImage();
+
+        if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+            device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
+        }
+        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+
+        device.getHandle().resetFences(inFlightFences[currentFrame]);
+
+        vk::PipelineStageFlags waitStage{ vk::PipelineStageFlagBits::eRayTracingShaderKHR };
+        device.getGraphicsQueue().submit(
+            vk::SubmitInfo{}
+            .setWaitSemaphores(imageAvailableSemaphores[currentFrame].get())
+            .setWaitDstStageMask(waitStage)
+            .setCommandBuffers(drawCmdBufs[imageIndex].get())
+            .setSignalSemaphores(renderFinishedSemaphores[currentFrame].get()),
+            inFlightFences[currentFrame]
+        );
+
+        device.getGraphicsQueue().presentKHR(
+            vk::PresentInfoKHR{}
+            .setWaitSemaphores(renderFinishedSemaphores[currentFrame].get())
+            .setSwapchains(swapChain.get())
+            .setImageIndices(imageIndex)
+        );
+
+        currentFrame = (currentFrame + 1) % maxFramesInFlight;
     }
 
     // Image
