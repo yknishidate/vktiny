@@ -78,31 +78,12 @@ namespace vkr
     };
 
 
-    struct WindowConfig
-    {
-        std::string title;
-
-        std::string iconPath;
-
-        uint32_t width;
-
-        uint32_t height;
-
-        bool cursorDisabled = false;
-
-        bool fullscreen = false;
-
-        bool resizable = false;
-    };
-
-
     class Window final
     {
     public:
 
-        Window(const std::string& title, const uint32_t width, const uint32_t height);
-
-        explicit Window(const WindowConfig& config);
+        Window(const std::string& title, const uint32_t width, const uint32_t height,
+               bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
 
         ~Window()
         {
@@ -333,7 +314,7 @@ namespace vkr
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
 
         vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin,
-            vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
+                                                    vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
 
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
@@ -446,21 +427,31 @@ namespace vkr
         };
 
         static SupportDetails querySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+
         static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
+
         static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
+
         static vk::Extent2D chooseSwapExtent(const Window& window, const vk::SurfaceCapabilitiesKHR& capabilities);
+
         static uint32_t chooseImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
 
         const vk::PhysicalDevice physicalDevice;
+
         const Device& device;
 
         vk::UniqueSwapchainKHR swapChain;
 
         uint32_t minImageCount;
+
         vk::PresentModeKHR presentMode;
+
         vk::Format format;
+
         vk::Extent2D extent;
+
         std::vector<vk::Image> images;
+
         std::vector<vk::UniqueImageView> imageViews;
 
         std::vector<vk::UniqueCommandBuffer> drawCmdBufs;
@@ -468,9 +459,13 @@ namespace vkr
         size_t currentFrame = 0;
 
         const int maxFramesInFlight = 2;
+
         std::vector<vk::UniqueSemaphore> imageAvailableSemaphores;
+
         std::vector<vk::UniqueSemaphore> renderFinishedSemaphores;
+
         std::vector<vk::Fence> inFlightFences;
+
         std::vector<vk::Fence> imagesInFlight;
     };
 
@@ -478,27 +473,41 @@ namespace vkr
     class Image
     {
     public:
-        Image(const Image&) = delete;
-        Image& operator = (const Image&) = delete;
-        Image& operator = (Image&& other) = delete;
 
-        Image(const Device& device, vk::Extent2D extent, vk::Format format);
-        Image(const Device& device, vk::Extent2D extent, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage);
-        Image(Image&& other) noexcept;
+        Image(const Device& device, vk::Extent2D extent, vk::Format format,
+              vk::ImageTiling tiling = vk::ImageTiling::eOptimal,
+              vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+
         ~Image() {}
 
+        Image(const Image&) = delete;
+
+        Image(Image&& other) noexcept;
+
+        Image& operator = (const Image&) = delete;
+
+        Image& operator = (Image&& other) = delete;
+
         const class Device& getDevice() const { return device; }
-        vk::Extent2D getExtent() const { return extent; }
-        vk::Format getFormat() const { return format; }
-        vk::ImageView getView() const { return *view; }
+
         vk::Image getHandle() const { return *image; }
 
-        void allocateMemory(vk::MemoryPropertyFlags properties);
-        void addImageView(vk::ImageAspectFlags aspectFlags);
+        vk::Extent2D getExtent() const { return extent; }
+
+        vk::Format getFormat() const { return format; }
+
+        vk::ImageView getView() const { return *view; }
+
         vk::MemoryRequirements getMemoryRequirements() const
         {
             return device.getHandle().getImageMemoryRequirements(*image);
         }
+
+        void allocateMemory(vk::MemoryPropertyFlags properties);
+
+        void addImageView(vk::ImageAspectFlags aspectFlags);
+
+        vk::DescriptorImageInfo createDescriptorInfo(vk::ImageLayout layout = vk::ImageLayout::eGeneral) const;
 
         //void copyFrom(const Buffer& buffer);
 
@@ -507,13 +516,16 @@ namespace vkr
         const Device& device;
 
         vk::UniqueImage image;
+
         vk::UniqueImageView view;
+
         vk::UniqueDeviceMemory memory;
 
         const vk::Extent2D extent;
-        const vk::Format format;
-        vk::ImageLayout imageLayout;
 
+        const vk::Format format;
+
+        vk::ImageLayout imageLayout;
     };
 
 
@@ -521,17 +533,24 @@ namespace vkr
     {
     public:
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
+
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data = nullptr);
+
         ~Buffer() {}
 
         Buffer(const Buffer&) = delete;
+
         Buffer(Buffer&&) = delete;
+
         Buffer& operator = (const Buffer&) = delete;
+
         Buffer& operator = (Buffer&&) = delete;
 
         const Device& getDevice() const { return device; }
-        vk::DeviceSize getSize() const { return size; }
+
         vk::Buffer getHandle() const { return *buffer; }
+
+        vk::DeviceSize getSize() const { return size; }
 
         uint64_t getDeviceAddress()
         {
@@ -547,10 +566,13 @@ namespace vkr
         void copyFrom(const Buffer& src);
 
     private:
+
         const Device& device;
 
         vk::UniqueBuffer buffer;
+
         vk::UniqueDeviceMemory memory;
+
         vk::DeviceSize size;
     };
 
@@ -558,14 +580,16 @@ namespace vkr
     class VertexBuffer final : public Buffer
     {
     public:
+
         VertexBuffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
-            vk::MemoryPropertyFlags properties, std::vector<Vertex>& vertices)
+                     vk::MemoryPropertyFlags properties, std::vector<Vertex>& vertices)
             : Buffer(device, size, usage, properties, vertices.data())
         {
             verticesCount = static_cast<uint32_t>(vertices.size());
         }
 
     private:
+
         uint32_t verticesCount;
     };
 
@@ -573,14 +597,16 @@ namespace vkr
     class IndexBuffer final : public Buffer
     {
     public:
+
         IndexBuffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
-            vk::MemoryPropertyFlags properties, std::vector<uint32_t>& indices)
+                    vk::MemoryPropertyFlags properties, std::vector<uint32_t>& indices)
             : Buffer(device, size, usage, properties, indices.data())
         {
             indicesCount = static_cast<uint32_t>(indices.size());
         }
 
     private:
+
         uint32_t indicesCount;
     };
 
@@ -588,31 +614,39 @@ namespace vkr
     class DescriptorSetBindings final
     {
     public:
+
         DescriptorSetBindings(const Device& device) : device(device) {}
 
+        ~DescriptorSetBindings() {}
+
         DescriptorSetBindings(const DescriptorSetBindings&) = delete;
+
         DescriptorSetBindings(DescriptorSetBindings&&) = delete;
+
         DescriptorSetBindings& operator = (const DescriptorSetBindings&) = delete;
+
         DescriptorSetBindings& operator = (DescriptorSetBindings&&) = delete;
 
         void addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
-            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
+                         vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         vk::UniqueDescriptorSetLayout createLayout(vk::DescriptorSetLayoutCreateFlags flags = {}) const;
 
         void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes) const;
 
         vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-            const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement = 0) const;
+                                         const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement = 0) const;
 
         vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-            const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const;
+                                         const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const;
 
         vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-            const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const;
+                                         const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const;
 
     private:
+
         const Device& device;
+
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
     };
 
@@ -620,14 +654,19 @@ namespace vkr
     class DescriptorSets final
     {
     public:
+
         DescriptorSets(const Device& device, uint32_t numSets = 1);
 
         DescriptorSets(const DescriptorSets&) = delete;
+
         DescriptorSets(DescriptorSets&&) = delete;
+
         DescriptorSets& operator = (const DescriptorSets&) = delete;
+
         DescriptorSets& operator = (DescriptorSets&&) = delete;
 
         vk::PipelineLayout getPipelineLayout() const { return *pipeLayout; }
+
         std::vector<vk::DescriptorSet> getDescriptorSets() const
         {
             std::vector<vk::DescriptorSet> rawDescSets;
@@ -636,6 +675,7 @@ namespace vkr
             }
             return rawDescSets;
         }
+
         std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const
         {
             std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
@@ -646,22 +686,23 @@ namespace vkr
         }
 
         void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
-            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
+                         vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
         void initPipelineLayout();
+
         vk::PipelineLayout createPipelineLayout();
 
-        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::WriteDescriptorSetAccelerationStructureKHR& writeInfo)
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, vk::WriteDescriptorSetAccelerationStructureKHR writeInfo)
         {
             writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
         }
 
-        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::DescriptorImageInfo& writeInfo)
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, vk::DescriptorImageInfo writeInfo)
         {
             writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
         }
 
-        void addWriteInfo(uint32_t setIndex, uint32_t binding, const vk::DescriptorBufferInfo& writeInfo)
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, vk::DescriptorBufferInfo writeInfo)
         {
             writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
         }
@@ -675,16 +716,21 @@ namespace vkr
         }
 
     private:
+
         const Device& device;
+
         const uint32_t numSets;
 
         vk::UniqueDescriptorPool descPool;
+
         vk::UniquePipelineLayout pipeLayout;
 
         std::vector<vk::UniqueDescriptorSet> descSets;
+
         std::vector<vk::UniqueDescriptorSetLayout> descSetLayouts;
 
         std::vector<std::unique_ptr<DescriptorSetBindings>> bindingsArray;
+
         std::vector<vk::WriteDescriptorSet> writeDescSets;
     };
 
@@ -692,42 +738,57 @@ namespace vkr
     class ShaderManager final
     {
     public:
+
         ShaderManager(const Device& device) : device(device) {}
 
         ShaderManager(const ShaderManager&) = delete;
+
         ShaderManager(ShaderManager&&) = delete;
+
         ShaderManager& operator = (const ShaderManager&) = delete;
+
         ShaderManager& operator = (ShaderManager&&) = delete;
 
         auto getStages() const { return stages; }
+
         auto getRayTracingGroups() const { return rtGroups; }
+
         auto getRaygenRegion() const { return raygenRegion; }
+
         auto getMissRegion() const { return missRegion; }
+
         auto getHitRegion() const { return hitRegion; }
 
         void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
-            vk::RayTracingShaderGroupTypeKHR groupType);
+                       vk::RayTracingShaderGroupTypeKHR groupType);
 
-        void addShader(uint32_t moduleIndex, vk::ShaderStageFlagBits stage, const std::string& pName,
-            vk::RayTracingShaderGroupTypeKHR groupType);
+        void addShader(uint32_t addedModuleIndex, vk::ShaderStageFlagBits stage, const std::string& pName,
+                       vk::RayTracingShaderGroupTypeKHR groupType);
 
         void initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
 
     private:
+
         vk::UniqueShaderModule createShaderModule(const std::string& filename);
 
         const Device& device;
 
         std::vector<vk::UniqueShaderModule> modules;
+
         std::vector<vk::PipelineShaderStageCreateInfo> stages;
+
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtGroups;
 
         std::unique_ptr<Buffer> raygenShaderBindingTable;
+
         std::unique_ptr<Buffer> missShaderBindingTable;
+
         std::unique_ptr<Buffer> hitShaderBindingTable;
 
         vk::StridedDeviceAddressRegionKHR raygenRegion;
+
         vk::StridedDeviceAddressRegionKHR missRegion;
+
         vk::StridedDeviceAddressRegionKHR hitRegion;
     };
 
@@ -735,7 +796,9 @@ namespace vkr
     struct AccelerationStructureInstance
     {
         uint32_t modelIndex;
+
         glm::mat4 transformMatrix;
+
         uint32_t textureOffset;
     };
 
@@ -743,20 +806,27 @@ namespace vkr
     class AccelerationStructure
     {
     public:
+
         AccelerationStructure(const Device& device) : device(device) {}
 
+        ~AccelerationStructure() {}
+
         AccelerationStructure(const AccelerationStructure&) = delete;
+
         AccelerationStructure& operator = (const AccelerationStructure&) = delete;
+
         AccelerationStructure& operator = (AccelerationStructure&&) = delete;
 
         AccelerationStructure(AccelerationStructure&& other) noexcept;
 
         const Device& getDevice() const { return device; }
+
+        vk::AccelerationStructureKHR getHandle() { return *accelerationStructure; }
+
         const uint64_t getDeviceAddress() const { return deviceAddress; }
 
-        vk::AccelerationStructureKHR& getHandle() { return *accelerationStructure; }
-
     protected:
+
         void build(vk::AccelerationStructureGeometryKHR& geometry, const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
 
         void createBuffer(vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo);
@@ -790,16 +860,24 @@ namespace vkr
     class TopLevelAccelerationStructure final : public AccelerationStructure
     {
     public:
+
         // TODO: vector input
         //TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances);
+
         TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
 
         TopLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
+
         TopLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
+
         TopLevelAccelerationStructure& operator = (BottomLevelAccelerationStructure&&) = delete;
 
         TopLevelAccelerationStructure(BottomLevelAccelerationStructure&& other) noexcept;
 
+        vk::WriteDescriptorSetAccelerationStructureKHR createWrite() const
+        {
+            return { 1, &accelerationStructure.get() };
+        }
     };
 
 
@@ -808,7 +886,7 @@ namespace vkr
 #if defined(_DEBUG)
         VKAPI_ATTR VkBool32 VKAPI_CALL
             debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-                VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
+                                        VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
         {
             std::cerr << "messageIDName   = " << pCallbackData->pMessageIdName << "\n";
 
@@ -988,38 +1066,10 @@ namespace vkr
 
 
     // Window
-    Window::Window(const std::string& title, const uint32_t width, const uint32_t height)
+    Window::Window(const std::string& title, const uint32_t width, const uint32_t height,
+                   bool cursorDisabled, bool fullscreen, bool resizable)
         : title(title), width(width), height(height)
-    {
-        glfwSetErrorCallback(glfwErrorCallback);
-
-        if (!glfwInit()) {
-            throw std::runtime_error("glfwInit() failed");
-        }
-
-        if (!glfwVulkanSupported()) {
-            throw std::runtime_error("glfwVulkanSupported() failed");
-        }
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-        if (window == nullptr) {
-            throw std::runtime_error("failed to create window");
-        }
-
-        glfwSetWindowUserPointer(window, this);
-        glfwSetKeyCallback(window, glfwKeyCallback);
-        glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
-        glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
-        glfwSetScrollCallback(window, glfwScrollCallback);
-    }
-
-    Window::Window(const WindowConfig& config)
-        : title(config.title), width(config.width), height(config.height)
-        , cursorDisabled(config.cursorDisabled), fullscreen(config.fullscreen)
-        , resizable(config.resizable)
+        , cursorDisabled(cursorDisabled), fullscreen(fullscreen), resizable(resizable)
     {
         glfwSetErrorCallback(glfwErrorCallback);
 
@@ -1051,6 +1101,7 @@ namespace vkr
         glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
         glfwSetScrollCallback(window, glfwScrollCallback);
     }
+
 
     // Instance
     Instance::Instance(const Window& window, const bool enableValidationLayers)
@@ -1315,11 +1366,11 @@ namespace vkr
     vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth)
     {
         auto result = device->createRayTracingPipelineKHRUnique(nullptr, nullptr,
-            vk::RayTracingPipelineCreateInfoKHR{}
-            .setStages(shaderManager.getStages())
-            .setGroups(shaderManager.getRayTracingGroups())
-            .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
-            .setLayout(descSets.getPipelineLayout())
+                                                                vk::RayTracingPipelineCreateInfoKHR{}
+                                                                .setStages(shaderManager.getStages())
+                                                                .setGroups(shaderManager.getRayTracingGroups())
+                                                                .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
+                                                                .setLayout(descSets.getPipelineLayout())
         );
         if (result.result == vk::Result::eSuccess) {
             return std::move(result.value);
@@ -1604,13 +1655,8 @@ namespace vkr
     }
 
     // Image
-    Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format)
-        : Image(device, extent, format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
-    {
-    }
-
     Image::Image(const class Device& device, const vk::Extent2D extent, const vk::Format format,
-        const vk::ImageTiling tiling, const vk::ImageUsageFlags usage)
+                 const vk::ImageTiling tiling, const vk::ImageUsageFlags usage)
         : device(device), extent(extent), format(format), imageLayout(vk::ImageLayout::eUndefined)
     {
         vk::ImageCreateInfo imageInfo = {};
@@ -1622,10 +1668,7 @@ namespace vkr
         imageInfo.arrayLayers = 1;
         imageInfo.format = format;
         imageInfo.tiling = tiling;
-        imageInfo.initialLayout = imageLayout;
         imageInfo.usage = usage;
-        imageInfo.sharingMode = vk::SharingMode::eExclusive;
-        imageInfo.samples = vk::SampleCountFlagBits::e1;
 
         image = device.getHandle().createImageUnique(imageInfo);
     }
@@ -1654,17 +1697,22 @@ namespace vkr
         view = device.getHandle().createImageViewUnique(createInfo);
     }
 
+    vk::DescriptorImageInfo Image::createDescriptorInfo(vk::ImageLayout layout /*= eGeneral*/) const
+    {
+        return { {}, *view, layout };
+    }
+
     // Buffer
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage)
         : device(device), size(size)
     {
-        buffer = device.getHandle().createBufferUnique({ {}, size, usage, vk::SharingMode::eExclusive });
+        buffer = device.getHandle().createBufferUnique({ {}, size, usage });
     }
 
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data /*= nullptr*/)
         : device(device), size(size)
     {
-        buffer = device.getHandle().createBufferUnique({ {}, size, usage, vk::SharingMode::eExclusive });
+        buffer = device.getHandle().createBufferUnique({ {}, size, usage });
 
         const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
 
@@ -1702,10 +1750,9 @@ namespace vkr
         device.submitCommandBuffer(*commandBuffer);
     }
 
-
     // DescriptorSetBindings
     void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
-        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
+                                            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
     {
         bindings.push_back({ binding, type, count, stageFlags, pImmutableSampler });
     }
@@ -1733,7 +1780,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement) const
+                                                            const vk::DescriptorImageInfo* pImageInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -1747,7 +1794,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement) const
+                                                            const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -1761,7 +1808,7 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-        const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement) const
+                                                            const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -1787,7 +1834,7 @@ namespace vkr
     }
 
     void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
-        vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler /*= nullptr*/)
+                                     vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler /*= nullptr*/)
     {
         assert(setIndex < numSets);
 
@@ -1833,7 +1880,7 @@ namespace vkr
     }
 
     void ShaderManager::addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
-        vk::RayTracingShaderGroupTypeKHR groupType)
+                                  vk::RayTracingShaderGroupTypeKHR groupType)
     {
         modules.push_back(createShaderModule(filename));
         stages.push_back({ {}, stage, *modules.back(), pName });
@@ -1882,11 +1929,11 @@ namespace vkr
 
         // Create SBT Buffers
         raygenShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
+                                                            shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
         missShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + missOffset * handleSizeAligned);
+                                                          shaderHandleStorage.data() + missOffset * handleSizeAligned);
         hitShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+                                                         shaderHandleStorage.data() + hitOffset * handleSizeAligned);
 
         raygenRegion.setDeviceAddress(raygenShaderBindingTable->getDeviceAddress());
         raygenRegion.setStride(handleSizeAligned);
@@ -1903,7 +1950,7 @@ namespace vkr
 
     // AccelerationStructure
     void AccelerationStructure::build(vk::AccelerationStructureGeometryKHR& geometry,
-        const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount)
+                                      const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount)
     {
         vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
         buildGeometryInfo.setType(asType);

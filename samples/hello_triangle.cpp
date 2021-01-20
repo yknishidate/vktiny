@@ -45,8 +45,8 @@ public:
         descSets->initPipelineLayout();
 
         descSets->allocate();
-        descSets->addWriteInfo(0, 0, { tlas->getHandle() });
-        descSets->addWriteInfo(0, 1, { {}, storageImage->getView(), vk::ImageLayout::eGeneral });
+        descSets->addWriteInfo(0, 0, tlas->createWrite());
+        descSets->addWriteInfo(0, 1, storageImage->createDescriptorInfo());
         descSets->update();
 
         // Create Ray Tracing Pipeline
