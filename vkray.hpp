@@ -78,12 +78,31 @@ namespace vkr
     };
 
 
+    struct WindowConfig
+    {
+        std::string title;
+
+        std::string iconPath;
+
+        uint32_t width;
+
+        uint32_t height;
+
+        bool cursorDisabled = false;
+
+        bool fullscreen = false;
+
+        bool resizable = false;
+    };
+
+
     class Window final
     {
     public:
 
-        Window(const std::string& title, const uint32_t width, const uint32_t height,
-            bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
+        Window(const std::string& title, const uint32_t width, const uint32_t height);
+
+        Window(const WindowConfig& config);
 
         ~Window()
         {
@@ -993,8 +1012,38 @@ namespace vkr
 
 
     // Window
-    Window::Window(const std::string& title, const uint32_t width, const uint32_t height, bool cursorDisabled, bool fullscreen, bool resizable)
-        : title(title), width(width), height(height), cursorDisabled(cursorDisabled), fullscreen(fullscreen), resizable(resizable)
+    Window::Window(const std::string& title, const uint32_t width, const uint32_t height)
+        : title(title), width(width), height(height)
+    {
+        glfwSetErrorCallback(glfwErrorCallback);
+
+        if (!glfwInit()) {
+            throw std::runtime_error("glfwInit() failed");
+        }
+
+        if (!glfwVulkanSupported()) {
+            throw std::runtime_error("glfwVulkanSupported() failed");
+        }
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+        window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+        if (window == nullptr) {
+            throw std::runtime_error("failed to create window");
+        }
+
+        glfwSetWindowUserPointer(window, this);
+        glfwSetKeyCallback(window, glfwKeyCallback);
+        glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
+        glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
+        glfwSetScrollCallback(window, glfwScrollCallback);
+    }
+
+    Window::Window(const WindowConfig& config)
+        : title(config.title), width(config.width), height(config.height)
+        , cursorDisabled(config.cursorDisabled), fullscreen(config.fullscreen)
+        , resizable(config.resizable)
     {
         glfwSetErrorCallback(glfwErrorCallback);
 

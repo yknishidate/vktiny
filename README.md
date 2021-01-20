@@ -1,4 +1,4 @@
-# quick-vkray
+# [WIP] quick-vkray
 
 A header only library to use Vulkan Ray Tracing quickly.
 
