@@ -532,6 +532,7 @@ namespace vkr
     class Buffer
     {
     public:
+
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
 
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data = nullptr);
@@ -1324,7 +1325,6 @@ namespace vkr
 
         bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
             | vk::BufferUsageFlagBits::eStorageBuffer
-            //| vk::BufferUsageFlagBits::eVertexBuffer
             | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;
@@ -1343,7 +1343,6 @@ namespace vkr
 
         bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
             | vk::BufferUsageFlagBits::eStorageBuffer
-            //| vk::BufferUsageFlagBits::eIndexBuffer
             | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
             | vk::MemoryPropertyFlagBits::eHostCoherent;
@@ -1607,7 +1606,7 @@ namespace vkr
             return result.value;
         }
 
-        throw std::runtime_error("failed to acquire next image!");
+        throw std::runtime_error("failed to acquire next image");
     }
 
     void SwapChain::draw()
@@ -1984,12 +1983,8 @@ namespace vkr
             vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
             vk::MemoryPropertyFlagBits::eDeviceLocal };
 
-        vk::AccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
-        accelerationBuildGeometryInfo.setType(asType);
-        accelerationBuildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
-        accelerationBuildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
-        accelerationBuildGeometryInfo.setGeometries(geometry);
-        accelerationBuildGeometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
+        buildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
+        buildGeometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
 
         vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
         accelerationStructureBuildRangeInfo
@@ -1999,7 +1994,8 @@ namespace vkr
             .setTransformOffset(0);
 
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
-        commandBuffer->buildAccelerationStructuresKHR(accelerationBuildGeometryInfo, &accelerationStructureBuildRangeInfo);
+        //commandBuffer->buildAccelerationStructuresKHR(accelerationBuildGeometryInfo, &accelerationStructureBuildRangeInfo);
+        commandBuffer->buildAccelerationStructuresKHR(buildGeometryInfo, &accelerationStructureBuildRangeInfo);
         device.submitCommandBuffer(*commandBuffer);
 
         deviceAddress = device.getHandle().getAccelerationStructureAddressKHR({ *accelerationStructure });
