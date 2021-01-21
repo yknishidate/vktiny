@@ -667,23 +667,9 @@ namespace vkr
 
         vk::PipelineLayout getPipelineLayout() const { return *pipeLayout; }
 
-        std::vector<vk::DescriptorSet> getDescriptorSets() const
-        {
-            std::vector<vk::DescriptorSet> rawDescSets;
-            for (auto& descSet : descSets) {
-                rawDescSets.push_back(*descSet);
-            }
-            return rawDescSets;
-        }
+        std::vector<vk::DescriptorSet> getDescriptorSets() const;
 
-        std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const
-        {
-            std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
-            for (auto& descSetLayout : descSetLayouts) {
-                rawDescSetLayouts.push_back(*descSetLayout);
-            }
-            return rawDescSetLayouts;
-        }
+        std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
 
         void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
                          vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
@@ -846,11 +832,15 @@ namespace vkr
     class BottomLevelAccelerationStructure final : public AccelerationStructure
     {
     public:
+
         BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
+
         //BottomLevelAccelerationStructure(const Device& device, const Buffer& vertexBuffer, const Buffer& indexBuffer);
 
         BottomLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
+
         BottomLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
+
         BottomLevelAccelerationStructure& operator = (BottomLevelAccelerationStructure&&) = delete;
 
         BottomLevelAccelerationStructure(BottomLevelAccelerationStructure&& other) noexcept;
@@ -1038,7 +1028,6 @@ namespace vkr
                     break;
             }
 
-            // コマンドバッファにバリアを積む
             cmdBuf.pipelineBarrier(
                 srcStageMask,      // srcStageMask
                 dstStageMask,      // dstStageMask
@@ -1170,14 +1159,12 @@ namespace vkr
 
     void Instance::createDebugMessenger()
     {
-        vk::DebugUtilsMessageSeverityFlagsEXT severityFlags{
-            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-            | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError };
+        vk::DebugUtilsMessageSeverityFlagsEXT severityFlags{ vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+                                                           | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError };
 
-        vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags{
-            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-            | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-            | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
+        vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags{ vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                                                          | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+                                                          | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
 
         messenger = instance->createDebugUtilsMessengerEXTUnique({ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback });
     }
@@ -1365,18 +1352,19 @@ namespace vkr
 
     vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth)
     {
-        auto result = device->createRayTracingPipelineKHRUnique(nullptr, nullptr,
-                                                                vk::RayTracingPipelineCreateInfoKHR{}
-                                                                .setStages(shaderManager.getStages())
-                                                                .setGroups(shaderManager.getRayTracingGroups())
-                                                                .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
-                                                                .setLayout(descSets.getPipelineLayout())
+        auto result = device->createRayTracingPipelineKHRUnique(
+            nullptr, nullptr,
+            vk::RayTracingPipelineCreateInfoKHR{}
+            .setStages(shaderManager.getStages())
+            .setGroups(shaderManager.getRayTracingGroups())
+            .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
+            .setLayout(descSets.getPipelineLayout())
         );
         if (result.result == vk::Result::eSuccess) {
             return std::move(result.value);
-        } else {
-            throw std::runtime_error("failed to create ray tracing pipeline.");
         }
+
+        throw std::runtime_error("failed to create ray tracing pipeline.");
     }
 
     void Device::checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
@@ -1828,9 +1816,27 @@ namespace vkr
     {
         assert(numSets > 0);
 
-        for (int i = 0; i < numSets; i++) {
+        for (uint32_t i = 0; i < numSets; i++) {
             bindingsArray.push_back(std::make_unique<DescriptorSetBindings>(device));
         }
+    }
+
+    std::vector<vk::DescriptorSet> DescriptorSets::getDescriptorSets() const
+    {
+        std::vector<vk::DescriptorSet> rawDescSets;
+        for (auto& descSet : descSets) {
+            rawDescSets.push_back(*descSet);
+        }
+        return rawDescSets;
+    }
+
+    std::vector<vk::DescriptorSetLayout> DescriptorSets::getDescriptorSetLayouts() const
+    {
+        std::vector<vk::DescriptorSetLayout> rawDescSetLayouts;
+        for (auto& descSetLayout : descSetLayouts) {
+            rawDescSetLayouts.push_back(*descSetLayout);
+        }
+        return rawDescSetLayouts;
     }
 
     void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
@@ -1922,18 +1928,19 @@ namespace vkr
 
         // Get shader group handles
         std::vector<uint8_t> shaderHandleStorage(sbtSize);
-        auto result = device.getHandle().getRayTracingShaderGroupHandlesKHR(pipeline, 0, groupCount, static_cast<size_t>(sbtSize), shaderHandleStorage.data());
+        auto result = device.getHandle().getRayTracingShaderGroupHandlesKHR(pipeline, 0, groupCount, static_cast<size_t>(sbtSize),
+                                                                            shaderHandleStorage.data());
         if (result != vk::Result::eSuccess) {
             throw std::runtime_error("failed to get ray tracing shader group handles.");
         }
 
         // Create SBT Buffers
         raygenShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                            shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
+                                                            shaderHandleStorage.data() + static_cast<uint64_t>(raygenOffset) * handleSizeAligned);
         missShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                          shaderHandleStorage.data() + missOffset * handleSizeAligned);
+                                                          shaderHandleStorage.data() + static_cast<uint64_t>(missOffset) * handleSizeAligned);
         hitShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                         shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+                                                         shaderHandleStorage.data() + static_cast<uint64_t>(hitOffset) * handleSizeAligned);
 
         raygenRegion.setDeviceAddress(raygenShaderBindingTable->getDeviceAddress());
         raygenRegion.setStride(handleSizeAligned);
@@ -2049,7 +2056,6 @@ namespace vkr
     //}
 
     // TopLevelAccelerationStructure
-    // TODO: これは実験用にしておく
     TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance)
         : AccelerationStructure(device)
     {
@@ -2078,6 +2084,5 @@ namespace vkr
         uint32_t instanceCount = 1;
         build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
-
 
 } // vkr
