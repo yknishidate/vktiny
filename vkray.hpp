@@ -407,6 +407,9 @@ namespace vkr
 
         vk::PresentModeKHR getPresentMode() const { return presentMode; }
 
+        /// <summary>
+        /// Creates an image to store the ray tracing results.
+        /// </summary>
         std::unique_ptr<Image> createStorageImage() const;
 
         void initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage);
@@ -533,9 +536,14 @@ namespace vkr
     {
     public:
 
+        /// <summary>
+        /// Creates a buffer handle, but does not allocate memory.
+        /// </summary>
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage);
 
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data = nullptr);
+
+        Buffer(const Device& device, vk::CommandBuffer& cmdBuf, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data);
 
         ~Buffer() {}
 
@@ -675,6 +683,9 @@ namespace vkr
         void addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
                          vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
+        /// <summary>
+        /// Creates a pipeline layout. It also creates each descriptor set internally.
+        /// </summary>
         void initPipelineLayout();
 
         vk::PipelineLayout createPipelineLayout();
@@ -1326,8 +1337,9 @@ namespace vkr
         bufferUsage = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
             | vk::BufferUsageFlagBits::eStorageBuffer
             | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-        memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
-            | vk::MemoryPropertyFlagBits::eHostCoherent;
+        //memoryProperty = vk::MemoryPropertyFlagBits::eHostVisible
+        //    | vk::MemoryPropertyFlagBits::eHostCoherent;
+        memoryProperty = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
         return std::make_unique<VertexBuffer>(*this, vertexBufferSize, bufferUsage, memoryProperty, vertices);
     }
@@ -1703,8 +1715,13 @@ namespace vkr
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data /*= nullptr*/)
         : device(device), size(size)
     {
+        // Create buffer
+        if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+            usage = usage | vk::BufferUsageFlagBits::eTransferDst;
+        }
         buffer = device.getHandle().createBufferUnique({ {}, size, usage });
 
+        // Find memory requirements
         const auto requirements = device.getHandle().getBufferMemoryRequirements(*buffer);
 
         vk::MemoryAllocateFlagsInfo flagsInfo{};
@@ -1712,18 +1729,35 @@ namespace vkr
             flagsInfo.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
         }
 
+        // Allocate memory
         vk::MemoryAllocateInfo allocInfo{};
         allocInfo.allocationSize = requirements.size;
         allocInfo.memoryTypeIndex = device.findMemoryType(requirements.memoryTypeBits, properties);
         allocInfo.pNext = &flagsInfo;
         memory = device.getHandle().allocateMemoryUnique(allocInfo);
 
+        // Bind memory to buffer
         device.getHandle().bindBufferMemory(*buffer, *memory, 0);
 
         if (data) {
-            void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
-            memcpy(dataPtr, data, static_cast<size_t>(size));
-            device.getHandle().unmapMemory(*memory);
+            if (properties & vk::MemoryPropertyFlagBits::eHostVisible
+                && properties & vk::MemoryPropertyFlagBits::eHostCoherent) {
+                // If it is a host buffer, just copy the data.
+                void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
+                memcpy(dataPtr, data, static_cast<size_t>(size));
+                device.getHandle().unmapMemory(*memory);
+
+            } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+                // If it is a device buffer, send it to the device with a copy command via the staging buffer.
+                auto stagingBuffer = Buffer(device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
+                                            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
+
+                vk::BufferCopy region{ 0, 0, size };
+                std::cout << size << std::endl;
+                auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+                commandBuffer->copyBuffer(stagingBuffer.getHandle(), *buffer, region);
+                device.submitCommandBuffer(*commandBuffer);
+            }
         }
     }
 
@@ -1731,12 +1765,7 @@ namespace vkr
     {
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
 
-        vk::BufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = src.getSize();
-
-        commandBuffer->copyBuffer(src.getHandle(), *buffer, copyRegion);
+        commandBuffer->copyBuffer(src.getHandle(), *buffer, { 0, 0, src.getSize() });
 
         device.submitCommandBuffer(*commandBuffer);
     }
@@ -1988,7 +2017,7 @@ namespace vkr
 
         vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
         accelerationStructureBuildRangeInfo
-            .setPrimitiveCount(primitiveCount) // TODO: primitiveCount ?
+            .setPrimitiveCount(primitiveCount)
             .setPrimitiveOffset(0)
             .setFirstVertex(0)
             .setTransformOffset(0);
