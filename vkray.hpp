@@ -1300,7 +1300,8 @@ namespace vkr
 
         graphicsQueue.submit(vk::SubmitInfo{}.setCommandBuffers(commandBuffer), fence.get());
 
-        device->waitForFences(fence.get(), true, std::numeric_limits<uint64_t>::max());
+        auto res = device->waitForFences(fence.get(), true, std::numeric_limits<uint64_t>::max());
+        assert(res == vk::Result::eSuccess);
     }
 
     std::unique_ptr<VertexBuffer> Device::createVertexBuffer(std::vector<Vertex>& vertices, bool onDevice) const
@@ -1611,12 +1612,14 @@ namespace vkr
 
     void SwapChain::draw()
     {
-        device.getHandle().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+        auto res = device.getHandle().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+        assert(res == vk::Result::eSuccess);
 
         uint32_t imageIndex = acquireNextImage();
 
         if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-            device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
+            res = device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
+            assert(res == vk::Result::eSuccess);
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
@@ -1632,12 +1635,13 @@ namespace vkr
             inFlightFences[currentFrame]
         );
 
-        device.getGraphicsQueue().presentKHR(
+        res = device.getGraphicsQueue().presentKHR(
             vk::PresentInfoKHR{}
             .setWaitSemaphores(renderFinishedSemaphores[currentFrame].get())
             .setSwapchains(swapChain.get())
             .setImageIndices(imageIndex)
         );
+        assert(res == vk::Result::eSuccess);
 
         currentFrame = (currentFrame + 1) % maxFramesInFlight;
     }

@@ -1,5 +1,4 @@
 
-
 #include "../vkray.hpp"
 
 using vkss = vk::ShaderStageFlagBits;
