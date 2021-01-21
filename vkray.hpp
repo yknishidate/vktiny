@@ -1994,7 +1994,6 @@ namespace vkr
             .setTransformOffset(0);
 
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
-        //commandBuffer->buildAccelerationStructuresKHR(accelerationBuildGeometryInfo, &accelerationStructureBuildRangeInfo);
         commandBuffer->buildAccelerationStructuresKHR(buildGeometryInfo, &accelerationStructureBuildRangeInfo);
         device.submitCommandBuffer(*commandBuffer);
 
@@ -2005,8 +2004,7 @@ namespace vkr
     {
         auto size = buildSizesInfo.accelerationStructureSize;
         auto usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-        // TODO: onDevice
-        buffer = std::make_unique<Buffer>(device, size, usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+        buffer = std::make_unique<Buffer>(device, size, usage, vk::MemoryPropertyFlagBits::eDeviceLocal);
     }
 
     // BottomLevelAccelerationStructure
