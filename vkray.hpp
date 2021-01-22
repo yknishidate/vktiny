@@ -888,6 +888,62 @@ namespace vkr
     };
 
 
+    class Texture
+    {
+    public:
+
+        Texture() {}
+
+    private:
+
+        std::unique_ptr<Image> image;
+
+        vk::UniqueSampler sampler;
+
+        uint32_t mipLevels;
+
+        uint32_t layerCount;
+    };
+
+
+    enum class AlphaMode
+    {
+        Opaque,
+
+        Mask,
+
+        Blend
+    };
+
+
+    struct Material
+    {
+        const Device& device;
+
+        // Base color
+        std::unique_ptr<Texture> baseColorTexture;
+        glm::vec4 baseColorFactor{ 1.0f };
+
+        // Metallic / Roughness
+        std::unique_ptr<Texture> metallicRoughnessTexture;
+        float metallicFactor{ 1.0f };
+        float roughnessFactor{ 1.0f };
+
+        std::unique_ptr<Texture> normalTexture;
+
+        std::unique_ptr<Texture> occlusionTexture;
+
+        // Emissive
+        std::unique_ptr<Texture> emissiveTexture;
+        glm::vec3 emissiveFactor{ 0.0f };
+
+        AlphaMode alphaMode{ AlphaMode::Opaque };
+        float alphaCutoff{ 0.5f };
+
+        bool doubleSided{ false };
+    };
+
+
     class Model final
     {
     public:
@@ -2192,11 +2248,10 @@ namespace vkr
 
     void Model::loadFromFile(const std::string& filename, uint32_t index)
     {
-        tinygltf::Model gltfModel;
-
+        // Load file
         tinygltf::TinyGLTF gltfLoader;
 
-        // Load file
+        tinygltf::Model gltfModel;
         std::string err, warn;
         bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename.c_str());
 
