@@ -63,6 +63,9 @@ Libraries
 -   vulkan.hpp (included in the SDK)
 -   GLFW
 -   GLM
+-   tinygltf (inclued in this repository)
+    -   jsonhpp (inclued in this repository)
+    -   stb_image (inclued in this repository)
 
 ## References
 
