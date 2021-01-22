@@ -20,22 +20,20 @@ public:
         storageImage = swapChain->createStorageImage();
 
         // Create BLAS
-        std::vector<vkr::Vertex> vertices{
-            { {1.0f, 1.0f, 0.0f} },
-            { {-1.0f, 1.0f, 0.0f} },
-            { {0.0f, -1.0f, 0.0f} } };
-        std::vector<uint32_t> indices = { 0, 1, 2 };
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
+        vkr::Model model(*device);
+        model.loadFromFile("samples/assets/Cube/Cube.gltf");
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, model);
 
         // Create TLAS
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
         // Load shaders
+        std::string shaderDir = "samples/shaders/01_gltf_loading/";
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/shaders/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/shaders/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/shaders/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader(shaderDir + "raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader(shaderDir + "miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader(shaderDir + "closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
