@@ -24,20 +24,11 @@
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-//#define STBI_NO_BMP
-//#define STBI_NO_PSD
-//#define STBI_NO_TGA
-//#define STBI_NO_GIF
-//#define STBI_NO_HDR
-//#define STBI_NO_PIC
-//#define STBI_NO_PNM
-//#include <stb_image.h>
-
-//#define TINYGLTF_NO_STB_IMAGE_WRITE
-//#ifdef VK_USE_PLATFORM_ANDROID_KHR
-//#define TINYGLTF_ANDROID_LOAD_FROM_ASSETS
-//#endif
-//#include <tiny_gltf.h>
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NOEXCEPTION
+#include "tiny_gltf.h"
 
 namespace vkr
 {
@@ -546,9 +537,10 @@ namespace vkr
         /// </summary>
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 
+        /// <summary>
+        /// Creates a buffer handle, allocates memory, and then stores the data.
+        /// </summary>
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data);
-
-        Buffer(const Device& device, vk::CommandBuffer& cmdBuf, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data);
 
         ~Buffer() {}
 
@@ -888,6 +880,32 @@ namespace vkr
     };
 
 
+    class Model final
+    {
+    public:
+
+        Model(const Device& device) : device(device) {}
+
+        ~Model() {}
+
+        void loadFromFile(const std::string& filename, uint32_t index = 0);
+
+    private:
+
+        const Device& device;
+
+        std::unique_ptr<VertexBuffer> vertexBuffer;
+
+        std::unique_ptr<IndexBuffer> indexBuffer;
+    };
+
+
+
+    //----------------//
+    // implementation //
+    //----------------//
+
+
     namespace
     {
 #if defined(_DEBUG)
@@ -1063,12 +1081,19 @@ namespace vkr
             return vk::TransformMatrixKHR(data);
         }
 
+        template <class T>
+        uint32_t toU32(T value)
+        {
+            static_assert(std::is_arithmetic<T>::value, "T must be numeric");
+
+            if (static_cast<uintmax_t>(value) > static_cast<uintmax_t>(std::numeric_limits<uint32_t>::max())) {
+                throw std::runtime_error("toU32() failed, value is too big to be converted to uint32_t");
+            }
+
+            return static_cast<uint32_t>(value);
+        }
+
     } // namespace
-
-
-    ////////////////////
-    // implementation //
-    ////////////////////
 
 
     // Window
@@ -1107,7 +1132,6 @@ namespace vkr
         glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
         glfwSetScrollCallback(window, glfwScrollCallback);
     }
-
 
     // Instance
     Instance::Instance(const Window& window, const bool enableValidationLayers)
@@ -2073,8 +2097,8 @@ namespace vkr
     BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
         : AccelerationStructure(device)
     {
-        auto vertexBuffer = device.createVertexBuffer(vertices, false);
-        auto indexBuffer = device.createIndexBuffer(indices, false);
+        auto vertexBuffer = device.createVertexBuffer(vertices);
+        auto indexBuffer = device.createIndexBuffer(indices);
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
         triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
@@ -2091,7 +2115,6 @@ namespace vkr
 
         uint32_t triangleCount = static_cast<uint32_t>(indices.size() / 3);
         build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
-
     }
 
     //BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, Buffer& vertexBuffer, Buffer& indexBuffer)
@@ -2145,4 +2168,99 @@ namespace vkr
         build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
 
+    void Model::loadFromFile(const std::string& filename, uint32_t index)
+    {
+        tinygltf::Model gltfModel;
+
+        tinygltf::TinyGLTF gltfLoader;
+
+        // Load file
+        std::string err, warn;
+        bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename.c_str());
+
+        if (!result) {
+            throw std::runtime_error("failed to load gltf file.");
+        }
+        if (!err.empty()) {
+            throw std::runtime_error("gltf error:" + err);
+        }
+        if (!warn.empty()) {
+            throw std::runtime_error("gltf warning:" + warn);
+        }
+
+        // vertices and indices
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+
+        // Get mesh
+        auto& gltfMesh = gltfModel.meshes.at(index);
+        auto& gltfPrimitive = gltfMesh.primitives.at(0);
+
+        // Get vertex attributes
+        auto& attributes = gltfPrimitive.attributes;
+
+        // Get pos
+        auto& accessor = gltfModel.accessors[attributes.find("POSITION")->second];
+        auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+        auto& buffer = gltfModel.buffers[bufferView.buffer];
+
+        const float* pos = nullptr;
+        pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+
+        // Pack data to vertex array
+        size_t verticesCount = accessor.count;
+        for (size_t v = 0; v < verticesCount; v++) {
+            Vertex vert{};
+            vert.pos = glm::make_vec3(&pos[v * 3]);
+            vertices.push_back(vert);
+        }
+
+        // Get indices
+        accessor = gltfModel.accessors[gltfPrimitive.indices];
+        bufferView = gltfModel.bufferViews[accessor.bufferView];
+        buffer = gltfModel.buffers[bufferView.buffer];
+
+        size_t indicesCount = accessor.count;
+        switch (accessor.componentType) {
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+            {
+                uint32_t* buf = new uint32_t[indicesCount];
+                size_t size = indicesCount * sizeof(uint32_t);
+                memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                for (size_t i = 0; i < indicesCount; i++) {
+                    indices.push_back(buf[i]);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+            {
+                uint16_t* buf = new uint16_t[indicesCount];
+                size_t size = indicesCount * sizeof(uint16_t);
+                memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                for (size_t i = 0; i < indicesCount; i++) {
+                    indices.push_back(buf[i]);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+            {
+                uint8_t* buf = new uint8_t[indicesCount];
+                size_t size = indicesCount * sizeof(uint8_t);
+                memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                for (size_t i = 0; i < indicesCount; i++) {
+                    indices.push_back(buf[i]);
+                }
+                break;
+            }
+            default:
+                std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                return;
+        }
+
+        std::cout << "OK\n";
+
+    }
+
+
 } // vkr
+
