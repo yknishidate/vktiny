@@ -50,6 +50,8 @@ namespace vkr
 
     class ShaderManager;
 
+    class Model;
+
 
     struct Vertex
     {
@@ -594,6 +596,8 @@ namespace vkr
             verticesCount = static_cast<uint32_t>(vertices.size());
         }
 
+        uint32_t getCount() { return verticesCount; }
+
     private:
 
         uint32_t verticesCount;
@@ -610,6 +614,8 @@ namespace vkr
         {
             indicesCount = static_cast<uint32_t>(indices.size());
         }
+
+        uint32_t getCount() { return indicesCount; }
 
     private:
 
@@ -844,7 +850,9 @@ namespace vkr
 
         BottomLevelAccelerationStructure(const Device& device, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
 
-        //BottomLevelAccelerationStructure(const Device& device, const Buffer& vertexBuffer, const Buffer& indexBuffer);
+        BottomLevelAccelerationStructure(const Device& device, VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer);
+
+        BottomLevelAccelerationStructure(const Device& device, const Model& model);
 
         BottomLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
 
@@ -887,6 +895,10 @@ namespace vkr
         Model(const Device& device) : device(device) {}
 
         ~Model() {}
+
+        VertexBuffer* getVertexBuffer() const { return vertexBuffer.get(); }
+
+        IndexBuffer* getIndexBuffer() const { return indexBuffer.get(); }
 
         void loadFromFile(const std::string& filename, uint32_t index = 0);
 
@@ -1339,7 +1351,9 @@ namespace vkr
 
         vk::UniqueFence fence = device->createFenceUnique({});
 
-        graphicsQueue.submit(vk::SubmitInfo{}.setCommandBuffers(commandBuffer), fence.get());
+        vk::SubmitInfo submitInfo{};
+        submitInfo.setCommandBuffers(commandBuffer);
+        graphicsQueue.submit(submitInfo, fence.get());
 
         auto res = device->waitForFences(fence.get(), true, std::numeric_limits<uint64_t>::max());
         assert(res == vk::Result::eSuccess);
@@ -2117,26 +2131,34 @@ namespace vkr
         build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
     }
 
-    //BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, Buffer& vertexBuffer, Buffer& indexBuffer)
-    //    : AccelerationStructure(device)
-    //{
-    //    vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
-    //    triangleData
-    //        .setVertexFormat(vk::Format::eR32G32B32Sfloat)
-    //        .setVertexData(vertexBuffer.getDeviceAddress())
-    //        .setVertexStride(sizeof(Vertex))
-    //        .setMaxVertex(vertices.size())
-    //        .setIndexType(vk::IndexType::eUint32)
-    //        .setIndexData(indexBuffer.getDeviceAddress());
-    //
-    //    vk::AccelerationStructureGeometryKHR geometry{};
-    //    geometry
-    //        .setGeometryType(vk::GeometryTypeKHR::eTriangles)
-    //        .setGeometry({ triangleData })
-    //        .setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-    //
-    //    build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, 1);
-    //}
+    BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
+        : AccelerationStructure(device)
+    {
+        // TODO
+    }
+
+    BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, const Model& model)
+        : AccelerationStructure(device)
+    {
+        auto vertexBuffer = model.getVertexBuffer();
+        auto indexBuffer = model.getIndexBuffer();
+
+        vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
+        triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
+        triangleData.setVertexData(vertexBuffer->getDeviceAddress());
+        triangleData.setVertexStride(sizeof(Vertex));
+        triangleData.setMaxVertex(vertexBuffer->getCount());
+        triangleData.setIndexType(vk::IndexType::eUint32);
+        triangleData.setIndexData(indexBuffer->getDeviceAddress());
+
+        vk::AccelerationStructureGeometryKHR geometry{};
+        geometry.setGeometryType(vk::GeometryTypeKHR::eTriangles);
+        geometry.setGeometry({ triangleData });
+        geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        uint32_t triangleCount = static_cast<uint32_t>(indexBuffer->getCount() / 3);
+        build(geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
+    }
 
     // TopLevelAccelerationStructure
     TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance)
@@ -2153,7 +2175,7 @@ namespace vkr
         vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) };
         Buffer instancesBuffer{ device, size,
             vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, &asInstance };
+            vk::MemoryPropertyFlagBits::eDeviceLocal, &asInstance };
 
         vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
         instancesData.setArrayOfPointers(false);
@@ -2196,22 +2218,86 @@ namespace vkr
         auto& gltfMesh = gltfModel.meshes.at(index);
         auto& gltfPrimitive = gltfMesh.primitives.at(0);
 
-        // Get vertex attributes
+        // Vertex attributes
         auto& attributes = gltfPrimitive.attributes;
+        const float* pos = nullptr;
+        const float* normal = nullptr;
+        const float* uv = nullptr;
+        const float* color = nullptr;
+        const uint16_t* joint0 = nullptr;
+        const float* weight0 = nullptr;
+        const float* tangent = nullptr;
+        uint32_t numColorComponents;
 
-        // Get pos
+        assert(attributes.find("POSITION") != attributes.end());
+
         auto& accessor = gltfModel.accessors[attributes.find("POSITION")->second];
         auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
         auto& buffer = gltfModel.buffers[bufferView.buffer];
-
-        const float* pos = nullptr;
         pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
 
-        // Pack data to vertex array
         size_t verticesCount = accessor.count;
+
+        if (attributes.find("NORMAL") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            normal = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+        }
+        if (attributes.find("TEXCOORD_0") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            uv = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+        }
+        if (attributes.find("COLOR_0") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            color = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+
+            numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
+        }
+        if (attributes.find("TANGENT") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+        }
+        if (attributes.find("JOINTS_0") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+        }
+        if (attributes.find("WEIGHTS_0") != attributes.end()) {
+            accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+            weight0 = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+        }
+
+        bool hasSkin = (joint0 && weight0);
+
+        // Pack data to vertex array
         for (size_t v = 0; v < verticesCount; v++) {
             Vertex vert{};
             vert.pos = glm::make_vec3(&pos[v * 3]);
+            vert.normal = glm::normalize(glm::vec3(normal ? glm::make_vec3(&normal[v * 3]) : glm::vec3(0.0f)));
+            vert.uv = uv ? glm::make_vec2(&uv[v * 2]) : glm::vec2(0.0f);
+            vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
+            if (color) {
+                if (numColorComponents == 3)
+                    vert.color = glm::vec4(glm::make_vec3(&color[v * 3]), 1.0f);
+                if (numColorComponents == 4)
+                    vert.color = glm::make_vec4(&color[v * 4]);
+            } else {
+                vert.color = glm::vec4(1.0f);
+            }
+            vert.tangent = tangent ? glm::vec4(glm::make_vec4(&tangent[v * 4])) : glm::vec4(0.0f);
+            vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
+            vert.weight0 = hasSkin ? glm::make_vec4(&weight0[v * 4]) : glm::vec4(0.0f);
+
             vertices.push_back(vert);
         }
 
@@ -2257,10 +2343,9 @@ namespace vkr
                 return;
         }
 
-        std::cout << "OK\n";
-
+        vertexBuffer = device.createVertexBuffer(vertices);
+        indexBuffer = device.createIndexBuffer(indices);
     }
-
 
 } // vkr
 
