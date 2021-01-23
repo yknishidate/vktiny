@@ -507,7 +507,11 @@ namespace vkr
 
         vk::DescriptorImageInfo createDescriptorInfo(vk::ImageLayout layout = vk::ImageLayout::eGeneral) const;
 
-        //void copyFrom(const Buffer& buffer);
+        void copyFrom(vk::CommandBuffer& cmdBuf, const Buffer& buffer);
+
+        void copyFrom(const Buffer& buffer);
+
+        void transitionImageLayout(vk::CommandBuffer& cmdBuf, vk::ImageLayout newLayout);
 
     private:
 
@@ -1005,7 +1009,7 @@ namespace vkr
 
         ~Model() {}
 
-        void loadFromFile(const std::string& filename);
+        void loadFromFile(const std::string& filepath);
 
         const std::vector<Mesh>& getMeshes() const { return meshes; }
 
@@ -1015,7 +1019,13 @@ namespace vkr
 
         void loadMaterials(tinygltf::Model& gltfModel);
 
+        void loadTextures(tinygltf::Model& gltfModel);
+
         const Device& device;
+
+        std::string fileDirectory;
+
+        //std::string fileBasename;
 
         std::vector<Scene> scenes;
 
@@ -1125,6 +1135,9 @@ namespace vkr
             return buffer;
         }
 
+        /// <summary>
+        /// For when you have to use vk::Image instead of vkr::Image.
+        /// </summary>
         void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
         {
             vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
@@ -1861,6 +1874,105 @@ namespace vkr
         return { {}, *view, layout };
     }
 
+    void Image::copyFrom(vk::CommandBuffer& cmdBuf, const Buffer& buffer)
+    {
+        vk::BufferImageCopy region{};
+        region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = vk::Extent3D{ extent.width, extent.height, 1 };
+
+        cmdBuf.copyBufferToImage(buffer.getHandle(), *image, vk::ImageLayout::eTransferDstOptimal, region);
+    }
+
+    void Image::copyFrom(const Buffer& buffer)
+    {
+        auto cmdBuf = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+
+        copyFrom(*cmdBuf, buffer);
+
+        device.submitCommandBuffer(*cmdBuf);
+    }
+
+    void Image::transitionImageLayout(vk::CommandBuffer& cmdBuf, vk::ImageLayout newLayout)
+    {
+        vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
+        vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
+
+        vk::ImageMemoryBarrier imageMemoryBarrier{};
+        imageMemoryBarrier
+            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setImage(*image)
+            .setOldLayout(imageLayout)
+            .setNewLayout(newLayout)
+            .setSubresourceRange({ vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1 });
+
+        // Source layouts (old)
+        switch (imageLayout) {
+            case vk::ImageLayout::eUndefined:
+                imageMemoryBarrier.srcAccessMask = {};
+                break;
+            case vk::ImageLayout::ePreinitialized:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
+                break;
+            case vk::ImageLayout::eColorAttachmentOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+                break;
+            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                break;
+            case vk::ImageLayout::eTransferSrcOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+                break;
+            case vk::ImageLayout::eTransferDstOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+                break;
+            default:
+                break;
+        }
+
+        // Target layouts (new)
+        switch (newLayout) {
+            case vk::ImageLayout::eTransferDstOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+                break;
+            case vk::ImageLayout::eTransferSrcOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+                break;
+            case vk::ImageLayout::eColorAttachmentOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+                break;
+            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags{}) {
+                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
+                }
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+                break;
+            default:
+                break;
+        }
+
+        cmdBuf.pipelineBarrier(
+            srcStageMask,      // srcStageMask
+            dstStageMask,      // dstStageMask
+            {},                // dependencyFlags
+            {},                // memoryBarriers
+            {},                // bufferMemoryBarriers
+            imageMemoryBarrier // imageMemoryBarriers
+        );
+
+        imageLayout = newLayout;
+    }
+
+
     // Buffer
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage)
         : device(device), size(size)
@@ -2308,178 +2420,14 @@ namespace vkr
     }
 
 
-    //Texture::Texture(const Device& device, tinygltf::Image& gltfimage, std::string path)
-    //{
-
-    //}
-
-
-    //void Mesh::loadFromFile(const std::string& filename, uint32_t index)
-    //{
-    //    // Load file
-    //    tinygltf::TinyGLTF gltfLoader;
-
-    //    tinygltf::Model gltfModel;
-    //    std::string err, warn;
-    //    bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename.c_str());
-
-    //    if (!result) {
-    //        throw std::runtime_error("failed to load gltf file.");
-    //    }
-    //    if (!err.empty()) {
-    //        throw std::runtime_error("gltf error:" + err);
-    //    }
-    //    if (!warn.empty()) {
-    //        throw std::runtime_error("gltf warning:" + warn);
-    //    }
-
-    //    // vertices and indices
-    //    std::vector<Vertex> vertices;
-    //    std::vector<uint32_t> indices;
-
-    //    // Get mesh
-    //    auto& gltfMesh = gltfModel.meshes.at(index);
-    //    auto& gltfPrimitive = gltfMesh.primitives.at(0);
-
-    //    // Vertex attributes
-    //    auto& attributes = gltfPrimitive.attributes;
-    //    const float* pos = nullptr;
-    //    const float* normal = nullptr;
-    //    const float* uv = nullptr;
-    //    const float* color = nullptr;
-    //    const uint16_t* joint0 = nullptr;
-    //    const float* weight0 = nullptr;
-    //    const float* tangent = nullptr;
-    //    uint32_t numColorComponents;
-
-    //    assert(attributes.find("POSITION") != attributes.end());
-
-    //    auto& accessor = gltfModel.accessors[attributes.find("POSITION")->second];
-    //    auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //    auto& buffer = gltfModel.buffers[bufferView.buffer];
-    //    pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-
-    //    size_t verticesCount = accessor.count;
-
-    //    if (attributes.find("NORMAL") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        normal = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-    //    }
-    //    if (attributes.find("TEXCOORD_0") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        uv = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-    //    }
-    //    if (attributes.find("COLOR_0") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        color = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-
-    //        numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
-    //    }
-    //    if (attributes.find("TANGENT") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-    //    }
-    //    if (attributes.find("JOINTS_0") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-    //    }
-    //    if (attributes.find("WEIGHTS_0") != attributes.end()) {
-    //        accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
-    //        bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //        buffer = gltfModel.buffers[bufferView.buffer];
-    //        weight0 = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-    //    }
-
-    //    bool hasSkin = (joint0 && weight0);
-
-    //    // Pack data to vertex array
-    //    for (size_t v = 0; v < verticesCount; v++) {
-    //        Vertex vert{};
-    //        vert.pos = glm::make_vec3(&pos[v * 3]);
-    //        vert.normal = glm::normalize(glm::vec3(normal ? glm::make_vec3(&normal[v * 3]) : glm::vec3(0.0f)));
-    //        vert.uv = uv ? glm::make_vec2(&uv[v * 2]) : glm::vec2(0.0f);
-    //        vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
-    //        if (color) {
-    //            if (numColorComponents == 3)
-    //                vert.color = glm::vec4(glm::make_vec3(&color[v * 3]), 1.0f);
-    //            if (numColorComponents == 4)
-    //                vert.color = glm::make_vec4(&color[v * 4]);
-    //        } else {
-    //            vert.color = glm::vec4(1.0f);
-    //        }
-    //        vert.tangent = tangent ? glm::vec4(glm::make_vec4(&tangent[v * 4])) : glm::vec4(0.0f);
-    //        vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
-    //        vert.weight0 = hasSkin ? glm::make_vec4(&weight0[v * 4]) : glm::vec4(0.0f);
-
-    //        vertices.push_back(vert);
-    //    }
-
-    //    // Get indices
-    //    accessor = gltfModel.accessors[gltfPrimitive.indices];
-    //    bufferView = gltfModel.bufferViews[accessor.bufferView];
-    //    buffer = gltfModel.buffers[bufferView.buffer];
-
-    //    size_t indicesCount = accessor.count;
-    //    switch (accessor.componentType) {
-    //        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
-    //        {
-    //            uint32_t* buf = new uint32_t[indicesCount];
-    //            size_t size = indicesCount * sizeof(uint32_t);
-    //            memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-    //            for (size_t i = 0; i < indicesCount; i++) {
-    //                indices.push_back(buf[i]);
-    //            }
-    //            break;
-    //        }
-    //        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
-    //        {
-    //            uint16_t* buf = new uint16_t[indicesCount];
-    //            size_t size = indicesCount * sizeof(uint16_t);
-    //            memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-    //            for (size_t i = 0; i < indicesCount; i++) {
-    //                indices.push_back(buf[i]);
-    //            }
-    //            break;
-    //        }
-    //        case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-    //        {
-    //            uint8_t* buf = new uint8_t[indicesCount];
-    //            size_t size = indicesCount * sizeof(uint8_t);
-    //            memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-    //            for (size_t i = 0; i < indicesCount; i++) {
-    //                indices.push_back(buf[i]);
-    //            }
-    //            break;
-    //        }
-    //        default:
-    //            std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
-    //            return;
-    //    }
-
-    //    vertexBuffer = device.createVertexBuffer(vertices);
-    //    indexBuffer = device.createIndexBuffer(indices);
-    //}
-
-    void Model::loadFromFile(const std::string& filename)
+    void Model::loadFromFile(const std::string& filepath)
     {
         // Load file
         tinygltf::TinyGLTF gltfLoader;
-
         tinygltf::Model gltfModel;
-        std::string err, warn;
-        bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename);
-        //bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename.c_str());
 
+        std::string err, warn;
+        bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filepath);
         if (!result) {
             throw std::runtime_error("failed to load gltf file.");
         }
@@ -2490,8 +2438,12 @@ namespace vkr
             throw std::runtime_error("gltf warning:" + warn);
         }
 
+        fileDirectory = filepath.substr(0, filepath.find_last_of('/'));
+
+        // Load components
         loadMeshes(gltfModel);
         loadMaterials(gltfModel);
+        loadTextures(gltfModel);
 
         // load images
         // load materials
@@ -2505,13 +2457,10 @@ namespace vkr
 
     void Model::loadMeshes(tinygltf::Model& gltfModel)
     {
-
         for (int index = 0; index < gltfModel.meshes.size(); index++) {
-            //vertices and indices
             std::vector<Vertex> vertices;
             std::vector<uint32_t> indices;
 
-            //Get mesh
             auto& gltfMesh = gltfModel.meshes.at(index);
             auto& gltfPrimitive = gltfMesh.primitives.at(0);
 
@@ -2647,9 +2596,7 @@ namespace vkr
             mesh.material = gltfPrimitive.material;
 
             meshes.push_back(std::move(mesh));
-
         }
-
     }
 
     void Model::loadMaterials(tinygltf::Model& gltfModel)
@@ -2707,6 +2654,41 @@ namespace vkr
             }
 
             materials.push_back(material);
+        }
+    }
+
+    void Model::loadTextures(tinygltf::Model& gltfModel)
+    {
+        for (auto& image : gltfModel.images) {
+            Texture tex;
+            tex.model = this;
+
+            if (image.component == 3) {
+                throw std::runtime_error("3 component image is not supported"); // TODO support RGB
+            }
+
+            auto buffer = &image.image[0];
+            vk::DeviceSize bufferSize = image.image.size();
+
+            // Create image
+            vk::Extent2D extent{ static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height) };
+            vk::Format format{ vk::Format::eR8G8B8A8Unorm };
+            tex.image = std::make_unique<Image>(device, extent, format);
+            tex.image->allocateMemory(vk::MemoryPropertyFlagBits::eDeviceLocal);
+            tex.image->addImageView(vk::ImageAspectFlagBits::eColor);
+
+            // TODO support mipmap
+
+            // Create staging buffer
+            vk::BufferUsageFlags stagingUsage = vk::BufferUsageFlagBits::eTransferSrc;
+            vk::MemoryPropertyFlags stagingProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+            Buffer stagingBuffer{ device, bufferSize, stagingUsage, stagingProperties, buffer };
+
+            // Set image layout and copy from buffer
+            auto cmdBuf = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+            tex.image->transitionImageLayout(*cmdBuf, vk::ImageLayout::eTransferDstOptimal);
+            tex.image->copyFrom(*cmdBuf, stagingBuffer);
+            device.submitCommandBuffer(*cmdBuf);
         }
     }
 
