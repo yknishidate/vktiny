@@ -20,9 +20,13 @@ public:
         storageImage = swapChain->createStorageImage();
 
         // Create BLAS
-        vkr::Mesh mesh(*device);
-        mesh.loadFromFile("samples/assets/Cube/Cube.gltf");
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
+        vkr::Model model(*device);
+        model.loadFromFile("samples/assets/Cube/Cube.gltf");
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, model.getMeshes()[0]);
+
+        //vkr::Mesh mesh(*device);
+        //mesh.loadFromFile("samples/assets/Cube/Cube.gltf");
+        //blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
         // Create TLAS
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
