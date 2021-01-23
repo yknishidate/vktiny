@@ -49,7 +49,7 @@ namespace vkr
 
     class ShaderManager;
 
-    class Model;
+    class Mesh;
 
 
     struct Vertex
@@ -851,7 +851,7 @@ namespace vkr
 
         BottomLevelAccelerationStructure(const Device& device, VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer);
 
-        BottomLevelAccelerationStructure(const Device& device, const Model& model);
+        BottomLevelAccelerationStructure(const Device& device, const Mesh& mesh);
 
         BottomLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
 
@@ -937,13 +937,13 @@ namespace vkr
     };
 
 
-    class Model final
+    class Mesh final
     {
     public:
 
-        Model(const Device& device) : device(device) {}
+        Mesh(const Device& device) : device(device) {}
 
-        ~Model() {}
+        ~Mesh() {}
 
         const VertexBuffer* getVertexBuffer() const { return vertexBuffer.get(); }
 
@@ -2186,11 +2186,11 @@ namespace vkr
         // TODO
     }
 
-    BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, const Model& model)
+    BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, const Mesh& mesh)
         : AccelerationStructure(device)
     {
-        auto vertexBuffer = model.getVertexBuffer();
-        auto indexBuffer = model.getIndexBuffer();
+        auto vertexBuffer = mesh.getVertexBuffer();
+        auto indexBuffer = mesh.getIndexBuffer();
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
         triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
@@ -2246,7 +2246,7 @@ namespace vkr
     }
 
 
-    void Model::loadFromFile(const std::string& filename, uint32_t index)
+    void Mesh::loadFromFile(const std::string& filename, uint32_t index)
     {
         // Load file
         tinygltf::TinyGLTF gltfLoader;
