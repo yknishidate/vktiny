@@ -13,6 +13,7 @@
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #include <GLFW/glfw3.h>
 
@@ -21,8 +22,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -560,7 +559,7 @@ namespace vkr
 
         vk::DeviceSize getSize() const { return size; }
 
-        uint64_t getDeviceAddress()
+        uint64_t getDeviceAddress() const
         {
             vk::BufferDeviceAddressInfoKHR bufferDeviceAI{ *buffer };
             return device.getHandle().getBufferAddressKHR(&bufferDeviceAI);
@@ -596,7 +595,7 @@ namespace vkr
             verticesCount = static_cast<uint32_t>(vertices.size());
         }
 
-        uint32_t getCount() { return verticesCount; }
+        uint32_t getCount() const { return verticesCount; }
 
     private:
 
@@ -615,7 +614,7 @@ namespace vkr
             indicesCount = static_cast<uint32_t>(indices.size());
         }
 
-        uint32_t getCount() { return indicesCount; }
+        uint32_t getCount() const { return indicesCount; }
 
     private:
 
@@ -888,13 +887,9 @@ namespace vkr
     };
 
 
-    class Texture
+    struct Texture
     {
-    public:
-
-        Texture() {}
-
-    private:
+        Texture(const Device& device, tinygltf::Image& gltfimage, std::string path);
 
         std::unique_ptr<Image> image;
 
@@ -918,23 +913,21 @@ namespace vkr
 
     struct Material
     {
-        const Device& device;
-
         // Base color
-        std::unique_ptr<Texture> baseColorTexture;
+        std::shared_ptr<Texture> baseColorTexture;
         glm::vec4 baseColorFactor{ 1.0f };
 
         // Metallic / Roughness
-        std::unique_ptr<Texture> metallicRoughnessTexture;
+        std::shared_ptr<Texture> metallicRoughnessTexture;
         float metallicFactor{ 1.0f };
         float roughnessFactor{ 1.0f };
 
-        std::unique_ptr<Texture> normalTexture;
+        std::shared_ptr<Texture> normalTexture;
 
-        std::unique_ptr<Texture> occlusionTexture;
+        std::shared_ptr<Texture> occlusionTexture;
 
         // Emissive
-        std::unique_ptr<Texture> emissiveTexture;
+        std::shared_ptr<Texture> emissiveTexture;
         glm::vec3 emissiveFactor{ 0.0f };
 
         AlphaMode alphaMode{ AlphaMode::Opaque };
@@ -952,9 +945,9 @@ namespace vkr
 
         ~Model() {}
 
-        VertexBuffer* getVertexBuffer() const { return vertexBuffer.get(); }
+        const VertexBuffer* getVertexBuffer() const { return vertexBuffer.get(); }
 
-        IndexBuffer* getIndexBuffer() const { return indexBuffer.get(); }
+        const IndexBuffer* getIndexBuffer() const { return indexBuffer.get(); }
 
         void loadFromFile(const std::string& filename, uint32_t index = 0);
 
@@ -2082,7 +2075,7 @@ namespace vkr
 
         using vkbu = vk::BufferUsageFlagBits;
         using vkmp = vk::MemoryPropertyFlagBits;
-        const vk::BufferUsageFlags usage = vkbu::eShaderBindingTableKHR | vkbu::eTransferSrc | vkbu::eShaderDeviceAddress;
+        const vk::BufferUsageFlags usage = vkbu::eShaderBindingTableKHR | vkbu::eShaderDeviceAddress;
         const vk::MemoryPropertyFlags memoryProperty = vkmp::eHostVisible | vkmp::eHostCoherent;
 
         // Get shader group handles
@@ -2245,6 +2238,13 @@ namespace vkr
         uint32_t instanceCount = 1;
         build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
+
+
+    Texture::Texture(const Device& device, tinygltf::Image& gltfimage, std::string path)
+    {
+
+    }
+
 
     void Model::loadFromFile(const std::string& filename, uint32_t index)
     {
