@@ -496,6 +496,8 @@ namespace vkr
 
         vk::ImageView getView() const { return *view; }
 
+        vk::ImageLayout getLayout() const { return imageLayout; }
+
         vk::MemoryRequirements getMemoryRequirements() const
         {
             return device.getHandle().getImageMemoryRequirements(*image);
@@ -505,7 +507,7 @@ namespace vkr
 
         void addImageView(vk::ImageAspectFlags aspectFlags);
 
-        vk::DescriptorImageInfo createDescriptorInfo(vk::ImageLayout layout = vk::ImageLayout::eGeneral) const;
+        vk::DescriptorImageInfo createDescriptorInfo() const;
 
         void copyFrom(vk::CommandBuffer& cmdBuf, const Buffer& buffer);
 
@@ -896,9 +898,12 @@ namespace vkr
 
     struct Texture
     {
-        Model* model;
+        vk::DescriptorImageInfo createDescriptorInfo() const
+        {
+            return { *sampler, image->getView(), image->getLayout() };
+        }
 
-        //Texture(const Device& device, tinygltf::Image& gltfimage, std::string path);
+        Model* model;
 
         std::unique_ptr<Image> image;
 
@@ -1869,9 +1874,9 @@ namespace vkr
         view = device.getHandle().createImageViewUnique(createInfo);
     }
 
-    vk::DescriptorImageInfo Image::createDescriptorInfo(vk::ImageLayout layout /*= eGeneral*/) const
+    vk::DescriptorImageInfo Image::createDescriptorInfo() const
     {
-        return { {}, *view, layout };
+        return { {}, *view, imageLayout };
     }
 
     void Image::copyFrom(vk::CommandBuffer& cmdBuf, const Buffer& buffer)
@@ -2678,6 +2683,7 @@ namespace vkr
             tex.image->addImageView(vk::ImageAspectFlagBits::eColor);
 
             // TODO support mipmap
+            tex.mipLevels = 1;
 
             // Create staging buffer
             vk::BufferUsageFlags stagingUsage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -2689,6 +2695,21 @@ namespace vkr
             tex.image->transitionImageLayout(*cmdBuf, vk::ImageLayout::eTransferDstOptimal);
             tex.image->copyFrom(*cmdBuf, stagingBuffer);
             device.submitCommandBuffer(*cmdBuf);
+
+            // Create sampler
+            vk::SamplerCreateInfo samplerInfo{};
+            samplerInfo.magFilter = vk::Filter::eLinear;
+            samplerInfo.minFilter = vk::Filter::eLinear;
+            samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+            samplerInfo.addressModeU = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.addressModeV = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.addressModeW = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.compareOp = vk::CompareOp::eNever;
+            samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+            samplerInfo.maxAnisotropy = 1.0;
+            samplerInfo.anisotropyEnable = false;
+            samplerInfo.maxLod = (float)tex.mipLevels;
+            tex.sampler = device.getHandle().createSamplerUnique(samplerInfo);
         }
     }
 
