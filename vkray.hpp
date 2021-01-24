@@ -49,10 +49,18 @@ namespace vkr
 
     class ShaderManager;
 
-    // Scene components //
+    // Model and components //
     class Model;
 
+    struct Scene;
+
+    struct Node;
+
     struct Mesh;
+
+    struct Material;
+
+    struct Texture;
 
 
     struct Vertex
@@ -503,6 +511,8 @@ namespace vkr
             return device.getHandle().getImageMemoryRequirements(*image);
         }
 
+        void setLayout(vk::ImageLayout layout) { imageLayout = layout; }
+
         void allocateMemory(vk::MemoryPropertyFlags properties);
 
         void addImageView(vk::ImageAspectFlags aspectFlags);
@@ -927,28 +937,36 @@ namespace vkr
 
     struct Material
     {
+        const Texture& getBaseColorTexture() const
+        {
+            if (baseColorTexture == -1) {
+                return Texture{};
+            }
+
+            //auto materials = model->getMaterials();
+
+            //assert(material < materials.size());
+
+            //return materials[material];
+        }
+
         Model* model;
 
         // Base color
         int32_t baseColorTexture{ -1 };
-        //std::shared_ptr<Texture> baseColorTexture;
         glm::vec4 baseColorFactor{ 1.0f };
 
         // Metallic / Roughness
         int32_t metallicRoughnessTexture{ -1 };
-        //std::shared_ptr<Texture> metallicRoughnessTexture;
         float metallicFactor{ 1.0f };
         float roughnessFactor{ 1.0f };
 
         int32_t normalTexture{ -1 };
-        //std::shared_ptr<Texture> normalTexture;
 
         int32_t occlusionTexture{ -1 };
-        //std::shared_ptr<Texture> occlusionTexture;
 
         // Emissive
         int32_t emissiveTexture{ -1 };
-        //std::shared_ptr<Texture> emissiveTexture;
         glm::vec3 emissiveFactor{ 0.0f };
 
         AlphaMode alphaMode{ AlphaMode::Opaque };
@@ -960,19 +978,7 @@ namespace vkr
 
     struct Mesh
     {
-        //// TODO: add  Mesh(device, vertices, indices)
-        //Mesh(const Device& device) : device(device) {}
-
-        //~Mesh() {}
-
-        //const VertexBuffer* getVertexBuffer() const { return vertexBuffer.get(); }
-
-        //const IndexBuffer* getIndexBuffer() const { return indexBuffer.get(); }
-
-        //// TODO: Delete this
-        //void loadFromFile(const std::string& filename, uint32_t index = 0);
-
-        //const Device& device;
+        const Material& getMaterial() const;
 
         Model* model;
 
@@ -1016,7 +1022,15 @@ namespace vkr
 
         void loadFromFile(const std::string& filepath);
 
+        const std::vector<Scene>& getScenes() const { return scenes; }
+
+        const std::vector<Node>& getNodes() const { return nodes; }
+
         const std::vector<Mesh>& getMeshes() const { return meshes; }
+
+        const std::vector<Material>& getMaterials() const { return materials; }
+
+        const std::vector<Texture>& getTextures() const { return textures; }
 
     private:
 
@@ -1029,8 +1043,6 @@ namespace vkr
         const Device& device;
 
         std::string fileDirectory;
-
-        //std::string fileBasename;
 
         std::vector<Scene> scenes;
 
@@ -1717,6 +1729,8 @@ namespace vkr
         auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
         transitionImageLayout(commandBuffer.get(), image->getHandle(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
         device.submitCommandBuffer(commandBuffer.get());
+
+        image->setLayout(vk::ImageLayout::eGeneral);
 
         return image;
     }
@@ -2713,6 +2727,20 @@ namespace vkr
         }
     }
 
+
+    const Material& Mesh::getMaterial() const
+    {
+        if (material == -1) {
+            // return default material
+            return Material{};
+        }
+
+        auto materials = model->getMaterials();
+
+        assert(material < materials.size());
+
+        return materials[material];
+    }
 
 } // vkr
 
