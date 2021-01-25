@@ -22,7 +22,9 @@ public:
         // Create BLAS
         vkr::Model model(*device);
         model.loadFromFile("samples/assets/Cube/Cube.gltf");
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, model.getMeshes()[0]);
+
+        const vkr::Mesh& mesh = model.getMeshes()[0];
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
         //vkr::Mesh mesh(*device);
         //mesh.loadFromFile("samples/assets/Cube/Cube.gltf");
