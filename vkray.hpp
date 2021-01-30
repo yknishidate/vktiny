@@ -147,11 +147,15 @@ namespace vkr
             glfwWaitEvents();
         }
 
-        void createWindowSurface(VkInstance instance, VkSurfaceKHR& surface) const
+        vk::SurfaceKHR createWindowSurface(vk::Instance instance) const
         {
+            VkSurfaceKHR surface;
+
             if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create window surface!");
             }
+
+            return vk::SurfaceKHR(surface);
         }
 
         std::function<void(int key, int scancode, int action, int mods)> onKey;
@@ -1147,13 +1151,11 @@ namespace vkr
 
     vk::UniqueSurfaceKHR Instance::createSurface() const
     {
-        VkSurfaceKHR _surface;
-
-        window.createWindowSurface(VkInstance(*instance), _surface);
+        vk::SurfaceKHR surface = window.createWindowSurface(*instance);
 
         vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
 
-        return vk::UniqueSurfaceKHR{ vk::SurfaceKHR(_surface), _deleter };
+        return vk::UniqueSurfaceKHR{ surface, _deleter };
     }
 
     vk::PhysicalDevice Instance::pickSuitablePhysicalDevice() const
