@@ -14,7 +14,7 @@ public:
         window = std::make_unique<vkr::Window>("vkray", 800, 600);
         instance = std::make_unique<vkr::Instance>(*window, true);
         device = std::make_unique<vkr::Device>(*instance);
-        swapChain = std::make_unique<vkr::SwapChain>(*device);
+        swapChain = std::make_unique<vkr::SwapChain>(*device, *window);
 
         // Create storage image
         storageImage = swapChain->createStorageImage();
@@ -40,8 +40,10 @@ public:
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
-        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
+        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR); // TLAS
+        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);             // Image
+        descSets->addBindging(0, 2, vkdt::eStorageBuffer, 1, vkss::eClosestHitKHR);        // Vertex
+        descSets->addBindging(0, 3, vkdt::eStorageBuffer, 1, vkss::eClosestHitKHR);        // Index
         descSets->initPipelineLayout();
 
         descSets->allocate();
