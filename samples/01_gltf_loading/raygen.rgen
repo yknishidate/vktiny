@@ -8,7 +8,7 @@ layout(location = 0) rayPayloadEXT vec3 payLoad;
 
 void main()
 {
-    float theta = radians(30);
+    float theta = radians(-30);
     mat4 rotX = mat4(
         1, 0,          0,           0,
         0, cos(theta), -sin(theta), 0,

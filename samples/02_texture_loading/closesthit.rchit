@@ -25,7 +25,7 @@ Vertex unpack(uint index)
     Vertex v;
     v.pos    = vec3(vertices.v[offset + 0], vertices.v[offset + 1], vertices.v[offset + 2]);
     v.normal = vec3(vertices.v[offset + 3], vertices.v[offset + 4], vertices.v[offset + 5]);
-    v.uv     = vec2(vertices.v[offset + 6], vertices.v[offset + 7]);
+    v.uv     = vec2(vertices.v[offset + 6], 1.0 - vertices.v[offset + 7]);
     v.color  = vec4(vertices.v[offset + 8], vertices.v[offset + 9], vertices.v[offset + 10], vertices.v[offset + 11]);
 
 	return v;
@@ -51,7 +51,7 @@ void main()
     vec3 color = texture(textureSamplers, uv).xyz;
     color = pow(color, vec3(2.2));
 
-    vec3 diffuse = color * dot(normal, normalize(lightPos - pos));
+    vec3 diffuse = color * max(0.2, dot(normal, normalize(lightPos - pos)));
 
     payLoad = diffuse;
 }
