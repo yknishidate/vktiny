@@ -1,5 +1,5 @@
 
-#include "../vkray.hpp"
+#include "../../vkray.hpp"
 
 using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;
@@ -31,11 +31,10 @@ public:
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
         // Load shaders
-        std::string shaderDir = "samples/shaders/01_gltf_loading/";
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader(shaderDir + "raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader(shaderDir + "miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader(shaderDir + "closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("samples/01_gltf_loading/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/01_gltf_loading/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/01_gltf_loading/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);

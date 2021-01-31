@@ -1,5 +1,5 @@
 
-#include "../vkray.hpp"
+#include "../../vkray.hpp"
 
 using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;
@@ -37,9 +37,9 @@ public:
 
         // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/shaders/00_hello_triangle/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/shaders/00_hello_triangle/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/shaders/00_hello_triangle/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("samples/00_hello_triangle/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/00_hello_triangle/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/00_hello_triangle/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
