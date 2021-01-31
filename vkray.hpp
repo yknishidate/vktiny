@@ -23,7 +23,11 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "vkgltf.hpp"
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NOEXCEPTION
+#include "tiny_gltf.h"
 
 namespace vkr
 {
@@ -40,6 +44,14 @@ namespace vkr
     class DescriptorSets;
 
     class ShaderManager;
+
+    // Model components
+    class Model;
+    struct Scene;
+    struct Node;
+    struct Mesh;
+    struct Material;
+    struct Texture;
 
 
     class Window final
@@ -253,7 +265,7 @@ namespace vkr
         // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
 
-        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level, bool begin,
+        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary, bool begin = true,
                                                     vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
 
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
@@ -473,12 +485,6 @@ namespace vkr
         /// </summary>
         Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data);
 
-
-        Buffer(const Device& device, vk::UniqueBuffer&& buffer, vk::UniqueDeviceMemory&& memory, vk::DeviceSize size);
-
-
-        ~Buffer() {}
-
         // non copyable
         Buffer(const Buffer&) = delete;
         Buffer& operator = (const Buffer&) = delete;
@@ -623,16 +629,12 @@ namespace vkr
         auto getRayTracingGroups() const { return rtGroups; }
 
         auto getRaygenRegion() const { return raygenRegion; }
-
         auto getMissRegion() const { return missRegion; }
-
         auto getHitRegion() const { return hitRegion; }
 
-        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
-                       vk::RayTracingShaderGroupTypeKHR groupType);
+        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName, vk::RayTracingShaderGroupTypeKHR groupType);
 
-        void addShader(uint32_t addedShaderIndex, vk::ShaderStageFlagBits stage, const char* pName,
-                       vk::RayTracingShaderGroupTypeKHR groupType);
+        void addShader(uint32_t addedShaderIndex, vk::ShaderStageFlagBits stage, const char* pName, vk::RayTracingShaderGroupTypeKHR groupType);
 
         void initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
 
@@ -684,7 +686,8 @@ namespace vkr
 
     protected:
 
-        void build(const Device& device, vk::AccelerationStructureGeometryKHR& geometry, const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
+        void build(const Device& device, vk::AccelerationStructureGeometryKHR& geometry,
+                   const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
 
         void createBuffer(const Device& device, vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo);
 
@@ -701,10 +704,6 @@ namespace vkr
     public:
 
         BottomLevelAccelerationStructure(const Device& device, const Mesh& mesh);
-
-        // non copyable
-        BottomLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
-        BottomLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
     };
 
 
@@ -717,10 +716,6 @@ namespace vkr
 
         TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
 
-        // non copyable
-        TopLevelAccelerationStructure(const BottomLevelAccelerationStructure&) = delete;
-        TopLevelAccelerationStructure& operator = (const BottomLevelAccelerationStructure&) = delete;
-
         vk::WriteDescriptorSetAccelerationStructureKHR createWrite() const
         {
             return { 1, &accelerationStructure.get() };
@@ -728,202 +723,374 @@ namespace vkr
     };
 
 
-    //----------------//
-    // implementation //
-    //----------------//
+} // vkr
+
+namespace vkr
+{
+    // Model components
+    struct Vertex
+    {
+        glm::vec3 pos;
+
+        glm::vec3 normal;
+
+        glm::vec2 uv;
+
+        glm::vec4 color;
+
+        glm::vec4 joint0;
+
+        glm::vec4 weight0;
+
+        glm::vec4 tangent;
+    };
+
+
+    struct Texture
+    {
+        std::unique_ptr<Image> image;
+
+        vk::DeviceSize deviceSize;
+
+        vk::UniqueSampler sampler;
+
+        uint32_t mipLevels;
+
+        uint32_t layerCount;
+    };
+
+
+    enum class AlphaMode
+    {
+        Opaque,
+        Mask,
+        Blend
+    };
+
+
+    struct Material
+    {
+        // Base color
+        int baseColorTexture{ -1 };
+        glm::vec4 baseColorFactor{ 1.0f };
+
+        // Metallic / Roughness
+        int metallicRoughnessTexture{ -1 };
+        float metallicFactor{ 1.0f };
+        float roughnessFactor{ 1.0f };
+
+        int normalTexture{ -1 };
+
+        int occlusionTexture{ -1 };
+
+        // Emissive
+        int emissiveTexture{ -1 };
+        glm::vec3 emissiveFactor{ 0.0f };
+
+        AlphaMode alphaMode{ AlphaMode::Opaque };
+        float alphaCutoff{ 0.5f };
+
+        bool doubleSided{ false };
+    };
+
+
+    struct Mesh
+    {
+        // Vertex
+        std::vector<Vertex> vertices;
+
+        std::unique_ptr<Buffer> vertexBuffer;
+
+        // Index
+        std::vector<uint32_t> indices;
+
+        std::unique_ptr<Buffer> indexBuffer;
+
+        int material{ -1 };
+
+        void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    };
+
+
+    struct Node
+    {
+        std::vector<int> children;
+
+        int mesh{ -1 };
+
+        glm::mat4 worldMatrix{ 1.0f };
+
+        glm::vec3 translation{ 1.0f };
+
+        glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
+
+        glm::vec3 scale{ 1.0f, 1.0f, 1.0f };
+    };
+
+
+    struct Scene
+    {
+        std::vector<int> nodes;
+    };
+
+
+    class Model final
+    {
+    public:
+
+        Model() = default;
+        ~Model() = default;
+
+        // non copyable
+        Model(const Model&) = delete;
+        Model& operator=(const Model&) = delete;
+
+        const std::vector<Scene>& getScenes() const { return scenes; }
+
+        const std::vector<Node>& getNodes() const { return nodes; }
+
+        const std::vector<Mesh>& getMeshes() const { return meshes; }
+
+        const std::vector<Material>& getMaterials() const { return materials; }
+
+        const std::vector<Texture>& getTextures() const { return textures; }
+
+        void loadFromFile(const Device& device, const std::string& filepath);
+
+    private:
+
+        void loadScenes(tinygltf::Model& gltfModel);
+
+        void loadNodes(tinygltf::Model& gltfModel);
+
+        void loadMeshes(const Device& device, tinygltf::Model& gltfModel);
+
+        void loadMaterials(tinygltf::Model& gltfModel);
+
+        void loadTextures(const Device& device, tinygltf::Model& gltfModel);
+
+        vk::Device device;
+
+        vk::PhysicalDevice physicalDevice;
+
+        vk::CommandPool cmdPool;
+
+        vk::Queue queue;
+
+        std::vector<Scene> scenes;
+
+        std::vector<Node> nodes;
+        vk::UniqueBuffer nodesBuffer;
+        vk::UniqueDeviceMemory nodesDeviceMemory;
+
+        std::vector<Mesh> meshes;
+        vk::UniqueBuffer meshesBuffer;
+        vk::UniqueDeviceMemory meshesDeviceMemory;
+
+        std::vector<Material> materials;
+
+        std::vector<Texture> textures;
+    };
+
+} // vkr
+
+
+
+//----------------//
+// implementation //
+//----------------//
+
+namespace vkr
+{
 
     // TODO インクルードするので名前を付ける
-    namespace
-    {
 #if defined(_DEBUG)
-        VKAPI_ATTR VkBool32 VKAPI_CALL
-            debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-                                        VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
-        {
-            std::cerr << "messageIDName   = " << pCallbackData->pMessageIdName << "\n";
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+        debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                                    VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
+    {
+        std::cerr << "messageIDName   = " << pCallbackData->pMessageIdName << "\n";
 
-            for (uint8_t i = 0; i < pCallbackData->objectCount; i++) {
-                std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)) << "\n";
-            }
-
-            std::cerr << pCallbackData->pMessage << "\n\n";
-
-            return VK_FALSE;
+        for (uint8_t i = 0; i < pCallbackData->objectCount; i++) {
+            std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)) << "\n";
         }
+
+        std::cerr << pCallbackData->pMessage << "\n\n";
+
+        return VK_FALSE;
+    }
 #endif
 
-        void glfwErrorCallback(const int error, const char* const description)
-        {
-            std::cerr << "ERROR: GLFW: " << description << " (code: " << error << ")" << std::endl;
+    void glfwErrorCallback(const int error, const char* const description)
+    {
+        std::cerr << "ERROR: GLFW: " << description << " (code: " << error << ")" << std::endl;
+    }
+
+    void glfwKeyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
+    {
+        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+        if (this_->onKey) {
+            this_->onKey(key, scancode, action, mods);
+        }
+    }
+
+    void glfwCursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
+    {
+        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+        if (this_->onCursorPosition) {
+            this_->onCursorPosition(xpos, ypos);
+        }
+    }
+
+    void glfwMouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
+    {
+        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+        if (this_->onMouseButton) {
+            this_->onMouseButton(button, action, mods);
+        }
+    }
+
+    void glfwScrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
+    {
+        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
+        if (this_->onScroll) {
+            this_->onScroll(xoffset, yoffset);
+        }
+    }
+
+    std::vector<vk::QueueFamilyProperties>::const_iterator findQueue(
+        const std::vector<vk::QueueFamilyProperties>& queueFamilies,
+        const std::string& name,
+        const vk::QueueFlags requiredBits,
+        const vk::QueueFlags excludedBits)
+    {
+        const auto family = std::find_if(queueFamilies.begin(), queueFamilies.end(), [requiredBits, excludedBits](const vk::QueueFamilyProperties& queueFamily) {
+            return queueFamily.queueCount > 0 && queueFamily.queueFlags & requiredBits && !(queueFamily.queueFlags & excludedBits);
+        });
+
+        if (family == queueFamilies.end()) {
+            throw std::runtime_error("found no matching " + name + " queue");
         }
 
-        void glfwKeyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
-        {
-            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-            if (this_->onKey) {
-                this_->onKey(key, scancode, action, mods);
-            }
+        return family;
+    }
+
+    std::vector<char> readFile(const std::string& filename)
+    {
+        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+        if (!file.is_open()) {
+            throw std::runtime_error("failed to open file!");
         }
 
-        void glfwCursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
-        {
-            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-            if (this_->onCursorPosition) {
-                this_->onCursorPosition(xpos, ypos);
-            }
+        size_t fileSize = (size_t)file.tellg();
+        std::vector<char> buffer(fileSize);
+
+        file.seekg(0);
+        file.read(buffer.data(), fileSize);
+
+        file.close();
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// For when you have to use vk::Image instead of vkr::Image.
+    /// </summary>
+    void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+    {
+        vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
+        vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
+
+        vk::ImageMemoryBarrier imageMemoryBarrier{};
+        imageMemoryBarrier
+            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setImage(image)
+            .setOldLayout(oldLayout)
+            .setNewLayout(newLayout)
+            .setSubresourceRange({ vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1 });
+
+        // Source layouts (old)
+        switch (oldLayout) {
+            case vk::ImageLayout::eUndefined:
+                imageMemoryBarrier.srcAccessMask = {};
+                break;
+            case vk::ImageLayout::ePreinitialized:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
+                break;
+            case vk::ImageLayout::eColorAttachmentOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+                break;
+            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                break;
+            case vk::ImageLayout::eTransferSrcOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+                break;
+            case vk::ImageLayout::eTransferDstOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+                break;
+            default:
+                break;
         }
 
-        void glfwMouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
-        {
-            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-            if (this_->onMouseButton) {
-                this_->onMouseButton(button, action, mods);
-            }
+        // Target layouts (new)
+        switch (newLayout) {
+            case vk::ImageLayout::eTransferDstOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+                break;
+            case vk::ImageLayout::eTransferSrcOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+                break;
+            case vk::ImageLayout::eColorAttachmentOptimal:
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+                break;
+            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags{}) {
+                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
+                }
+                imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+                break;
+            default:
+                break;
         }
 
-        void glfwScrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
-        {
-            auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-            if (this_->onScroll) {
-                this_->onScroll(xoffset, yoffset);
-            }
+        cmdBuf.pipelineBarrier(
+            srcStageMask,      // srcStageMask
+            dstStageMask,      // dstStageMask
+            {},                // dependencyFlags
+            {},                // memoryBarriers
+            {},                // bufferMemoryBarriers
+            imageMemoryBarrier // imageMemoryBarriers
+        );
+    }
+
+    vk::TransformMatrixKHR toVkMatrix(const glm::mat4 transformMatrix)
+    {
+        const glm::mat4 transposedMatrix = glm::transpose(transformMatrix);
+        std::array<std::array<float, 4>, 3> data;
+        std::memcpy(&data, &transposedMatrix, sizeof(vk::TransformMatrixKHR));
+        return vk::TransformMatrixKHR(data);
+    }
+
+    template <class T>
+    uint32_t toU32(T value)
+    {
+        static_assert(std::is_arithmetic<T>::value, "T must be numeric");
+
+        if (static_cast<uintmax_t>(value) > static_cast<uintmax_t>(std::numeric_limits<uint32_t>::max())) {
+            throw std::runtime_error("toU32() failed, value is too big to be converted to uint32_t");
         }
 
-        std::vector<vk::QueueFamilyProperties>::const_iterator findQueue(
-            const std::vector<vk::QueueFamilyProperties>& queueFamilies,
-            const std::string& name,
-            const vk::QueueFlags requiredBits,
-            const vk::QueueFlags excludedBits)
-        {
-            const auto family = std::find_if(queueFamilies.begin(), queueFamilies.end(), [requiredBits, excludedBits](const vk::QueueFamilyProperties& queueFamily) {
-                return queueFamily.queueCount > 0 && queueFamily.queueFlags & requiredBits && !(queueFamily.queueFlags & excludedBits);
-            });
-
-            if (family == queueFamilies.end()) {
-                throw std::runtime_error("found no matching " + name + " queue");
-            }
-
-            return family;
-        }
-
-        std::vector<char> readFile(const std::string& filename)
-        {
-            std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-            if (!file.is_open()) {
-                throw std::runtime_error("failed to open file!");
-            }
-
-            size_t fileSize = (size_t)file.tellg();
-            std::vector<char> buffer(fileSize);
-
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-
-            file.close();
-
-            return buffer;
-        }
-
-        /// <summary>
-        /// For when you have to use vk::Image instead of vkr::Image.
-        /// </summary>
-        void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
-        {
-            vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
-            vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
-
-            vk::ImageMemoryBarrier imageMemoryBarrier{};
-            imageMemoryBarrier
-                .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                .setImage(image)
-                .setOldLayout(oldLayout)
-                .setNewLayout(newLayout)
-                .setSubresourceRange({ vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1 });
-
-            // Source layouts (old)
-            switch (oldLayout) {
-                case vk::ImageLayout::eUndefined:
-                    imageMemoryBarrier.srcAccessMask = {};
-                    break;
-                case vk::ImageLayout::ePreinitialized:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite;
-                    break;
-                case vk::ImageLayout::eColorAttachmentOptimal:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-                    break;
-                case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-                    break;
-                case vk::ImageLayout::eTransferSrcOptimal:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-                    break;
-                case vk::ImageLayout::eTransferDstOptimal:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-                    break;
-                case vk::ImageLayout::eShaderReadOnlyOptimal:
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
-                    break;
-                default:
-                    break;
-            }
-
-            // Target layouts (new)
-            switch (newLayout) {
-                case vk::ImageLayout::eTransferDstOptimal:
-                    imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-                    break;
-                case vk::ImageLayout::eTransferSrcOptimal:
-                    imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
-                    break;
-                case vk::ImageLayout::eColorAttachmentOptimal:
-                    imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-                    break;
-                case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-                    imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-                    break;
-                case vk::ImageLayout::eShaderReadOnlyOptimal:
-                    if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags{}) {
-                        imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
-                    }
-                    imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-                    break;
-                default:
-                    break;
-            }
-
-            cmdBuf.pipelineBarrier(
-                srcStageMask,      // srcStageMask
-                dstStageMask,      // dstStageMask
-                {},                // dependencyFlags
-                {},                // memoryBarriers
-                {},                // bufferMemoryBarriers
-                imageMemoryBarrier // imageMemoryBarriers
-            );
-        }
-
-        vk::TransformMatrixKHR toVkMatrix(const glm::mat4 transformMatrix)
-        {
-            const glm::mat4 transposedMatrix = glm::transpose(transformMatrix);
-            std::array<std::array<float, 4>, 3> data;
-            std::memcpy(&data, &transposedMatrix, sizeof(vk::TransformMatrixKHR));
-            return vk::TransformMatrixKHR(data);
-        }
-
-        template <class T>
-        uint32_t toU32(T value)
-        {
-            static_assert(std::is_arithmetic<T>::value, "T must be numeric");
-
-            if (static_cast<uintmax_t>(value) > static_cast<uintmax_t>(std::numeric_limits<uint32_t>::max())) {
-                throw std::runtime_error("toU32() failed, value is too big to be converted to uint32_t");
-            }
-
-            return static_cast<uint32_t>(value);
-        }
-
-    } // namespace
+        return static_cast<uint32_t>(value);
+    }
 
 
     // Window
@@ -1351,7 +1518,7 @@ namespace vkr
         auto image = std::make_unique<Image>(device, extent, format, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::ImageAspectFlagBits::eColor,
                                              vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
 
-        auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+        auto commandBuffer = device.createCommandBuffer();
         transitionImageLayout(commandBuffer.get(), image->getHandle(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
         device.submitCommandBuffer(commandBuffer.get());
 
@@ -1388,7 +1555,7 @@ namespace vkr
                 shaderManager.getRaygenRegion(), // raygenShaderBindingTable
                 shaderManager.getMissRegion(),   // missShaderBindingTable
                 shaderManager.getHitRegion(),    // hitShaderBindingTable
-                {},            // callableShaderBindingTable
+                {},                              // callableShaderBindingTable
                 extent.width,  // width
                 extent.height, // height
                 1              // depth
@@ -1538,7 +1705,7 @@ namespace vkr
 
     void Image::copyFrom(const Device& device, const Buffer& buffer)
     {
-        auto cmdBuf = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+        auto cmdBuf = device.createCommandBuffer();
 
         copyFrom(*cmdBuf, buffer);
 
@@ -1713,7 +1880,7 @@ namespace vkr
                                         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
 
             vk::BufferCopy region{ 0, 0, size };
-            auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+            auto commandBuffer = device.createCommandBuffer();
             commandBuffer->copyBuffer(stagingBuffer.getHandle(), *buffer, region);
             device.submitCommandBuffer(*commandBuffer);
         }
@@ -1722,7 +1889,7 @@ namespace vkr
 
     void Buffer::copyFrom(const Device& device, const Buffer& src)
     {
-        auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+        auto commandBuffer = device.createCommandBuffer();
 
         commandBuffer->copyBuffer(src.getHandle(), *buffer, { 0, 0, src.getSize() });
 
@@ -1981,7 +2148,7 @@ namespace vkr
             .setFirstVertex(0)
             .setTransformOffset(0);
 
-        auto commandBuffer = device.createCommandBuffer(vk::CommandBufferLevel::ePrimary, true);
+        auto commandBuffer = device.createCommandBuffer();
         commandBuffer->buildAccelerationStructuresKHR(buildGeometryInfo, &accelerationStructureBuildRangeInfo);
         device.submitCommandBuffer(*commandBuffer);
 
@@ -1998,10 +2165,10 @@ namespace vkr
 
     BottomLevelAccelerationStructure::BottomLevelAccelerationStructure(const Device& device, const Mesh& mesh)
     {
-        vk::BufferDeviceAddressInfoKHR vertexAddressInfo{ *mesh.vertexBuffer };
+        vk::BufferDeviceAddressInfoKHR vertexAddressInfo{ mesh.vertexBuffer->getHandle() };
         auto vertexAddress = device.getHandle().getBufferAddressKHR(&vertexAddressInfo);
 
-        vk::BufferDeviceAddressInfoKHR indexAddressInfo{ *mesh.indexBuffer };
+        vk::BufferDeviceAddressInfoKHR indexAddressInfo{ mesh.indexBuffer->getHandle() };
         auto indexAddress = device.getHandle().getBufferAddressKHR(&indexAddressInfo);
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData{};
@@ -2050,6 +2217,340 @@ namespace vkr
         build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
 
-
 } // vkr
 
+namespace vkr
+{
+    void Mesh::create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    {
+        this->vertices = vertices;
+        this->indices = indices;
+
+        using vkbu = vk::BufferUsageFlagBits;
+        using vkmp = vk::MemoryPropertyFlagBits;
+
+        vk::BufferUsageFlags usage{ vkbu::eAccelerationStructureBuildInputReadOnlyKHR
+                                  | vkbu::eStorageBuffer
+                                  | vkbu::eShaderDeviceAddress
+                                  | vkbu::eTransferDst };
+
+        vk::MemoryPropertyFlags properties{ vkmp::eDeviceLocal };
+
+        uint64_t vertexBufferSize = vertices.size() * sizeof(Vertex);
+        vertexBuffer = std::make_unique<Buffer>(device, vertexBufferSize, usage, properties, (void*)vertices.data());
+
+        uint64_t indexBufferSize = indices.size() * sizeof(uint32_t);
+        indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
+    }
+
+
+    void Model::loadFromFile(const Device& device, const std::string& filepath)
+    {
+        this->device = device.getHandle();
+
+        tinygltf::TinyGLTF gltfLoader;
+        tinygltf::Model gltfModel;
+
+        std::string err, warn;
+        bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filepath);
+        if (!result) {
+            throw std::runtime_error("failed to load gltf file.");
+        }
+        if (!err.empty()) {
+            throw std::runtime_error("gltf error:" + err);
+        }
+        if (!warn.empty()) {
+            throw std::runtime_error("gltf warning:" + warn);
+        }
+
+        loadScenes(gltfModel);
+        loadNodes(gltfModel);
+        loadMeshes(device, gltfModel);
+        loadMaterials(gltfModel);
+        loadTextures(device, gltfModel);
+    }
+
+    void Model::loadScenes(tinygltf::Model& gltfModel)
+    {
+        for (auto& scene : gltfModel.scenes) {
+            Scene sc;
+            sc.nodes = scene.nodes;
+        }
+    }
+
+    void Model::loadNodes(tinygltf::Model& gltfModel)
+    {
+        for (auto& node : gltfModel.nodes) {
+            Node nd;
+            nd.children = node.children;
+            nd.mesh = node.mesh;
+
+            glm::vec3 translation{ 0.0f };
+            if (node.translation.size() == 3) {
+                translation = glm::make_vec3(node.translation.data());
+                nd.translation = translation;
+            }
+            glm::mat4 rotation{ 1.0f };
+            if (node.rotation.size() == 4) {
+                glm::quat q = glm::make_quat(node.rotation.data());
+                nd.rotation = glm::mat4(q);
+            }
+            glm::vec3 scale{ 1.0f };
+            if (node.scale.size() == 3) {
+                scale = glm::make_vec3(node.scale.data());
+                nd.scale = scale;
+            }
+            if (node.matrix.size() == 16) {
+                nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
+            };
+
+            nodes.push_back(nd);
+        }
+    }
+
+    void Model::loadMeshes(const Device& device, tinygltf::Model& gltfModel)
+    {
+        for (int index = 0; index < gltfModel.meshes.size(); index++) {
+            std::vector<Vertex> vertices;
+            std::vector<uint32_t> indices;
+
+            auto& gltfMesh = gltfModel.meshes.at(index);
+            auto& gltfPrimitive = gltfMesh.primitives.at(0);
+
+            // Vertex attributes
+            auto& attributes = gltfPrimitive.attributes;
+            const float* pos = nullptr;
+            const float* normal = nullptr;
+            const float* uv = nullptr;
+            const float* color = nullptr;
+            const uint16_t* joint0 = nullptr;
+            const float* weight0 = nullptr;
+            const float* tangent = nullptr;
+            uint32_t numColorComponents;
+
+            assert(attributes.find("POSITION") != attributes.end());
+
+            auto& accessor = gltfModel.accessors[attributes.find("POSITION")->second];
+            auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+            auto& buffer = gltfModel.buffers[bufferView.buffer];
+            pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+
+            size_t verticesCount = accessor.count;
+
+            if (attributes.find("NORMAL") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                normal = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("TEXCOORD_0") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                uv = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("COLOR_0") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                color = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+
+                numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
+            }
+            if (attributes.find("TANGENT") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("JOINTS_0") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("WEIGHTS_0") != attributes.end()) {
+                accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
+                bufferView = gltfModel.bufferViews[accessor.bufferView];
+                buffer = gltfModel.buffers[bufferView.buffer];
+                weight0 = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+
+            bool hasSkin = (joint0 && weight0);
+
+            // Pack data to vertex array
+            for (size_t v = 0; v < verticesCount; v++) {
+                Vertex vert{};
+                vert.pos = glm::make_vec3(&pos[v * 3]);
+                vert.normal = glm::normalize(glm::vec3(normal ? glm::make_vec3(&normal[v * 3]) : glm::vec3(0.0f)));
+                vert.uv = uv ? glm::make_vec2(&uv[v * 2]) : glm::vec2(0.0f);
+                vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
+                if (color) {
+                    if (numColorComponents == 3)
+                        vert.color = glm::vec4(glm::make_vec3(&color[v * 3]), 1.0f);
+                    if (numColorComponents == 4)
+                        vert.color = glm::make_vec4(&color[v * 4]);
+                } else {
+                    vert.color = glm::vec4(1.0f);
+                }
+                vert.tangent = tangent ? glm::vec4(glm::make_vec4(&tangent[v * 4])) : glm::vec4(0.0f);
+                vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
+                vert.weight0 = hasSkin ? glm::make_vec4(&weight0[v * 4]) : glm::vec4(0.0f);
+
+                vertices.push_back(vert);
+            }
+
+            // Get indices
+            accessor = gltfModel.accessors[gltfPrimitive.indices];
+            bufferView = gltfModel.bufferViews[accessor.bufferView];
+            buffer = gltfModel.buffers[bufferView.buffer];
+
+            size_t indicesCount = accessor.count;
+            switch (accessor.componentType) {
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+                {
+                    uint32_t* buf = new uint32_t[indicesCount];
+                    size_t size = indicesCount * sizeof(uint32_t);
+                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                    for (size_t i = 0; i < indicesCount; i++) {
+                        indices.push_back(buf[i]);
+                    }
+                    break;
+                }
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+                {
+                    uint16_t* buf = new uint16_t[indicesCount];
+                    size_t size = indicesCount * sizeof(uint16_t);
+                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                    for (size_t i = 0; i < indicesCount; i++) {
+                        indices.push_back(buf[i]);
+                    }
+                    break;
+                }
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+                {
+                    uint8_t* buf = new uint8_t[indicesCount];
+                    size_t size = indicesCount * sizeof(uint8_t);
+                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                    for (size_t i = 0; i < indicesCount; i++) {
+                        indices.push_back(buf[i]);
+                    }
+                    break;
+                }
+                default:
+                    std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                    return;
+            }
+
+            Mesh mesh;
+            mesh.create(device, vertices, indices);
+            mesh.material = gltfPrimitive.material;
+            meshes.push_back(std::move(mesh));
+        }
+    }
+
+    void Model::loadMaterials(tinygltf::Model& gltfModel)
+    {
+        for (auto& mat : gltfModel.materials) {
+            Material material;
+
+            // Base color
+            if (mat.values.find("baseColorTexture") != mat.values.end()) {
+                material.baseColorTexture = mat.values["baseColorTexture"].TextureIndex();
+            }
+            if (mat.values.find("baseColorFactor") != mat.values.end()) {
+                material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+            }
+
+            // Metallic / Roughness
+            if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
+                material.metallicRoughnessTexture = mat.values["metallicRoughnessTexture"].TextureIndex();
+            }
+            if (mat.values.find("roughnessFactor") != mat.values.end()) {
+                material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+            }
+            if (mat.values.find("metallicFactor") != mat.values.end()) {
+                material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+            }
+
+            // Normal
+            if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
+                material.normalTexture = mat.additionalValues["normalTexture"].TextureIndex();
+            }
+
+            // Emissive
+            if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
+                material.emissiveTexture = mat.additionalValues["emissiveTexture"].TextureIndex();
+            }
+
+            // Occlusion
+            if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
+                material.occlusionTexture = mat.additionalValues["occlusionTexture"].TextureIndex();
+            }
+
+            // Alpha
+            if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
+                auto param = mat.additionalValues["alphaMode"];
+                if (param.string_value == "BLEND") {
+                    material.alphaMode = AlphaMode::Blend;
+                }
+                if (param.string_value == "MASK") {
+                    material.alphaMode = AlphaMode::Mask;
+                }
+            }
+            if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
+                material.alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+            }
+
+            materials.push_back(material);
+        }
+    }
+
+    void Model::loadTextures(const Device& device, tinygltf::Model& gltfModel)
+    {
+        for (auto& image : gltfModel.images) {
+            Texture tex;
+
+            if (image.component == 3) {
+                throw std::runtime_error("3 component image is not supported"); // TODO support RGB
+            }
+
+            auto buffer = &image.image[0];
+            tex.deviceSize = image.image.size();
+
+            // Create image
+            vk::Extent2D extent{ static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height) };
+            vk::Format format{ vk::Format::eR8G8B8A8Unorm };
+            tex.mipLevels = 1; // TODO support mipmap
+            tex.image = std::make_unique<Image>(device, extent, format, vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                                vk::ImageAspectFlagBits::eColor);
+
+            // Set image layout
+            vk::UniqueCommandBuffer cmdBuf = device.createCommandBuffer();
+            tex.image->transitionImageLayout(*cmdBuf, vk::ImageLayout::eTransferDstOptimal);
+
+            // Copy from staging buffer
+            using vkbu = vk::BufferUsageFlagBits;
+            using vkmp = vk::MemoryPropertyFlagBits;
+            Buffer stageBuf{ device, tex.deviceSize, vkbu::eTransferSrc, vkmp::eHostVisible | vkmp::eHostCoherent, buffer };
+            tex.image->copyFrom(*cmdBuf, stageBuf);
+            device.submitCommandBuffer(*cmdBuf);
+
+            // Create sampler
+            vk::SamplerCreateInfo samplerInfo{};
+            samplerInfo.magFilter = vk::Filter::eLinear;
+            samplerInfo.minFilter = vk::Filter::eLinear;
+            samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+            samplerInfo.addressModeU = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.addressModeV = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.addressModeW = vk::SamplerAddressMode::eMirroredRepeat;
+            samplerInfo.compareOp = vk::CompareOp::eNever;
+            samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+            samplerInfo.maxAnisotropy = 1.0;
+            samplerInfo.anisotropyEnable = false;
+            samplerInfo.maxLod = (float)tex.mipLevels;
+            tex.sampler = device.getHandle().createSamplerUnique(samplerInfo);
+        }
+    }
+
+} // vkr

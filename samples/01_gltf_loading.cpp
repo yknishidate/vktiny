@@ -21,8 +21,7 @@ public:
 
         // Create BLAS
         vkr::Model model;
-        model.loadFromFile(device->getHandle(), device->getPhysicalDevice(), device->getCommandPool(),
-                           device->getGraphicsQueue(), "samples/assets/Cube/Cube.gltf");
+        model.loadFromFile(*device, "samples/assets/Cube/Cube.gltf");
 
         const vkr::Mesh& mesh = model.getMeshes()[0];
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
