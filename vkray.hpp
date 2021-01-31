@@ -2538,7 +2538,7 @@ namespace vkr
             tex.image = std::make_unique<Image>(device, extent, format, vk::MemoryPropertyFlagBits::eDeviceLocal,
                                                 vk::ImageAspectFlagBits::eColor);
 
-            // Set image layout
+            // Set image layout for transfer
             vk::UniqueCommandBuffer cmdBuf = device.createCommandBuffer();
             tex.image->transitionImageLayout(*cmdBuf, vk::ImageLayout::eTransferDstOptimal);
 
@@ -2547,6 +2547,10 @@ namespace vkr
             using vkmp = vk::MemoryPropertyFlagBits;
             Buffer stageBuf{ device, tex.deviceSize, vkbu::eTransferSrc, vkmp::eHostVisible | vkmp::eHostCoherent, buffer };
             tex.image->copyFrom(*cmdBuf, stageBuf);
+
+            // Set image layout for shader
+            tex.image->transitionImageLayout(*cmdBuf, vk::ImageLayout::eShaderReadOnlyOptimal);
+
             device.submitCommandBuffer(*cmdBuf);
 
             // Create sampler
@@ -2563,6 +2567,8 @@ namespace vkr
             samplerInfo.anisotropyEnable = false;
             samplerInfo.maxLod = (float)tex.mipLevels;
             tex.sampler = device.getHandle().createSamplerUnique(samplerInfo);
+
+            textures.push_back(std::move(tex));
         }
     }
 

@@ -25,7 +25,6 @@ public:
 
         const vkr::Mesh& mesh = model.getMeshes()[0];
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
-        std::cout << sizeof(vkr::Vertex) << std::endl;
 
         // Create TLAS
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };

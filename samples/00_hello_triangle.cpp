@@ -14,18 +14,22 @@ public:
         window = std::make_unique<vkr::Window>("vkray", 800, 600);
         instance = std::make_unique<vkr::Instance>(*window, true);
         device = std::make_unique<vkr::Device>(*instance);
-        swapChain = std::make_unique<vkr::SwapChain>(*device);
+        swapChain = std::make_unique<vkr::SwapChain>(*device, *window);
 
         // Create storage image
         storageImage = swapChain->createStorageImage();
 
-        // Create BLAS
+        // Create Mesh
         std::vector<vkr::Vertex> vertices{
             { {1.0f, 1.0f, 0.0f} },
             { {-1.0f, 1.0f, 0.0f} },
             { {0.0f, -1.0f, 0.0f} } };
         std::vector<uint32_t> indices{ 0, 1, 2 };
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, vertices, indices);
+        vkr::Mesh mesh;
+        mesh.create(*device, vertices, indices);
+
+        // Create BLAS
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
         // Create TLAS
         vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
