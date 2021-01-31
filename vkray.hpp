@@ -497,6 +497,8 @@ namespace vkr
 
         void copyFrom(const Device& device, const Buffer& src);
 
+        vk::DescriptorBufferInfo createDescriptorInfo() const;
+
     private:
 
         vk::UniqueBuffer buffer;
@@ -1896,6 +1898,12 @@ namespace vkr
         device.submitCommandBuffer(*commandBuffer);
     }
 
+    vk::DescriptorBufferInfo Buffer::createDescriptorInfo() const
+    {
+        return vk::DescriptorBufferInfo{ *buffer, 0, size };
+    }
+
+
     // DescriptorSetBindings
     void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
                                             vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
@@ -2270,6 +2278,7 @@ namespace vkr
         loadTextures(device, gltfModel);
     }
 
+
     void Model::loadScenes(tinygltf::Model& gltfModel)
     {
         for (auto& scene : gltfModel.scenes) {
@@ -2277,6 +2286,7 @@ namespace vkr
             sc.nodes = scene.nodes;
         }
     }
+
 
     void Model::loadNodes(tinygltf::Model& gltfModel)
     {
@@ -2307,6 +2317,7 @@ namespace vkr
             nodes.push_back(nd);
         }
     }
+
 
     void Model::loadMeshes(const Device& device, tinygltf::Model& gltfModel)
     {
@@ -2449,6 +2460,7 @@ namespace vkr
         }
     }
 
+
     void Model::loadMaterials(tinygltf::Model& gltfModel)
     {
         for (auto& mat : gltfModel.materials) {
@@ -2505,6 +2517,7 @@ namespace vkr
             materials.push_back(material);
         }
     }
+
 
     void Model::loadTextures(const Device& device, tinygltf::Model& gltfModel)
     {
