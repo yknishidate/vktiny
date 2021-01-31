@@ -759,6 +759,11 @@ namespace vkr
         uint32_t mipLevels;
 
         uint32_t layerCount;
+
+        vk::DescriptorImageInfo createDescriptorInfo() const
+        {
+            return { *sampler, image->getView(), image->getLayout() };
+        }
     };
 
 
@@ -904,8 +909,6 @@ namespace vkr
 
 namespace vkr
 {
-
-    // TODO インクルードするので名前を付ける
 #if defined(_DEBUG)
     VKAPI_ATTR VkBool32 VKAPI_CALL
         debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
