@@ -331,7 +331,7 @@ namespace vkr
 
         vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
 
-        uint32_t getMinImageCount() const { return minImageCount; }
+        uint32_t getImageCount() const { return imageCount; }
 
         const std::vector<vk::Image>& getImages() const { return images; }
 
@@ -381,7 +381,7 @@ namespace vkr
 
         vk::UniqueSwapchainKHR swapChain;
 
-        uint32_t minImageCount;
+        uint32_t imageCount;
 
         vk::PresentModeKHR presentMode;
 
@@ -499,7 +499,17 @@ namespace vkr
 
         vk::DescriptorBufferInfo createDescriptorInfo() const;
 
+        void map();
+
+        void map(vk::DeviceSize size, vk::DeviceSize offset = 0);
+
+        void unmap();
+
+        void copy(void* data);
+
     private:
+
+        vk::Device device;
 
         vk::UniqueBuffer buffer;
 
@@ -508,6 +518,8 @@ namespace vkr
         vk::DeviceSize size;
 
         uint64_t deviceAddress;
+
+        void* mapped = nullptr;
     };
 
 
@@ -864,6 +876,8 @@ namespace vkr
 
         void loadFromFile(const Device& device, const std::string& filepath);
 
+        void setFlipY(bool flipY) { this->flipY = flipY; }
+
     private:
 
         void loadScenes(tinygltf::Model& gltfModel);
@@ -897,6 +911,8 @@ namespace vkr
         std::vector<Material> materials;
 
         std::vector<Texture> textures;
+
+        bool flipY{ true };
     };
 
 } // vkr
@@ -1404,9 +1420,9 @@ namespace vkr
         const auto& surface = device.getSurface();
 
         const auto surfaceFormat = chooseSwapSurfaceFormat(details.formats);
-        const auto actualPresentMode = chooseSwapPresentMode(details.presentModes);
-        const auto swapExtent = chooseSwapExtent(window, details.capabilities);
-        const auto imageCount = chooseImageCount(details.capabilities);
+        presentMode = chooseSwapPresentMode(details.presentModes);
+        extent = chooseSwapExtent(window, details.capabilities);
+        imageCount = chooseImageCount(details.capabilities);
 
         // Create swap chain
         vk::SwapchainCreateInfoKHR createInfo{};
@@ -1414,12 +1430,12 @@ namespace vkr
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = swapExtent;
+        createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
         createInfo.imageSharingMode = vk::SharingMode::eExclusive;
         createInfo.preTransform = details.capabilities.currentTransform;
-        createInfo.presentMode = actualPresentMode;
+        createInfo.presentMode = presentMode;
         createInfo.clipped = true;
 
         if (device.getGraphicsFamilyIndex() != device.getPresentFamilyIndex()) {
@@ -1431,10 +1447,7 @@ namespace vkr
 
         swapChain = device.getHandle().createSwapchainKHRUnique(createInfo);
 
-        minImageCount = imageCount;
-        presentMode = actualPresentMode;
         format = surfaceFormat.format;
-        extent = swapExtent;
         images = device.getHandle().getSwapchainImagesKHR(*swapChain);
 
         // Create image views
@@ -1797,13 +1810,13 @@ namespace vkr
 
     // Buffer
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage)
-        : size(size)
+        : device(device.getHandle()), size(size)
     {
         buffer = device.getHandle().createBufferUnique({ {}, size, usage });
     }
 
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
-        : size(size)
+        : device(device.getHandle()), size(size)
     {
         // Create buffer
         buffer = device.getHandle().createBufferUnique({ {}, size, usage });
@@ -1833,7 +1846,7 @@ namespace vkr
     }
 
     Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data)
-        : size(size)
+        : device(device.getHandle()), size(size)
     {
         // Create buffer
         if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
@@ -1866,8 +1879,11 @@ namespace vkr
 
         if (properties & vk::MemoryPropertyFlagBits::eHostVisible) {
             // If it is a host buffer, just copy the data.
-            void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
-            memcpy(dataPtr, data, static_cast<size_t>(size));
+            //void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
+            //memcpy(dataPtr, data, static_cast<size_t>(size));
+
+            map();
+            memcpy(mapped, data, static_cast<size_t>(size));
 
             if (!(properties & vk::MemoryPropertyFlagBits::eHostCoherent)) {
                 vk::MappedMemoryRange mapped_range{};
@@ -1877,7 +1893,7 @@ namespace vkr
                 device.getHandle().flushMappedMemoryRanges(mapped_range);
             }
 
-            device.getHandle().unmapMemory(*memory);
+            //device.getHandle().unmapMemory(*memory);
 
         } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
             // If it is a device buffer, send it to the device with a copy command via the staging buffer.
@@ -1904,6 +1920,29 @@ namespace vkr
     vk::DescriptorBufferInfo Buffer::createDescriptorInfo() const
     {
         return vk::DescriptorBufferInfo{ *buffer, 0, size };
+    }
+
+    void Buffer::map()
+    {
+        mapped = device.mapMemory(*memory, 0, size);
+    }
+
+    void Buffer::map(vk::DeviceSize size, vk::DeviceSize offset)
+    {
+        mapped = device.mapMemory(*memory, offset, size);
+    }
+
+    void Buffer::unmap()
+    {
+        if (mapped) {
+            device.unmapMemory(*memory);
+            mapped = nullptr;
+        }
+    }
+
+    void Buffer::copy(void* data)
+    {
+        memcpy(mapped, data, size);
     }
 
 
@@ -2254,7 +2293,6 @@ namespace vkr
         indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
     }
 
-
     void Model::loadFromFile(const Device& device, const std::string& filepath)
     {
         this->device = device.getHandle();
@@ -2397,6 +2435,10 @@ namespace vkr
                 Vertex vert{};
                 vert.pos = glm::make_vec3(&pos[v * 3]);
                 vert.normal = glm::normalize(glm::vec3(normal ? glm::make_vec3(&normal[v * 3]) : glm::vec3(0.0f)));
+                if (flipY) {
+                    vert.pos = -vert.pos;
+                    vert.normal = -vert.normal;
+                }
                 vert.uv = uv ? glm::make_vec2(&uv[v * 2]) : glm::vec2(0.0f);
                 vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&joint0[v * 4])) : glm::vec4(0.0f);
                 if (color) {
