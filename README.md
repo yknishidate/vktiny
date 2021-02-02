@@ -2,9 +2,6 @@
 
 A header only library to use Vulkan Ray Tracing quickly.
 
-[This library is currently being redesigned.]
-
-<!--
 ## Features
 
 -   Support Vulkan Ray Tracing Final Specification
@@ -25,7 +22,10 @@ std::vector<vkr::Vertex> vertices{
 
 std::vector<uint32_t> indices { 0, 1, 2 };
 
-vkr::BottomLevelAccelerationStructure blas{ device, vertices, indices };
+Mesh mesh;
+mesh.create(device, vertices, indices);
+
+vkr::BottomLevelAccelerationStructure blas{ device, mesh };
 
 vkr::AccelerationStructureInstance asInstance{ 0, glm::mat4(1), 0 };
 vkr::TopLevelAccelerationStructure tlas{ device, blas, asInstance };
@@ -39,7 +39,7 @@ Vulkan Setup
 vkr::Window    window    { "vkray", 800, 600 };
 vkr::Instance  instance  { window, true };
 vkr::Device    device    { instance };
-vkr::SwapChain swapChain { device };
+vkr::SwapChain swapChain { device, window };
 ```
 
 <br>
@@ -78,4 +78,4 @@ Libraries
 -   [Vulkan-Samples](https://github.com/KhronosGroup/Vulkan-Samples)
 -   [rtxON](https://github.com/iOrange/rtxON)
 -   [RayTracingInVulkan](https://github.com/GPSnoopy/RayTracingInVulkan)
--   [SaschaWillems/Vulkan](https://github.com/SaschaWillems/Vulkan) -->
+-   [SaschaWillems/Vulkan](https://github.com/SaschaWillems/Vulkan)
