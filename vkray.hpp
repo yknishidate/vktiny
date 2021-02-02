@@ -683,7 +683,13 @@ namespace vkr
 
     struct AccelerationStructureInstance
     {
-        uint32_t modelIndex;
+        AccelerationStructureInstance() = default;
+
+        AccelerationStructureInstance(const Device& device, const Node& node);
+
+        AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix, uint32_t textureOffset);
+
+        uint32_t blasIndex;
 
         glm::mat4 transformMatrix;
 
@@ -786,7 +792,7 @@ namespace vkr
     };
 
 
-    enum class AlphaMode
+    enum class AlphaMode : int
     {
         Opaque,
         Mask,
@@ -796,24 +802,23 @@ namespace vkr
 
     struct Material
     {
-        // Base color
+        // Textures
         int baseColorTexture{ -1 };
+        int metallicRoughnessTexture{ -1 };
+        int normalTexture{ -1 };
+        int occlusionTexture{ -1 };
+        int emissiveTexture{ -1 };
+
         glm::vec4 baseColorFactor{ 1.0f };
 
-        // Metallic / Roughness
-        int metallicRoughnessTexture{ -1 };
         float metallicFactor{ 1.0f };
+
         float roughnessFactor{ 1.0f };
 
-        int normalTexture{ -1 };
-
-        int occlusionTexture{ -1 };
-
-        // Emissive
-        int emissiveTexture{ -1 };
         glm::vec3 emissiveFactor{ 0.0f };
 
         AlphaMode alphaMode{ AlphaMode::Opaque };
+
         float alphaCutoff{ 0.5f };
 
         bool doubleSided{ false };
@@ -823,7 +828,14 @@ namespace vkr
     struct Mesh
     {
         Mesh() = default;
+
         Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+
+        void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+
+        Material getMaterial();
+
+        Model* model = nullptr;
 
         // Vertex
         std::vector<Vertex> vertices;
@@ -836,13 +848,15 @@ namespace vkr
         std::unique_ptr<Buffer> indexBuffer;
 
         int material{ -1 };
-
-        void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
     };
 
 
     struct Node
     {
+        const Mesh& getMesh();
+
+        Model* model = nullptr;
+
         std::vector<int> children;
 
         int mesh{ -1 };
@@ -859,6 +873,8 @@ namespace vkr
 
     struct Scene
     {
+        Model* model = nullptr;
+
         std::vector<int> nodes;
     };
 
@@ -2253,7 +2269,7 @@ namespace vkr
     {
         vk::AccelerationStructureInstanceKHR asInstance{};
         asInstance.setTransform(toVkMatrix(instance.transformMatrix));
-        asInstance.setInstanceCustomIndex(instance.modelIndex);
+        asInstance.setInstanceCustomIndex(instance.blasIndex);
         asInstance.setMask(0xFF);
         asInstance.setInstanceShaderBindingTableRecordOffset(0);
         asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
@@ -2276,6 +2292,19 @@ namespace vkr
         uint32_t instanceCount = 1;
         build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
+
+    AccelerationStructureInstance::AccelerationStructureInstance(const Device& device, const Node& node)
+    {
+
+    }
+
+    AccelerationStructureInstance::AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix, uint32_t textureOffset)
+        : blasIndex(blasIndex)
+        , transformMatrix(transformMatrix)
+        , textureOffset(textureOffset)
+    {
+    }
+
 
 } // vkr
 
@@ -2306,6 +2335,20 @@ namespace vkr
 
         uint64_t indexBufferSize = indices.size() * sizeof(uint32_t);
         indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
+    }
+
+    Material Mesh::getMaterial()
+    {
+        assert(model);
+        assert(material != -1);
+        return model->getMaterials()[material];
+    }
+
+    const Mesh& Node::getMesh()
+    {
+        assert(model);
+        assert(mesh != -1);
+        return model->getMeshes()[mesh];
     }
 
     void Model::loadFromFile(const Device& device, const std::string& filepath)
@@ -2340,6 +2383,8 @@ namespace vkr
         for (auto& scene : gltfModel.scenes) {
             Scene sc;
             sc.nodes = scene.nodes;
+            sc.model = this;
+            scenes.push_back(std::move(sc));
         }
     }
 
@@ -2370,6 +2415,7 @@ namespace vkr
                 nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
             };
 
+            nd.model = this;
             nodes.push_back(nd);
         }
     }
@@ -2514,6 +2560,7 @@ namespace vkr
             }
 
             Mesh mesh;
+            mesh.model = this;
             mesh.create(device, vertices, indices);
             mesh.material = gltfPrimitive.material;
             meshes.push_back(std::move(mesh));
