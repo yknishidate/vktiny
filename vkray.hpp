@@ -822,6 +822,9 @@ namespace vkr
 
     struct Mesh
     {
+        Mesh() = default;
+        Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+
         // Vertex
         std::vector<Vertex> vertices;
 
@@ -2278,6 +2281,11 @@ namespace vkr
 
 namespace vkr
 {
+    Mesh::Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    {
+        create(device, vertices, indices);
+    }
+
     void Mesh::create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
     {
         this->vertices = vertices;
