@@ -126,7 +126,7 @@ public:
 
         // Create TLAS
         glm::mat4 worldMatrix{ 1 };
-        vkr::AccelerationStructureInstance instance{ 0, worldMatrix, 0 };
+        vkr::AccelerationStructureInstance instance{ 0, worldMatrix };
 
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 

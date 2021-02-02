@@ -687,13 +687,11 @@ namespace vkr
 
         AccelerationStructureInstance(const Device& device, const Node& node);
 
-        AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix, uint32_t textureOffset);
+        AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix);
 
         uint32_t blasIndex;
 
         glm::mat4 transformMatrix;
-
-        uint32_t textureOffset;
     };
 
 
@@ -2295,13 +2293,12 @@ namespace vkr
 
     AccelerationStructureInstance::AccelerationStructureInstance(const Device& device, const Node& node)
     {
-
+        blasIndex = node.mesh;
     }
 
-    AccelerationStructureInstance::AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix, uint32_t textureOffset)
+    AccelerationStructureInstance::AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix)
         : blasIndex(blasIndex)
         , transformMatrix(transformMatrix)
-        , textureOffset(textureOffset)
     {
     }
 

@@ -32,7 +32,7 @@ public:
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
         // Create TLAS
-        vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1), 0 };
+        vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1) };
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
         // Load shaders

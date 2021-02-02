@@ -10,6 +10,38 @@ using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;
 using vksgt = vk::RayTracingShaderGroupTypeKHR;
 
+struct Camera
+{
+    float phi{ 0 };
+    float theta{ 0 };
+
+    float fov{ 45 };
+    float aspect{ 4.0f / 3.0f };
+    float znear{ 0.001 };
+    float zfar{ 1000 };
+
+    glm::vec4 pos{ 0, 0, 3, 1 };
+    glm::vec3 target{ 0, -0.25, 0 };
+    glm::vec3 up{ 0, 1, 0 };
+    glm::mat4 invView{ 1 };
+    glm::mat4 invProj{ 1 };
+
+    Camera()
+    {
+        invView = glm::inverse(glm::lookAt(glm::vec3(pos), target, up));
+        invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
+    }
+
+    void update(uint64_t frame)
+    {
+        glm::mat4 rotX = glm::rotate(glm::radians(float(30)), glm::vec3(1, 0, 0));
+        glm::mat4 rotY = glm::rotate(glm::radians(float(frame)), glm::vec3(0, 1, 0));
+
+        invView = glm::inverse(glm::lookAt(glm::vec3(rotY * rotX * pos), target, up));
+        invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
+    }
+};
+
 struct UniformData
 {
     glm::mat4 model;
@@ -33,18 +65,9 @@ public:
 
     void updateUniformBuffer()
     {
-        glm::vec4 camPos(0, 0, 3, 1);
-        glm::mat4 rotX = glm::rotate(glm::radians(30.0f), glm::vec3(1, 0, 0));
-        glm::mat4 rotY = glm::rotate(glm::radians(float(frame)), glm::vec3(0, 1, 0));
-
-        uniformData.invView = glm::inverse(glm::lookAt(
-            glm::vec3(rotY * rotX * camPos),
-            glm::vec3(0, -0.25, 0),
-            glm::vec3(0, 1, 0)
-        ));
-        uniformData.invProj = glm::inverse(glm::perspective(
-            glm::radians(45.0f), 800.0f / 600.0f, 0.001f, 10000.0f
-        ));
+        camera.update(frame);
+        uniformData.invView = camera.invView;
+        uniformData.invProj = camera.invProj;
         ubo->copy(&uniformData);
     }
 
@@ -79,7 +102,7 @@ public:
 
         // Create TLAS
         glm::mat4 worldMatrix{ 1 };
-        vkr::AccelerationStructureInstance instance{ 0, worldMatrix, 0 };
+        vkr::AccelerationStructureInstance instance{ 0, worldMatrix };
 
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
 
@@ -124,7 +147,6 @@ public:
         }
 
         device->waitIdle();
-
     }
 
 private:
@@ -148,6 +170,7 @@ private:
     UniformData uniformData;
     std::unique_ptr<vkr::Buffer> ubo;
 
+    Camera camera;
 };
 
 int main()
