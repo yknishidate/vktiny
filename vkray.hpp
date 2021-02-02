@@ -151,6 +151,13 @@ namespace vkr
             glfwWaitEvents();
         }
 
+        glm::vec2 getCursorPos()
+        {
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            return glm::vec2(xpos, ypos);
+        }
+
         vk::SurfaceKHR createWindowSurface(vk::Instance instance) const
         {
             VkSurfaceKHR surface;
