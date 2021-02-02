@@ -22,7 +22,7 @@ std::vector<vkr::Vertex> vertices{
 
 std::vector<uint32_t> indices { 0, 1, 2 };
 
-Mesh mesh;
+vkr::Mesh mesh;
 mesh.create(device, vertices, indices);
 
 vkr::BottomLevelAccelerationStructure blas{ device, mesh };
