@@ -26,7 +26,7 @@ vkr::Mesh mesh{ device, vertices, indices };
 
 vkr::BottomLevelAccelerationStructure blas{ device, mesh };
 
-vkr::AccelerationStructureInstance asInstance{ 0, glm::mat4(1), 0 };
+vkr::AccelerationStructureInstance asInstance{ 0, glm::mat4(1) };
 vkr::TopLevelAccelerationStructure tlas{ device, blas, asInstance };
 ```
 
