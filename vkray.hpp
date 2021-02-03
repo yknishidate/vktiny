@@ -831,7 +831,7 @@ namespace vkr
 
         void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
-        Material getMaterial();
+        Material getMaterial() const;
 
         Model* model = nullptr;
 
@@ -851,7 +851,7 @@ namespace vkr
 
     struct Node
     {
-        const Mesh& getMesh();
+        const Mesh& getMesh() const;
 
         Model* model = nullptr;
 
@@ -2334,14 +2334,14 @@ namespace vkr
         indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
     }
 
-    Material Mesh::getMaterial()
+    Material Mesh::getMaterial() const
     {
         assert(model);
         assert(material != -1);
         return model->getMaterials()[material];
     }
 
-    const Mesh& Node::getMesh()
+    const Mesh& Node::getMesh() const
     {
         assert(model);
         assert(mesh != -1);
