@@ -741,10 +741,16 @@ namespace vkr
 
         TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
 
+        TopLevelAccelerationStructure(const Device& device, const Scene& scene);
+
         vk::WriteDescriptorSetAccelerationStructureKHR createWrite() const
         {
             return { 1, &accelerationStructure.get() };
         }
+
+        std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
+        vk::DeviceSize size;
+        std::unique_ptr<Buffer> instancesBuffer;
     };
 
 
@@ -825,15 +831,15 @@ namespace vkr
 
     struct Mesh
     {
-        Mesh() = default;
+        //Mesh() = default;
 
         Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
-        void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+        //void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
-        Material getMaterial() const;
+        //Material getMaterial() const;
 
-        Model* model = nullptr;
+        //Model* model = nullptr;
 
         // Vertex
         std::vector<Vertex> vertices;
@@ -851,9 +857,9 @@ namespace vkr
 
     struct Node
     {
-        const Mesh& getMesh() const;
+        //const Mesh& getMesh() const;
 
-        Model* model = nullptr;
+        //Model* model = nullptr;
 
         std::vector<int> children;
 
@@ -2291,6 +2297,12 @@ namespace vkr
         build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
     }
 
+    TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, const Scene& scene)
+    {
+        // TODO 実装
+    }
+
+
     AccelerationStructureInstance::AccelerationStructureInstance(const Device& device, const Node& node)
     {
         blasIndex = node.mesh;
@@ -2309,11 +2321,8 @@ namespace vkr
 {
     Mesh::Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
     {
-        create(device, vertices, indices);
-    }
+        //create(device, vertices, indices);
 
-    void Mesh::create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
-    {
         this->vertices = vertices;
         this->indices = indices;
 
@@ -2334,19 +2343,41 @@ namespace vkr
         indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
     }
 
-    Material Mesh::getMaterial() const
-    {
-        assert(model);
-        assert(material != -1);
-        return model->getMaterials()[material];
-    }
+    //void Mesh::create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    //{
+    //    this->vertices = vertices;
+    //    this->indices = indices;
 
-    const Mesh& Node::getMesh() const
-    {
-        assert(model);
-        assert(mesh != -1);
-        return model->getMeshes()[mesh];
-    }
+    //    using vkbu = vk::BufferUsageFlagBits;
+    //    using vkmp = vk::MemoryPropertyFlagBits;
+
+    //    vk::BufferUsageFlags usage{ vkbu::eAccelerationStructureBuildInputReadOnlyKHR
+    //                              | vkbu::eStorageBuffer
+    //                              | vkbu::eShaderDeviceAddress
+    //                              | vkbu::eTransferDst };
+
+    //    vk::MemoryPropertyFlags properties{ vkmp::eDeviceLocal };
+
+    //    uint64_t vertexBufferSize = vertices.size() * sizeof(Vertex);
+    //    vertexBuffer = std::make_unique<Buffer>(device, vertexBufferSize, usage, properties, (void*)vertices.data());
+
+    //    uint64_t indexBufferSize = indices.size() * sizeof(uint32_t);
+    //    indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
+    //}
+
+    //Material Mesh::getMaterial() const
+    //{
+    //    assert(model);
+    //    assert(material != -1);
+    //    return model->getMaterials()[material];
+    //}
+
+    //const Mesh& Node::getMesh() const
+    //{
+    //    assert(model);
+    //    assert(mesh != -1);
+    //    return model->getMeshes()[mesh];
+    //}
 
     void Model::loadFromFile(const Device& device, const std::string& filepath)
     {
@@ -2412,7 +2443,7 @@ namespace vkr
                 nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
             };
 
-            nd.model = this;
+            //nd.model = this;
             nodes.push_back(nd);
         }
     }
@@ -2556,9 +2587,9 @@ namespace vkr
                     return;
             }
 
-            Mesh mesh;
-            mesh.model = this;
-            mesh.create(device, vertices, indices);
+            Mesh mesh(device, vertices, indices);
+            //mesh.model = this;
+            //mesh.create(device, vertices, indices);
             mesh.material = gltfPrimitive.material;
             meshes.push_back(std::move(mesh));
         }

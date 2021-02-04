@@ -24,7 +24,9 @@ public:
         model.loadFromFile(*device, "samples/assets/Cube/Cube.gltf");
 
         const vkr::Mesh& mesh = model.getMeshes()[0];
-        const vkr::Texture& texture = model.getTextures()[0];
+        const vkr::Material material = model.getMaterials()[mesh.material];
+        const vkr::Texture& texture = model.getTextures()[material.baseColorTexture];
+
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
         // Create TLAS
@@ -33,9 +35,9 @@ public:
 
         // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/02_texture_loading/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/02_texture_loading/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/02_texture_loading/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("samples/02_gltf_texture/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/02_gltf_texture/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/02_gltf_texture/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);

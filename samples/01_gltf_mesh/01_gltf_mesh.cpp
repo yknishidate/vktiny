@@ -32,9 +32,9 @@ public:
 
         // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/01_gltf_loading/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/01_gltf_loading/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/01_gltf_loading/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("samples/01_gltf_mesh/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/01_gltf_mesh/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/01_gltf_mesh/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
