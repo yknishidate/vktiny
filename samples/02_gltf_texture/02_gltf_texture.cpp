@@ -24,8 +24,8 @@ public:
         model.loadFromFile(*device, "samples/assets/Cube/Cube.gltf");
 
         const vkr::Mesh& mesh = model.getMeshes()[0];
-        const vkr::Material material = model.getMaterials()[mesh.materialID];
-        const vkr::Texture& texture = model.getTextures()[material.baseColorTextureID];
+        const vkr::Material material = model.getMaterials()[mesh.materialIndex];
+        const vkr::Texture& texture = model.getTextures()[material.baseColorTextureIndex];
 
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 

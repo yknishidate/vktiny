@@ -115,9 +115,9 @@ public:
         //model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
 
         auto& node = model.getNodes()[0];
-        auto& mesh = model.getMeshes()[node.meshID];
-        auto& material = model.getMaterials()[mesh.materialID];
-        auto& texture = model.getTextures()[material.baseColorTextureID];
+        auto& mesh = model.getMeshes()[node.meshIndex];
+        auto& material = model.getMaterials()[mesh.materialIndex];
+        auto& texture = model.getTextures()[material.baseColorTextureIndex];
 
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 

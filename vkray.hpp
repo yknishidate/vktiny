@@ -809,11 +809,11 @@ namespace vkr
     struct Material
     {
         // Textures
-        int baseColorTextureID{ -1 };
-        int metallicRoughnessTextureID{ -1 };
-        int normalTextureID{ -1 };
-        int occlusionTextureID{ -1 };
-        int emissiveTextureID{ -1 };
+        int baseColorTextureIndex{ -1 };
+        int metallicRoughnessTextureIndex{ -1 };
+        int normalTextureIndex{ -1 };
+        int occlusionTextureIndex{ -1 };
+        int emissiveTextureIndex{ -1 };
 
         glm::vec4 baseColorFactor{ 1.0f };
 
@@ -845,7 +845,7 @@ namespace vkr
 
         std::unique_ptr<Buffer> indexBuffer;
 
-        int materialID{ -1 };
+        int materialIndex{ -1 };
     };
 
 
@@ -853,7 +853,7 @@ namespace vkr
     {
         std::vector<int> children;
 
-        int meshID{ -1 };
+        int meshIndex{ -1 };
 
         glm::mat4 worldMatrix{ 1.0f };
 
@@ -867,7 +867,7 @@ namespace vkr
 
     struct Scene
     {
-        std::vector<int> nodeIDs;
+        std::vector<int> nodeIndices;
     };
 
 
@@ -950,7 +950,7 @@ namespace vkr
         debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                     VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
     {
-        std::cerr << "messageIDName   = " << pCallbackData->pMessageIdName << "\n";
+        std::cerr << "messageIndexName   = " << pCallbackData->pMessageIdName << "\n";
 
         for (uint8_t i = 0; i < pCallbackData->objectCount; i++) {
             std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)) << "\n";
@@ -2299,7 +2299,7 @@ namespace vkr
 
     AccelerationStructureInstance::AccelerationStructureInstance(const Device& device, const Node& node)
     {
-        blasIndex = node.meshID;
+        blasIndex = node.meshIndex;
     }
 
     AccelerationStructureInstance::AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix)
@@ -2366,7 +2366,7 @@ namespace vkr
     {
         for (auto& scene : gltfModel.scenes) {
             Scene sc;
-            sc.nodeIDs = scene.nodes;
+            sc.nodeIndices = scene.nodes;
             scenes.push_back(std::move(sc));
         }
     }
@@ -2377,7 +2377,7 @@ namespace vkr
         for (auto& node : gltfModel.nodes) {
             Node nd;
             nd.children = node.children;
-            nd.meshID = node.mesh;
+            nd.meshIndex = node.mesh;
 
             glm::vec3 translation{ 0.0f };
             if (node.translation.size() == 3) {
@@ -2542,7 +2542,7 @@ namespace vkr
             }
 
             Mesh mesh(device, vertices, indices);
-            mesh.materialID = gltfPrimitive.material;
+            mesh.materialIndex = gltfPrimitive.material;
             meshes.push_back(std::move(mesh));
         }
     }
@@ -2555,7 +2555,7 @@ namespace vkr
 
             // Base color
             if (mat.values.find("baseColorTexture") != mat.values.end()) {
-                material.baseColorTextureID = mat.values["baseColorTexture"].TextureIndex();
+                material.baseColorTextureIndex = mat.values["baseColorTexture"].TextureIndex();
             }
             if (mat.values.find("baseColorFactor") != mat.values.end()) {
                 material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
@@ -2563,7 +2563,7 @@ namespace vkr
 
             // Metallic / Roughness
             if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-                material.metallicRoughnessTextureID = mat.values["metallicRoughnessTexture"].TextureIndex();
+                material.metallicRoughnessTextureIndex = mat.values["metallicRoughnessTexture"].TextureIndex();
             }
             if (mat.values.find("roughnessFactor") != mat.values.end()) {
                 material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
@@ -2574,17 +2574,17 @@ namespace vkr
 
             // Normal
             if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
-                material.normalTextureID = mat.additionalValues["normalTexture"].TextureIndex();
+                material.normalTextureIndex = mat.additionalValues["normalTexture"].TextureIndex();
             }
 
             // Emissive
             if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
-                material.emissiveTextureID = mat.additionalValues["emissiveTexture"].TextureIndex();
+                material.emissiveTextureIndex = mat.additionalValues["emissiveTexture"].TextureIndex();
             }
 
             // Occlusion
             if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
-                material.occlusionTextureID = mat.additionalValues["occlusionTexture"].TextureIndex();
+                material.occlusionTextureIndex = mat.additionalValues["occlusionTexture"].TextureIndex();
             }
 
             // Alpha
