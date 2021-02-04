@@ -831,15 +831,7 @@ namespace vkr
 
     struct Mesh
     {
-        //Mesh() = default;
-
         Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-
-        //void create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-
-        //Material getMaterial() const;
-
-        //Model* model = nullptr;
 
         // Vertex
         std::vector<Vertex> vertices;
@@ -857,10 +849,6 @@ namespace vkr
 
     struct Node
     {
-        //const Mesh& getMesh() const;
-
-        //Model* model = nullptr;
-
         std::vector<int> children;
 
         int mesh{ -1 };
@@ -2321,8 +2309,6 @@ namespace vkr
 {
     Mesh::Mesh(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
     {
-        //create(device, vertices, indices);
-
         this->vertices = vertices;
         this->indices = indices;
 
@@ -2342,42 +2328,6 @@ namespace vkr
         uint64_t indexBufferSize = indices.size() * sizeof(uint32_t);
         indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
     }
-
-    //void Mesh::create(const Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
-    //{
-    //    this->vertices = vertices;
-    //    this->indices = indices;
-
-    //    using vkbu = vk::BufferUsageFlagBits;
-    //    using vkmp = vk::MemoryPropertyFlagBits;
-
-    //    vk::BufferUsageFlags usage{ vkbu::eAccelerationStructureBuildInputReadOnlyKHR
-    //                              | vkbu::eStorageBuffer
-    //                              | vkbu::eShaderDeviceAddress
-    //                              | vkbu::eTransferDst };
-
-    //    vk::MemoryPropertyFlags properties{ vkmp::eDeviceLocal };
-
-    //    uint64_t vertexBufferSize = vertices.size() * sizeof(Vertex);
-    //    vertexBuffer = std::make_unique<Buffer>(device, vertexBufferSize, usage, properties, (void*)vertices.data());
-
-    //    uint64_t indexBufferSize = indices.size() * sizeof(uint32_t);
-    //    indexBuffer = std::make_unique<Buffer>(device, indexBufferSize, usage, properties, (void*)indices.data());
-    //}
-
-    //Material Mesh::getMaterial() const
-    //{
-    //    assert(model);
-    //    assert(material != -1);
-    //    return model->getMaterials()[material];
-    //}
-
-    //const Mesh& Node::getMesh() const
-    //{
-    //    assert(model);
-    //    assert(mesh != -1);
-    //    return model->getMeshes()[mesh];
-    //}
 
     void Model::loadFromFile(const Device& device, const std::string& filepath)
     {
@@ -2443,7 +2393,6 @@ namespace vkr
                 nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
             };
 
-            //nd.model = this;
             nodes.push_back(nd);
         }
     }
@@ -2588,8 +2537,6 @@ namespace vkr
             }
 
             Mesh mesh(device, vertices, indices);
-            //mesh.model = this;
-            //mesh.create(device, vertices, indices);
             mesh.material = gltfPrimitive.material;
             meshes.push_back(std::move(mesh));
         }
