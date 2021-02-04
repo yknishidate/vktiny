@@ -711,8 +711,10 @@ namespace vkr
 
     protected:
 
-        void build(const Device& device, vk::AccelerationStructureGeometryKHR& geometry,
-                   const vk::AccelerationStructureTypeKHR& asType, uint32_t primitiveCount);
+        void build(const Device& device,
+                   vk::AccelerationStructureGeometryKHR& geometry,
+                   const vk::AccelerationStructureTypeKHR& asType,
+                   uint32_t primitiveCount);
 
         void createBuffer(const Device& device, vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo);
 
@@ -865,8 +867,6 @@ namespace vkr
 
     struct Scene
     {
-        Model* model = nullptr;
-
         std::vector<int> nodes;
     };
 
@@ -2361,7 +2361,6 @@ namespace vkr
         for (auto& scene : gltfModel.scenes) {
             Scene sc;
             sc.nodes = scene.nodes;
-            sc.model = this;
             scenes.push_back(std::move(sc));
         }
     }
