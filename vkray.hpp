@@ -743,7 +743,7 @@ namespace vkr
 
         TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
 
-        TopLevelAccelerationStructure(const Device& device, const Scene& scene);
+        //TopLevelAccelerationStructure(const Device& device, const Scene& scene);
 
         vk::WriteDescriptorSetAccelerationStructureKHR createWrite() const
         {
@@ -809,11 +809,11 @@ namespace vkr
     struct Material
     {
         // Textures
-        int baseColorTexture{ -1 };
-        int metallicRoughnessTexture{ -1 };
-        int normalTexture{ -1 };
-        int occlusionTexture{ -1 };
-        int emissiveTexture{ -1 };
+        int baseColorTextureID{ -1 };
+        int metallicRoughnessTextureID{ -1 };
+        int normalTextureID{ -1 };
+        int occlusionTextureID{ -1 };
+        int emissiveTextureID{ -1 };
 
         glm::vec4 baseColorFactor{ 1.0f };
 
@@ -845,7 +845,7 @@ namespace vkr
 
         std::unique_ptr<Buffer> indexBuffer;
 
-        int material{ -1 };
+        int materialID{ -1 };
     };
 
 
@@ -853,7 +853,7 @@ namespace vkr
     {
         std::vector<int> children;
 
-        int mesh{ -1 };
+        int meshID{ -1 };
 
         glm::mat4 worldMatrix{ 1.0f };
 
@@ -867,7 +867,7 @@ namespace vkr
 
     struct Scene
     {
-        std::vector<int> nodes;
+        std::vector<int> nodeIDs;
     };
 
 
@@ -895,6 +895,8 @@ namespace vkr
         void loadFromFile(const Device& device, const std::string& filepath);
 
         void setFlipY(bool flipY) { this->flipY = flipY; }
+
+        //void buildAS();
 
     private:
 
@@ -2257,7 +2259,9 @@ namespace vkr
     }
 
     // TopLevelAccelerationStructure
-    TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance)
+    TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device,
+                                                                 BottomLevelAccelerationStructure& blas,
+                                                                 AccelerationStructureInstance& instance)
     {
         vk::AccelerationStructureInstanceKHR asInstance{};
         asInstance.setTransform(toVkMatrix(instance.transformMatrix));
@@ -2266,34 +2270,36 @@ namespace vkr
         asInstance.setInstanceShaderBindingTableRecordOffset(0);
         asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
         asInstance.setAccelerationStructureReference(blas.getDeviceAddress());
+        asInstances.push_back(asInstance);
 
-        vk::DeviceSize size{ sizeof(VkAccelerationStructureInstanceKHR) };
-        Buffer instancesBuffer{ device, size,
-            vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            vk::MemoryPropertyFlagBits::eDeviceLocal, &asInstance };
+        size = vk::DeviceSize{ sizeof(VkAccelerationStructureInstanceKHR) * asInstances.size() };
+        instancesBuffer = std::make_unique<Buffer>(device, size,
+                                                   vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+                                                   | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                                   vk::MemoryPropertyFlagBits::eDeviceLocal, asInstances.data());
 
         vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
         instancesData.setArrayOfPointers(false);
-        instancesData.setData(instancesBuffer.getDeviceAddress());
+        instancesData.setData(instancesBuffer->getDeviceAddress());
 
         vk::AccelerationStructureGeometryKHR geometry{};
         geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
         geometry.setGeometry({ instancesData });
         geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
 
-        uint32_t instanceCount = 1;
-        build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instanceCount);
+        build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, asInstances.size());
     }
 
-    TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, const Scene& scene)
-    {
-        // TODO 実装
-    }
+    //TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, const Scene& scene)
+    //{
+    //    // TODO 実装
+
+    //}
 
 
     AccelerationStructureInstance::AccelerationStructureInstance(const Device& device, const Node& node)
     {
-        blasIndex = node.mesh;
+        blasIndex = node.meshID;
     }
 
     AccelerationStructureInstance::AccelerationStructureInstance(uint32_t blasIndex, const glm::mat4& transformMatrix)
@@ -2360,7 +2366,7 @@ namespace vkr
     {
         for (auto& scene : gltfModel.scenes) {
             Scene sc;
-            sc.nodes = scene.nodes;
+            sc.nodeIDs = scene.nodes;
             scenes.push_back(std::move(sc));
         }
     }
@@ -2371,7 +2377,7 @@ namespace vkr
         for (auto& node : gltfModel.nodes) {
             Node nd;
             nd.children = node.children;
-            nd.mesh = node.mesh;
+            nd.meshID = node.mesh;
 
             glm::vec3 translation{ 0.0f };
             if (node.translation.size() == 3) {
@@ -2536,7 +2542,7 @@ namespace vkr
             }
 
             Mesh mesh(device, vertices, indices);
-            mesh.material = gltfPrimitive.material;
+            mesh.materialID = gltfPrimitive.material;
             meshes.push_back(std::move(mesh));
         }
     }
@@ -2549,7 +2555,7 @@ namespace vkr
 
             // Base color
             if (mat.values.find("baseColorTexture") != mat.values.end()) {
-                material.baseColorTexture = mat.values["baseColorTexture"].TextureIndex();
+                material.baseColorTextureID = mat.values["baseColorTexture"].TextureIndex();
             }
             if (mat.values.find("baseColorFactor") != mat.values.end()) {
                 material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
@@ -2557,7 +2563,7 @@ namespace vkr
 
             // Metallic / Roughness
             if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-                material.metallicRoughnessTexture = mat.values["metallicRoughnessTexture"].TextureIndex();
+                material.metallicRoughnessTextureID = mat.values["metallicRoughnessTexture"].TextureIndex();
             }
             if (mat.values.find("roughnessFactor") != mat.values.end()) {
                 material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
@@ -2568,17 +2574,17 @@ namespace vkr
 
             // Normal
             if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
-                material.normalTexture = mat.additionalValues["normalTexture"].TextureIndex();
+                material.normalTextureID = mat.additionalValues["normalTexture"].TextureIndex();
             }
 
             // Emissive
             if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
-                material.emissiveTexture = mat.additionalValues["emissiveTexture"].TextureIndex();
+                material.emissiveTextureID = mat.additionalValues["emissiveTexture"].TextureIndex();
             }
 
             // Occlusion
             if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
-                material.occlusionTexture = mat.additionalValues["occlusionTexture"].TextureIndex();
+                material.occlusionTextureID = mat.additionalValues["occlusionTexture"].TextureIndex();
             }
 
             // Alpha

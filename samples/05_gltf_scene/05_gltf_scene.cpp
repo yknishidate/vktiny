@@ -99,8 +99,12 @@ public:
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device, *window);
 
-        window->onCursorPosition = [this](const double xpos, const double ypos) { onCursorPosition(xpos, ypos); };
-        window->onMouseButton = [this](const int button, const int action, const int mods) { onMouseButton(button, action, mods); };
+        window->onCursorPosition = [this](const double xpos, const double ypos) {
+            onCursorPosition(xpos, ypos);
+        };
+        window->onMouseButton = [this](const int button, const int action, const int mods) {
+            onMouseButton(button, action, mods);
+        };
 
         // Create storage image
         storageImage = swapChain->createStorageImage();
@@ -111,18 +115,9 @@ public:
         //model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
 
         auto& node = model.getNodes()[0];
-
-        // Get mesh
-        auto meshIndex = node.mesh;
-        auto& mesh = model.getMeshes()[meshIndex];
-
-        // Get material
-        auto materialIndex = mesh.material;
-        auto& material = model.getMaterials()[materialIndex];
-
-        // Get base color texture
-        auto textureIndex = material.normalTexture;
-        auto& texture = model.getTextures()[textureIndex];
+        auto& mesh = model.getMeshes()[node.meshID];
+        auto& material = model.getMaterials()[mesh.materialID];
+        auto& texture = model.getTextures()[material.baseColorTextureID];
 
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
