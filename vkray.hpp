@@ -716,9 +716,17 @@ namespace vkr
                    const vk::AccelerationStructureTypeKHR& asType,
                    uint32_t primitiveCount);
 
+        void rebuild(const Device& device,
+                     vk::AccelerationStructureGeometryKHR& geometry,
+                     const vk::AccelerationStructureTypeKHR& asType,
+                     uint32_t primitiveCount,
+                     bool matrixOnly = true);
+
         void createBuffer(const Device& device, vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo);
 
         vk::UniqueAccelerationStructureKHR accelerationStructure;
+
+        //vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo;
 
         std::unique_ptr<Buffer> buffer;
 
@@ -750,9 +758,19 @@ namespace vkr
             return { 1, &accelerationStructure.get() };
         }
 
+        void update(const Device& device, AccelerationStructureInstance& instance);
+
+        void updateMatrices(const Device& device);
+
         std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
         vk::DeviceSize size;
         std::unique_ptr<Buffer> instancesBuffer;
+
+        vk::AccelerationStructureGeometryInstancesDataKHR instancesData;
+
+        vk::AccelerationStructureGeometryKHR geometry;
+
+        std::unique_ptr<Buffer> scratchBuffer;
     };
 
 
@@ -1034,6 +1052,14 @@ namespace vkr
 
         return buffer;
     }
+
+    //namespace Time
+    //{
+    //    float getTime()
+    //    {
+    //        return static_cast<float>(glfwGetTime());
+    //    }
+    //}
 
     /// <summary>
     /// For when you have to use vk::Image instead of vkr::Image.
@@ -2225,6 +2251,46 @@ namespace vkr
         deviceAddress = device.getHandle().getAccelerationStructureAddressKHR({ *accelerationStructure });
     }
 
+    void AccelerationStructure::rebuild(const Device& device,
+                                        vk::AccelerationStructureGeometryKHR& geometry,
+                                        const vk::AccelerationStructureTypeKHR& asType,
+                                        uint32_t primitiveCount,
+                                        bool matrixOnly)
+    {
+        if (matrixOnly) {
+            vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
+            buildGeometryInfo.setType(asType);
+            buildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+            buildGeometryInfo.setGeometries(geometry);
+
+            auto buildSizesInfo = device.getHandle().getAccelerationStructureBuildSizesKHR(
+                vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, primitiveCount);
+
+            Buffer scratchBuffer{ device, buildSizesInfo.buildScratchSize,
+                vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                vk::MemoryPropertyFlagBits::eDeviceLocal };
+
+            buildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
+            buildGeometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
+
+            vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+            accelerationStructureBuildRangeInfo
+                .setPrimitiveCount(primitiveCount)
+                .setPrimitiveOffset(0)
+                .setFirstVertex(0)
+                .setTransformOffset(0);
+
+            auto commandBuffer = device.createCommandBuffer();
+            commandBuffer->buildAccelerationStructuresKHR(buildGeometryInfo, &accelerationStructureBuildRangeInfo);
+            device.submitCommandBuffer(*commandBuffer);
+
+            deviceAddress = device.getHandle().getAccelerationStructureAddressKHR({ *accelerationStructure });
+
+        } else {
+            // TODO implements
+        }
+    }
+
     void AccelerationStructure::createBuffer(const Device& device, vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo)
     {
         auto size = buildSizesInfo.accelerationStructureSize;
@@ -2276,19 +2342,63 @@ namespace vkr
         instancesBuffer = std::make_unique<Buffer>(device, size,
                                                    vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
                                                    | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                                                   vk::MemoryPropertyFlagBits::eDeviceLocal, asInstances.data());
+                                                   vk::MemoryPropertyFlagBits::eHostVisible
+                                                   | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                                   asInstances.data());
+        //vk::MemoryPropertyFlagBits::eDeviceLocal, asInstances.data());
 
-        vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
+        //vk::AccelerationStructureGeometryInstancesDataKHR instancesData{};
         instancesData.setArrayOfPointers(false);
         instancesData.setData(instancesBuffer->getDeviceAddress());
 
-        vk::AccelerationStructureGeometryKHR geometry{};
+        //vk::AccelerationStructureGeometryKHR geometry{};
         geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
         geometry.setGeometry({ instancesData });
         geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
 
         build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, asInstances.size());
     }
+
+    void TopLevelAccelerationStructure::update(const Device& device, AccelerationStructureInstance& instance)
+    {
+        asInstances[0].setTransform(toVkMatrix(instance.transformMatrix));
+
+        instancesBuffer->copy(asInstances.data());
+
+        updateMatrices(device);
+    }
+
+    void TopLevelAccelerationStructure::updateMatrices(const Device& device)
+    {
+        vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
+        buildGeometryInfo.setType(vk::AccelerationStructureTypeKHR::eTopLevel);
+        buildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+        buildGeometryInfo.setGeometries(geometry);
+
+        auto buildSizesInfo = device.getHandle().getAccelerationStructureBuildSizesKHR(
+            vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, asInstances.size());
+
+        if (!scratchBuffer) {
+            scratchBuffer = std::make_unique<Buffer>(device, buildSizesInfo.buildScratchSize,
+                                                     vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                                     vk::MemoryPropertyFlagBits::eDeviceLocal);
+        }
+
+        buildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
+        buildGeometryInfo.setScratchData(scratchBuffer->getDeviceAddress());
+
+        vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+        accelerationStructureBuildRangeInfo
+            .setPrimitiveCount(asInstances.size())
+            .setPrimitiveOffset(0)
+            .setFirstVertex(0)
+            .setTransformOffset(0);
+
+        auto commandBuffer = device.createCommandBuffer();
+        commandBuffer->buildAccelerationStructuresKHR(buildGeometryInfo, &accelerationStructureBuildRangeInfo);
+        device.submitCommandBuffer(*commandBuffer);
+    }
+
 
     //TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device, const Scene& scene)
     //{
