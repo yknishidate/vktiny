@@ -31,10 +31,10 @@ Vertex unpack(uint meshIndex, uint index)
     uint offset = index * vertexSize;
 
     Vertex v;
-    v.pos    = vec3(vertices[meshIndex].v[offset + 0],       vertices[meshIndex].v[offset + 1], vertices[meshIndex].v[offset + 2]);
-    v.normal = vec3(vertices[meshIndex].v[offset + 3],       vertices[meshIndex].v[offset + 4], vertices[meshIndex].v[offset + 5]);
-    v.uv     = vec2(vertices[meshIndex].v[offset + 6], 1.0 - vertices[meshIndex].v[offset + 7]);
-    v.color  = vec4(vertices[meshIndex].v[offset + 8],       vertices[meshIndex].v[offset + 9], vertices[meshIndex].v[offset + 10], vertices[meshIndex].v[offset + 11]);
+    v.pos    = vec3(vertices[meshIndex].v[offset + 0], vertices[meshIndex].v[offset + 1], vertices[meshIndex].v[offset + 2]);
+    v.normal = vec3(vertices[meshIndex].v[offset + 3], vertices[meshIndex].v[offset + 4], vertices[meshIndex].v[offset + 5]);
+    v.uv     = vec2(vertices[meshIndex].v[offset + 6], vertices[meshIndex].v[offset + 7]);
+    v.color  = vec4(vertices[meshIndex].v[offset + 8], vertices[meshIndex].v[offset + 9], vertices[meshIndex].v[offset + 10], vertices[meshIndex].v[offset + 11]);
 
 	return v;
 }

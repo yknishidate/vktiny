@@ -1937,13 +1937,8 @@ namespace vkr
 
         if (properties & vk::MemoryPropertyFlagBits::eHostVisible) {
             // If it is a host buffer, just copy the data.
-            //void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
-            //memcpy(dataPtr, data, static_cast<size_t>(size));
-            std::cout << "eHostVisible\n";
-
             map();
             memcpy(mapped, data, static_cast<size_t>(size));
-            std::cout << "ok memcpy\n";
 
             if (!(properties & vk::MemoryPropertyFlagBits::eHostCoherent)) {
                 vk::MappedMemoryRange mapped_range{};
@@ -1953,10 +1948,7 @@ namespace vkr
                 device.getHandle().flushMappedMemoryRanges(mapped_range);
             }
 
-            //device.getHandle().unmapMemory(*memory);
-
         } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
-            std::cout << "eDeviceLocal\n";
             // If it is a device buffer, send it to the device with a copy command via the staging buffer.
             auto stagingBuffer = Buffer(device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
                                         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
@@ -2534,13 +2526,10 @@ namespace vkr
 
     void Model::loadNodes(tinygltf::Model& gltfModel)
     {
-        std::cout << "loadNodes()" << std::endl;
         for (auto& node : gltfModel.nodes) {
             Node nd;
             nd.children = node.children;
             nd.meshIndex = node.mesh;
-
-            std::cout << "meshIndex: " << nd.meshIndex << std::endl;
 
             glm::vec3 translation{ 0.0f };
             if (node.translation.size() == 3) {
@@ -2569,7 +2558,6 @@ namespace vkr
 
     void Model::loadMeshes(const Device& device, tinygltf::Model& gltfModel)
     {
-        std::cout << "loadMeshes()" << std::endl;
         for (int index = 0; index < gltfModel.meshes.size(); index++) {
             std::vector<Vertex> vertices;
             std::vector<uint32_t> indices;

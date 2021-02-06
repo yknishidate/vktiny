@@ -28,7 +28,7 @@ struct Camera
     float zfar{ 1000 };
 
     glm::vec4 pos{ 0, 0, 2, 1 };
-    glm::vec3 target{ 0, -0.5, 0 };
+    glm::vec3 target{ 0, -0.25, 0 };
     glm::vec3 up{ 0, 1, 0 };
     glm::mat4 invView{ 1 };
     glm::mat4 invProj{ 1 };
@@ -55,7 +55,7 @@ struct Camera
 
     void update(float yoffset)
     {
-        pos.z -= yoffset;
+        pos.z -= yoffset / 4.0;
         invView = glm::inverse(glm::lookAt(glm::vec3(rotY * rotX * pos), target, up));
         invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
     }
@@ -123,11 +123,9 @@ public:
 
         vk::DeviceSize size = sizeof(InstanceDataOnDevice);
         vk::BufferUsageFlags usage{ vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst };
-        //vk::MemoryPropertyFlags prop{ vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
         vk::MemoryPropertyFlags prop{ vk::MemoryPropertyFlagBits::eDeviceLocal };
 
         for (const auto& node : nodes) {
-            std::cout << "node\n";
             const auto& mesh = meshes[node.meshIndex];
             const auto& material = materials[mesh.materialIndex];
 
