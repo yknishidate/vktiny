@@ -32,6 +32,8 @@ struct Camera
     glm::vec3 up{ 0, 1, 0 };
     glm::mat4 invView{ 1 };
     glm::mat4 invProj{ 1 };
+    glm::mat4 rotX{ 1.0f };
+    glm::mat4 rotY{ 1.0f };
 
     Camera()
     {
@@ -44,13 +46,28 @@ struct Camera
         phi -= dx;
         theta = std::clamp(theta + dy, -89.0f, 89.0f);
 
-        glm::mat4 rotX = glm::rotate(glm::radians(theta), glm::vec3(1, 0, 0));
-        glm::mat4 rotY = glm::rotate(glm::radians(phi), glm::vec3(0, 1, 0));
+        rotX = glm::rotate(glm::radians(theta), glm::vec3(1, 0, 0));
+        rotY = glm::rotate(glm::radians(phi), glm::vec3(0, 1, 0));
 
         invView = glm::inverse(glm::lookAt(glm::vec3(rotY * rotX * pos), target, up));
         invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
     }
 
+    void update(float yoffset)
+    {
+        pos.z -= yoffset;
+        invView = glm::inverse(glm::lookAt(glm::vec3(rotY * rotX * pos), target, up));
+        invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
+    }
+};
+
+struct InstanceDataOnDevice
+{
+    glm::mat4 worldMatrix{ 1.0f };
+    int meshIndex{ -1 };
+    int baseColorTextureIndex{ -1 };
+    int normalTextureIndex{ -1 };
+    int occlusionTextureIndex{ -1 };
 };
 
 class Application
@@ -75,6 +92,11 @@ public:
         }
     }
 
+    void onScroll(double xoffset, double yoffset)
+    {
+        camera.update(float(yoffset));
+    }
+
     void createUniformBuffer()
     {
         vk::DeviceSize size = sizeof(UniformData);
@@ -92,6 +114,36 @@ public:
         ubo->copy(&uniformData);
     }
 
+    void createInstanceDataBuffer(vkr::Model& model)
+    {
+        const std::vector<vkr::Node>& nodes = model.getNodes();
+        const std::vector<vkr::Mesh>& meshes = model.getMeshes();
+        const std::vector<vkr::Material>& materials = model.getMaterials();
+        const std::vector<vkr::Texture>& textures = model.getTextures();
+
+        vk::DeviceSize size = sizeof(InstanceDataOnDevice);
+        vk::BufferUsageFlags usage{ vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst };
+        //vk::MemoryPropertyFlags prop{ vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent };
+        vk::MemoryPropertyFlags prop{ vk::MemoryPropertyFlagBits::eDeviceLocal };
+
+        for (const auto& node : nodes) {
+            std::cout << "node\n";
+            const auto& mesh = meshes[node.meshIndex];
+            const auto& material = materials[mesh.materialIndex];
+
+            InstanceDataOnDevice data;
+            data.meshIndex = node.meshIndex;
+            data.worldMatrix = node.worldMatrix;
+            data.baseColorTextureIndex = material.baseColorTextureIndex;
+            data.normalTextureIndex = material.normalTextureIndex;
+            data.occlusionTextureIndex = material.occlusionTextureIndex;
+
+            instanceDataBuffers.push_back(
+                std::make_unique<vkr::Buffer>(*device, size, usage, prop, &data));
+        }
+
+    }
+
     void run()
     {
         window = std::make_unique<vkr::Window>("vkray", 800, 600);
@@ -105,6 +157,9 @@ public:
         window->onMouseButton = [this](const int button, const int action, const int mods) {
             onMouseButton(button, action, mods);
         };
+        window->onScroll = [this](const double xoffset, const double yoffset) {
+            onScroll(xoffset, yoffset);
+        };
 
         // Create storage image
         storageImage = swapChain->createStorageImage();
@@ -112,21 +167,27 @@ public:
         vkr::Model model;
         model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
 
+        const std::vector<vkr::Node>& nodes = model.getNodes();
+        const std::vector<vkr::Mesh>& meshes = model.getMeshes();
+        const std::vector<vkr::Material>& materials = model.getMaterials();
+        const std::vector<vkr::Texture>& textures = model.getTextures();
+
         // build BLASs
-        for (const auto& mesh : model.getMeshes()) {
+        for (const auto& mesh : meshes) {
             auto blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
             blasArray.push_back(std::move(blas));
         }
 
         // create AS instances
         std::vector<vkr::AccelerationStructureInstance> instances;
-        for (const auto& node : model.getNodes()) {
+        for (const auto& node : nodes) {
             instances.push_back({ static_cast<uint32_t>(node.meshIndex), node.worldMatrix });
         }
 
         // Create TLAS
         tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, blasArray, instances);
 
+        createInstanceDataBuffer(model);
         createUniformBuffer();
 
         //Load shaders
@@ -139,20 +200,40 @@ public:
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR); // TLAS
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);             // Image
-        descSets->addBindging(0, 2, vkdt::eStorageBuffer, blasArray.size(), vkss::eClosestHitKHR);        // Vertex
-        descSets->addBindging(0, 3, vkdt::eStorageBuffer, blasArray.size(), vkss::eClosestHitKHR);        // Index
-        //descSets->addBindging(0, 4, vkdt::eCombinedImageSampler, 1, vkss::eClosestHitKHR); // Texture
-        descSets->addBindging(0, 5, vkdt::eUniformBuffer, 1, vkss::eRaygenKHR);            // UBO
+        descSets->addBindging(0, 2, vkdt::eUniformBuffer, 1, vkss::eRaygenKHR);            // UBO
+        descSets->addBindging(0, 3, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);        // Vertex
+        descSets->addBindging(0, 4, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);        // Index
+        descSets->addBindging(0, 5, vkdt::eCombinedImageSampler, textures.size(), vkss::eClosestHitKHR); // Texture
+        descSets->addBindging(0, 6, vkdt::eUniformBuffer, nodes.size(), vkss::eClosestHitKHR); // Instance data
 
         descSets->initPipelineLayout();
+
+        // Create DescInfo array
+        std::vector<vk::DescriptorBufferInfo> vertexBufferInfo;
+        std::vector<vk::DescriptorBufferInfo> indexBufferInfo;
+        for (const auto& mesh : meshes) {
+            vertexBufferInfo.push_back(mesh.vertexBuffer->createDescriptorInfo());
+            indexBufferInfo.push_back(mesh.indexBuffer->createDescriptorInfo());
+        }
+
+        std::vector<vk::DescriptorImageInfo> textureInfo;
+        for (const auto& tex : textures) {
+            textureInfo.push_back(tex.createDescriptorInfo());
+        }
+
+        std::vector<vk::DescriptorBufferInfo> instanceDataBufferInfo;
+        for (const auto& bufffer : instanceDataBuffers) {
+            instanceDataBufferInfo.push_back(bufffer->createDescriptorInfo());
+        }
 
         descSets->allocate();
         descSets->addWriteInfo(0, 0, tlas->createWrite());
         descSets->addWriteInfo(0, 1, storageImage->createDescriptorInfo());
-        //descSets->addWriteInfo(0, 2, mesh.vertexBuffer->createDescriptorInfo());
-        //descSets->addWriteInfo(0, 3, mesh.indexBuffer->createDescriptorInfo());
-        //descSets->addWriteInfo(0, 4, texture.createDescriptorInfo());
-        descSets->addWriteInfo(0, 5, ubo->createDescriptorInfo());
+        descSets->addWriteInfo(0, 2, ubo->createDescriptorInfo());
+        descSets->addWriteInfo(0, 3, vertexBufferInfo);
+        descSets->addWriteInfo(0, 4, indexBufferInfo);
+        descSets->addWriteInfo(0, 5, textureInfo);
+        descSets->addWriteInfo(0, 6, instanceDataBufferInfo);
         descSets->update();
 
         // Create Ray Tracing Pipeline
@@ -205,6 +286,7 @@ private:
 
     Camera camera;
 
+    std::vector<std::unique_ptr<vkr::Buffer>> instanceDataBuffers;
 };
 
 int main()

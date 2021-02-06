@@ -605,6 +605,16 @@ namespace vkr
             writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
         }
 
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, std::vector<vk::DescriptorImageInfo>& writeInfoArray)
+        {
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, writeInfoArray.data()));
+        }
+
+        void addWriteInfo(uint32_t setIndex, uint32_t binding, std::vector<vk::DescriptorBufferInfo>& writeInfoArray)
+        {
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, writeInfoArray.data()));
+        }
+
         void allocate();
 
         void update()
@@ -917,8 +927,6 @@ namespace vkr
         void loadFromFile(const Device& device, const std::string& filepath);
 
         void setFlipY(bool flipY) { this->flipY = flipY; }
-
-        //void buildAS();
 
     private:
 
@@ -1931,9 +1939,11 @@ namespace vkr
             // If it is a host buffer, just copy the data.
             //void* dataPtr = device.getHandle().mapMemory(*memory, 0, size);
             //memcpy(dataPtr, data, static_cast<size_t>(size));
+            std::cout << "eHostVisible\n";
 
             map();
             memcpy(mapped, data, static_cast<size_t>(size));
+            std::cout << "ok memcpy\n";
 
             if (!(properties & vk::MemoryPropertyFlagBits::eHostCoherent)) {
                 vk::MappedMemoryRange mapped_range{};
@@ -1946,6 +1956,7 @@ namespace vkr
             //device.getHandle().unmapMemory(*memory);
 
         } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
+            std::cout << "eDeviceLocal\n";
             // If it is a device buffer, send it to the device with a copy command via the staging buffer.
             auto stagingBuffer = Buffer(device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
                                         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
@@ -2547,6 +2558,7 @@ namespace vkr
                 nd.scale = scale;
             }
             if (node.matrix.size() == 16) {
+                // TODO なかったら変換から作成する
                 nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
             };
 
@@ -2611,9 +2623,9 @@ namespace vkr
                 tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("JOINTS_0") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("WEIGHTS_0") != attributes.end()) {
