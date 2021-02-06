@@ -27,8 +27,8 @@ struct Camera
     float znear{ 0.001 };
     float zfar{ 1000 };
 
-    glm::vec4 pos{ 0, 0, 3, 1 };
-    glm::vec3 target{ 0, 0, 0 };
+    glm::vec4 pos{ 0, 0, 2, 1 };
+    glm::vec3 target{ 0, -0.5, 0 };
     glm::vec3 up{ 0, 1, 0 };
     glm::mat4 invView{ 1 };
     glm::mat4 invProj{ 1 };
@@ -109,39 +109,39 @@ public:
         // Create storage image
         storageImage = swapChain->createStorageImage();
 
-        // Create BLAS
         vkr::Model model;
-        model.loadFromFile(*device, "samples/assets/DamagedHelmet/DamagedHelmet.gltf");
-        //model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
+        model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
 
-        auto& node = model.getNodes()[0];
-        auto& mesh = model.getMeshes()[node.meshIndex];
-        auto& material = model.getMaterials()[mesh.materialIndex];
-        auto& texture = model.getTextures()[material.baseColorTextureIndex];
+        // build BLASs
+        for (const auto& mesh : model.getMeshes()) {
+            auto blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
+            blasArray.push_back(std::move(blas));
+        }
 
-        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
-
-        glm::mat4 worldMatrix = glm::mat4(node.rotation);
-        vkr::AccelerationStructureInstance instance{ 0, worldMatrix };
+        // create AS instances
+        std::vector<vkr::AccelerationStructureInstance> instances;
+        for (const auto& node : model.getNodes()) {
+            instances.push_back({ static_cast<uint32_t>(node.meshIndex), node.worldMatrix });
+        }
 
         // Create TLAS
-        tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
+        tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, blasArray, instances);
 
         createUniformBuffer();
 
-        // Load shaders
+        //Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/99_tmp/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/99_tmp/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/99_tmp/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("samples/05_gltf_scene/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/05_gltf_scene/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/05_gltf_scene/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
         descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR); // TLAS
         descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);             // Image
-        descSets->addBindging(0, 2, vkdt::eStorageBuffer, 1, vkss::eClosestHitKHR);        // Vertex
-        descSets->addBindging(0, 3, vkdt::eStorageBuffer, 1, vkss::eClosestHitKHR);        // Index
-        descSets->addBindging(0, 4, vkdt::eCombinedImageSampler, 1, vkss::eClosestHitKHR); // Texture
+        descSets->addBindging(0, 2, vkdt::eStorageBuffer, blasArray.size(), vkss::eClosestHitKHR);        // Vertex
+        descSets->addBindging(0, 3, vkdt::eStorageBuffer, blasArray.size(), vkss::eClosestHitKHR);        // Index
+        //descSets->addBindging(0, 4, vkdt::eCombinedImageSampler, 1, vkss::eClosestHitKHR); // Texture
         descSets->addBindging(0, 5, vkdt::eUniformBuffer, 1, vkss::eRaygenKHR);            // UBO
 
         descSets->initPipelineLayout();
@@ -149,9 +149,9 @@ public:
         descSets->allocate();
         descSets->addWriteInfo(0, 0, tlas->createWrite());
         descSets->addWriteInfo(0, 1, storageImage->createDescriptorInfo());
-        descSets->addWriteInfo(0, 2, mesh.vertexBuffer->createDescriptorInfo());
-        descSets->addWriteInfo(0, 3, mesh.indexBuffer->createDescriptorInfo());
-        descSets->addWriteInfo(0, 4, texture.createDescriptorInfo());
+        //descSets->addWriteInfo(0, 2, mesh.vertexBuffer->createDescriptorInfo());
+        //descSets->addWriteInfo(0, 3, mesh.indexBuffer->createDescriptorInfo());
+        //descSets->addWriteInfo(0, 4, texture.createDescriptorInfo());
         descSets->addWriteInfo(0, 5, ubo->createDescriptorInfo());
         descSets->update();
 
@@ -187,7 +187,8 @@ private:
     std::unique_ptr<vkr::SwapChain> swapChain;
 
     std::unique_ptr<vkr::Image> storageImage;
-    std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
+
+    std::vector<std::unique_ptr<vkr::BottomLevelAccelerationStructure>> blasArray;
     std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
 
     std::unique_ptr<vkr::DescriptorSets> descSets;

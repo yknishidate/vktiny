@@ -747,9 +747,13 @@ namespace vkr
     public:
 
         // TODO: vector input
-        //TopLevelAccelerationStructure(const Device& device, std::vector<AccelerationStructureInstance>& instances);
+        TopLevelAccelerationStructure(const Device& device,
+                                      std::vector<std::unique_ptr<BottomLevelAccelerationStructure>>& blasArray,
+                                      std::vector<AccelerationStructureInstance>& instances);
 
-        TopLevelAccelerationStructure(const Device& device, BottomLevelAccelerationStructure& blas, AccelerationStructureInstance& instance);
+        TopLevelAccelerationStructure(const Device& device,
+                                      BottomLevelAccelerationStructure& blas,
+                                      AccelerationStructureInstance& instance);
 
         //TopLevelAccelerationStructure(const Device& device, const Scene& scene);
 
@@ -2324,6 +2328,41 @@ namespace vkr
         build(device, geometry, vk::AccelerationStructureTypeKHR::eBottomLevel, triangleCount);
     }
 
+
+    TopLevelAccelerationStructure::TopLevelAccelerationStructure(
+        const Device& device,
+        std::vector<std::unique_ptr<BottomLevelAccelerationStructure>>& blasArray,
+        std::vector<AccelerationStructureInstance>& instances)
+    {
+        for (auto& instance : instances) {
+            vk::AccelerationStructureInstanceKHR asInstance{};
+            asInstance.setTransform(toVkMatrix(instance.transformMatrix));
+            asInstance.setInstanceCustomIndex(instance.blasIndex);
+            asInstance.setMask(0xFF);
+            asInstance.setInstanceShaderBindingTableRecordOffset(0);
+            asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+            asInstance.setAccelerationStructureReference(blasArray[instance.blasIndex]->getDeviceAddress());
+            asInstances.push_back(asInstance);
+        }
+
+        size = vk::DeviceSize{ sizeof(VkAccelerationStructureInstanceKHR) * asInstances.size() };
+        instancesBuffer = std::make_unique<Buffer>(device, size,
+                                                   vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+                                                   | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                                                   vk::MemoryPropertyFlagBits::eHostVisible
+                                                   | vk::MemoryPropertyFlagBits::eHostCoherent,
+                                                   asInstances.data());
+
+        instancesData.setArrayOfPointers(false);
+        instancesData.setData(instancesBuffer->getDeviceAddress());
+
+        geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+        geometry.setGeometry({ instancesData });
+        geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        build(device, geometry, vk::AccelerationStructureTypeKHR::eTopLevel, asInstances.size());
+    }
+
     // TopLevelAccelerationStructure
     TopLevelAccelerationStructure::TopLevelAccelerationStructure(const Device& device,
                                                                  BottomLevelAccelerationStructure& blas,
@@ -2484,10 +2523,13 @@ namespace vkr
 
     void Model::loadNodes(tinygltf::Model& gltfModel)
     {
+        std::cout << "loadNodes()" << std::endl;
         for (auto& node : gltfModel.nodes) {
             Node nd;
             nd.children = node.children;
             nd.meshIndex = node.mesh;
+
+            std::cout << "meshIndex: " << nd.meshIndex << std::endl;
 
             glm::vec3 translation{ 0.0f };
             if (node.translation.size() == 3) {
@@ -2515,6 +2557,7 @@ namespace vkr
 
     void Model::loadMeshes(const Device& device, tinygltf::Model& gltfModel)
     {
+        std::cout << "loadMeshes()" << std::endl;
         for (int index = 0; index < gltfModel.meshes.size(); index++) {
             std::vector<Vertex> vertices;
             std::vector<uint32_t> indices;
@@ -2539,33 +2582,32 @@ namespace vkr
             auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
             auto& buffer = gltfModel.buffers[bufferView.buffer];
             pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
-
             size_t verticesCount = accessor.count;
 
             if (attributes.find("NORMAL") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 normal = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("TEXCOORD_0") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 uv = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("COLOR_0") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 color = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
 
                 numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
             }
             if (attributes.find("TANGENT") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("JOINTS_0") != attributes.end()) {
@@ -2575,9 +2617,9 @@ namespace vkr
                 joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("WEIGHTS_0") != attributes.end()) {
-                accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
-                bufferView = gltfModel.bufferViews[accessor.bufferView];
-                buffer = gltfModel.buffers[bufferView.buffer];
+                auto& accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
                 weight0 = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
 
@@ -2610,45 +2652,47 @@ namespace vkr
             }
 
             // Get indices
-            accessor = gltfModel.accessors[gltfPrimitive.indices];
-            bufferView = gltfModel.bufferViews[accessor.bufferView];
-            buffer = gltfModel.buffers[bufferView.buffer];
+            {
+                auto& accessor = gltfModel.accessors[gltfPrimitive.indices];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
 
-            size_t indicesCount = accessor.count;
-            switch (accessor.componentType) {
-                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
-                {
-                    uint32_t* buf = new uint32_t[indicesCount];
-                    size_t size = indicesCount * sizeof(uint32_t);
-                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-                    for (size_t i = 0; i < indicesCount; i++) {
-                        indices.push_back(buf[i]);
+                size_t indicesCount = accessor.count;
+                switch (accessor.componentType) {
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+                    {
+                        uint32_t* buf = new uint32_t[indicesCount];
+                        size_t size = indicesCount * sizeof(uint32_t);
+                        memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                        for (size_t i = 0; i < indicesCount; i++) {
+                            indices.push_back(buf[i]);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
-                {
-                    uint16_t* buf = new uint16_t[indicesCount];
-                    size_t size = indicesCount * sizeof(uint16_t);
-                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-                    for (size_t i = 0; i < indicesCount; i++) {
-                        indices.push_back(buf[i]);
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+                    {
+                        uint16_t* buf = new uint16_t[indicesCount];
+                        size_t size = indicesCount * sizeof(uint16_t);
+                        memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                        for (size_t i = 0; i < indicesCount; i++) {
+                            indices.push_back(buf[i]);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-                {
-                    uint8_t* buf = new uint8_t[indicesCount];
-                    size_t size = indicesCount * sizeof(uint8_t);
-                    memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
-                    for (size_t i = 0; i < indicesCount; i++) {
-                        indices.push_back(buf[i]);
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+                    {
+                        uint8_t* buf = new uint8_t[indicesCount];
+                        size_t size = indicesCount * sizeof(uint8_t);
+                        memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], size);
+                        for (size_t i = 0; i < indicesCount; i++) {
+                            indices.push_back(buf[i]);
+                        }
+                        break;
                     }
-                    break;
+                    default:
+                        std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                        return;
                 }
-                default:
-                    std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
-                    return;
             }
 
             Mesh mesh(device, vertices, indices);
