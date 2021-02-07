@@ -200,12 +200,15 @@ namespace vkr
         // for other objects
         uint32_t findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const;
 
-        vk::UniqueCommandBuffer createCommandBuffer(vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary, bool begin = true,
-                                                    vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
+        vk::UniqueCommandBuffer createCommandBuffer(
+            vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary,
+            bool begin = true,
+            vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
 
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
 
-        vk::UniquePipeline createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth);
+        vk::UniquePipeline createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager,
+                                                    uint32_t maxRecursionDepth);
 
     private:
 
@@ -283,7 +286,8 @@ namespace vkr
         /// </summary>
         std::unique_ptr<Image> createStorageImage() const;
 
-        void initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage);
+        void initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const
+                                    ShaderManager& shaderManager, vkr::Image& storageImage);
 
         uint32_t acquireNextImage();
 
@@ -413,12 +417,14 @@ namespace vkr
         /// <summary>
         /// Creates a buffer handle and then allocates and binds the memory.
         /// </summary>
-        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+               vk::MemoryPropertyFlags properties);
 
         /// <summary>
         /// Creates a buffer handle, allocates memory, and then stores the data.
         /// </summary>
-        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data);
+        Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+               vk::MemoryPropertyFlags properties, void* data);
 
         // non copyable
         Buffer(const Buffer&) = delete;
@@ -471,7 +477,8 @@ namespace vkr
         void addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
                          vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler = nullptr);
 
-        vk::UniqueDescriptorSetLayout createLayout(const Device& device, vk::DescriptorSetLayoutCreateFlags flags = {}) const;
+        vk::UniqueDescriptorSetLayout createLayout(const Device& device,
+                                                   vk::DescriptorSetLayoutCreateFlags flags = {}) const;
 
         void addRequiredPoolSizes(std::vector<vk::DescriptorPoolSize>& poolSizes) const;
 
@@ -482,7 +489,8 @@ namespace vkr
                                          const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement = 0) const;
 
         vk::WriteDescriptorSet makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-                                         const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement = 0) const;
+                                         const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo,
+                                         uint32_t arrayElement = 0) const;
 
     private:
 
@@ -518,7 +526,8 @@ namespace vkr
 
         vk::PipelineLayout createPipelineLayout();
 
-        void addWriteInfo(uint32_t setIndex, uint32_t binding, vk::WriteDescriptorSetAccelerationStructureKHR writeInfo)
+        void addWriteInfo(uint32_t setIndex, uint32_t binding,
+                          vk::WriteDescriptorSetAccelerationStructureKHR writeInfo)
         {
             writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, &writeInfo));
         }
@@ -535,12 +544,14 @@ namespace vkr
 
         void addWriteInfo(uint32_t setIndex, uint32_t binding, std::vector<vk::DescriptorImageInfo>& writeInfoArray)
         {
-            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, writeInfoArray.data()));
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding,
+                                                                       writeInfoArray.data()));
         }
 
         void addWriteInfo(uint32_t setIndex, uint32_t binding, std::vector<vk::DescriptorBufferInfo>& writeInfoArray)
         {
-            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding, writeInfoArray.data()));
+            writeDescSets.push_back(bindingsArray[setIndex]->makeWrite(*descSets[setIndex], binding,
+                                                                       writeInfoArray.data()));
         }
 
         void allocate();
@@ -591,11 +602,14 @@ namespace vkr
         auto getMissRegion() const { return missRegion; }
         auto getHitRegion() const { return hitRegion; }
 
-        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName, vk::RayTracingShaderGroupTypeKHR groupType);
+        void addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
+                       vk::RayTracingShaderGroupTypeKHR groupType);
 
-        void addShader(uint32_t addedShaderIndex, vk::ShaderStageFlagBits stage, const char* pName, vk::RayTracingShaderGroupTypeKHR groupType);
+        void addShader(uint32_t addedShaderIndex, vk::ShaderStageFlagBits stage, const char* pName,
+                       vk::RayTracingShaderGroupTypeKHR groupType);
 
-        void initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
+        void initShaderBindingTable(const vk::Pipeline& pipeline,
+                                    uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
 
     private:
 
@@ -907,13 +921,16 @@ namespace vkr
 {
 #if defined(_DEBUG)
     VKAPI_ATTR VkBool32 VKAPI_CALL
-        debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-                                    VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData, void* /*pUserData*/)
+        debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                    VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                                    VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData,
+                                    void* /*pUserData*/)
     {
         std::cerr << "messageIndexName   = " << pCallbackData->pMessageIdName << "\n";
 
         for (uint8_t i = 0; i < pCallbackData->objectCount; i++) {
-            std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType)) << "\n";
+            std::cerr << "objectType      = " << vk::to_string(static_cast<vk::ObjectType>(
+                pCallbackData->pObjects[i].objectType)) << "\n";
         }
 
         std::cerr << pCallbackData->pMessage << "\n\n";
@@ -965,8 +982,10 @@ namespace vkr
         const vk::QueueFlags requiredBits,
         const vk::QueueFlags excludedBits)
     {
-        const auto family = std::find_if(queueFamilies.begin(), queueFamilies.end(), [requiredBits, excludedBits](const vk::QueueFamilyProperties& queueFamily) {
-            return queueFamily.queueCount > 0 && queueFamily.queueFlags & requiredBits && !(queueFamily.queueFlags & excludedBits);
+        const auto family = std::find_if(queueFamilies.begin(), queueFamilies.end(),
+                                         [requiredBits, excludedBits](const vk::QueueFamilyProperties& queueFamily) {
+            return queueFamily.queueCount > 0 && queueFamily.queueFlags & requiredBits
+                && !(queueFamily.queueFlags & excludedBits);
         });
 
         if (family == queueFamilies.end()) {
@@ -998,7 +1017,8 @@ namespace vkr
     /// <summary>
     /// For when you have to use vk::Image instead of vkr::Image.
     /// </summary>
-    void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+    void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image,
+                               vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
     {
         vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
         vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
@@ -1051,11 +1071,13 @@ namespace vkr
                 imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
                 break;
             case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask
+                    | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
                 break;
             case vk::ImageLayout::eShaderReadOnlyOptimal:
                 if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags{}) {
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
+                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite
+                        | vk::AccessFlagBits::eTransferWrite;
                 }
                 imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
                 break;
@@ -1277,10 +1299,12 @@ namespace vkr
 
     vk::PhysicalDevice Instance::pickSuitablePhysicalDevice() const
     {
-        const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& device) {
+        const auto result = std::find_if(physicalDevices.begin(), physicalDevices.end(),
+                                         [](const vk::PhysicalDevice& device) {
             const auto queueFamilies = device.getQueueFamilyProperties();
 
-            const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](const vk::QueueFamilyProperties& queueFamily) {
+            const auto hasGraphicsQueue = std::find_if(queueFamilies.begin(), queueFamilies.end(),
+                                                       [](const vk::QueueFamilyProperties& queueFamily) {
                 return queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics;
             });
 
@@ -1303,7 +1327,8 @@ namespace vkr
                                                           | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                                                           | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation };
 
-        messenger = instance->createDebugUtilsMessengerEXTUnique({ {}, severityFlags, messageTypeFlags, &debugUtilsMessengerCallback });
+        messenger = instance->createDebugUtilsMessengerEXTUnique({ {}, severityFlags, messageTypeFlags,
+                                                                 &debugUtilsMessengerCallback });
     }
 
     void Instance::checkVulkanMinimumVersion(uint32_t minVersion)
@@ -1320,12 +1345,14 @@ namespace vkr
         const auto availableLayers = vk::enumerateInstanceLayerProperties();
 
         for (const char* layer : validationLayers) {
-            auto result = std::find_if(availableLayers.begin(), availableLayers.end(), [layer](const vk::LayerProperties& layerProperties) {
+            auto result = std::find_if(availableLayers.begin(), availableLayers.end(),
+                                       [layer](const vk::LayerProperties& layerProperties) {
                 return strcmp(layer, layerProperties.layerName) == 0;
             });
 
             if (result == availableLayers.end()) {
-                throw std::runtime_error("could not find the requested validation layer: '" + std::string(layer) + "'");
+                throw std::runtime_error("could not find the requested validation layer: '"
+                                         + std::string(layer) + "'");
             }
         }
     }
@@ -1342,11 +1369,14 @@ namespace vkr
 
         // Find queues
         const auto graphicsFamily = findQueue(queueFamilies, "graphics", vk::QueueFlagBits::eGraphics, {});
-        const auto computeFamily = findQueue(queueFamilies, "compute", vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics);
-        const auto transferFamily = findQueue(queueFamilies, "transfer", vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
+        const auto computeFamily = findQueue(queueFamilies, "compute", vk::QueueFlagBits::eCompute,
+                                             vk::QueueFlagBits::eGraphics);
+        const auto transferFamily = findQueue(queueFamilies, "transfer", vk::QueueFlagBits::eTransfer,
+                                              vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
 
         // Find the presentation queue (usually the same as graphics queue).
-        const auto presentFamily = std::find_if(queueFamilies.begin(), queueFamilies.end(), [&](const vk::QueueFamilyProperties& queueFamily) {
+        const auto presentFamily = std::find_if(queueFamilies.begin(), queueFamilies.end(),
+                                                [&](const vk::QueueFamilyProperties& queueFamily) {
             VkBool32 presentSupport = false;
             const uint32_t i = static_cast<uint32_t>(&*queueFamilies.cbegin() - &queueFamily);
             presentSupport = physicalDevice.getSurfaceSupportKHR(i, *surface);
@@ -1384,11 +1414,13 @@ namespace vkr
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
         indexingFeatures.runtimeDescriptorArray = true;
 
-        vk::DeviceCreateInfo createInfo{ {}, queueCreateInfos, instance.getValidationLayers(), requiredExtensions, &deviceFeatures };
+        vk::DeviceCreateInfo createInfo{ {}, queueCreateInfos, instance.getValidationLayers(), requiredExtensions,
+                                         &deviceFeatures };
 
         vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceDescriptorIndexingFeaturesEXT,
             vk::PhysicalDeviceBufferDeviceAddressFeatures, vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
-            vk::PhysicalDeviceAccelerationStructureFeaturesKHR> createInfoChain{ createInfo, indexingFeatures, {true}, {true}, {true} };
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR> createInfoChain{ createInfo, indexingFeatures,
+                                                                                 {true}, {true}, {true} };
 
         device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
 
@@ -1399,7 +1431,8 @@ namespace vkr
         presentQueue = device->getQueue(presentFamilyIndex, 0);
         transferQueue = device->getQueue(transferFamilyIndex, 0);
 
-        commandPool = device->createCommandPoolUnique({ vk::CommandPoolCreateFlagBits::eResetCommandBuffer, graphicsFamilyIndex });
+        commandPool = device->createCommandPoolUnique({ vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+                                                      graphicsFamilyIndex });
     }
 
     uint32_t Device::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const
@@ -1415,11 +1448,13 @@ namespace vkr
         throw std::runtime_error("failed to find suitable memory type");
     }
 
-    vk::UniqueCommandBuffer Device::createCommandBuffer(vk::CommandBufferLevel level, bool begin, vk::CommandBufferUsageFlags usage) const
+    vk::UniqueCommandBuffer Device::createCommandBuffer(vk::CommandBufferLevel level, bool begin,
+                                                        vk::CommandBufferUsageFlags usage) const
     {
         assert(commandPool);
 
-        vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique({ *commandPool , level, 1 }).front());
+        vk::UniqueCommandBuffer commandBuffer = std::move(device->allocateCommandBuffersUnique({ *commandPool,
+                                                                                               level, 1 }).front());
 
         if (begin) {
             commandBuffer->begin({ usage });
@@ -1443,7 +1478,9 @@ namespace vkr
     }
 
 
-    vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager, uint32_t maxRecursionDepth)
+    vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets,
+                                                        const ShaderManager& shaderManager,
+                                                        uint32_t maxRecursionDepth)
     {
         auto result = device->createRayTracingPipelineKHRUnique(
             nullptr, nullptr,
@@ -1551,7 +1588,8 @@ namespace vkr
         }
     }
 
-    SwapChain::SupportDetails SwapChain::querySwapChainSupport(vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
+    SwapChain::SupportDetails SwapChain::querySwapChainSupport(vk::PhysicalDevice physicalDevice,
+                                                               const vk::SurfaceKHR surface)
     {
         SupportDetails details;
         details.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
@@ -1567,7 +1605,8 @@ namespace vkr
         }
 
         for (const auto& format : formats) {
-            if (format.format == vk::Format::eB8G8R8A8Unorm && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+            if (format.format == vk::Format::eB8G8R8A8Unorm
+                && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
                 return format;
             }
         }
@@ -1594,8 +1633,12 @@ namespace vkr
 
         auto actualExtent = window.getFramebufferSize();
 
-        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+        actualExtent.width = std::clamp(actualExtent.width,
+                                        capabilities.minImageExtent.width,
+                                        capabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height,
+                                         capabilities.minImageExtent.height,
+                                         capabilities.maxImageExtent.height);
 
         return actualExtent;
     }
@@ -1613,11 +1656,13 @@ namespace vkr
 
     std::unique_ptr<Image> SwapChain::createStorageImage() const
     {
-        auto image = std::make_unique<Image>(device, extent, format, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::ImageAspectFlagBits::eColor,
-                                             vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
+        auto image = std::make_unique<Image>(device, extent, format, vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                             vk::ImageAspectFlagBits::eColor, vk::ImageTiling::eOptimal,
+                                             vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
 
         auto commandBuffer = device.createCommandBuffer();
-        transitionImageLayout(commandBuffer.get(), image->getHandle(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
+        transitionImageLayout(commandBuffer.get(), image->getHandle(), vk::ImageLayout::eUndefined,
+                              vk::ImageLayout::eGeneral);
         device.submitCommandBuffer(commandBuffer.get());
 
         image->setLayout(vk::ImageLayout::eGeneral);
@@ -1625,7 +1670,8 @@ namespace vkr
         return image;
     }
 
-    void SwapChain::initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets, const ShaderManager& shaderManager, vkr::Image& storageImage)
+    void SwapChain::initDrawCommandBuffers(vk::Pipeline pipeline, const DescriptorSets& descSets,
+                                           const ShaderManager& shaderManager, vkr::Image& storageImage)
     {
         assert(images.size());
 
@@ -1659,8 +1705,10 @@ namespace vkr
                 1              // depth
             );
 
-            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal);
+            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eUndefined,
+                                  vk::ImageLayout::eTransferDstOptimal);
+            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eGeneral,
+                                  vk::ImageLayout::eTransferSrcOptimal);
 
             vk::ImageCopy copyRegion{};
             copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
@@ -1677,8 +1725,10 @@ namespace vkr
                 copyRegion                            // regions
             );
 
-            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR);
-            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral);
+            transitionImageLayout(*drawCmdBufs[i], images.at(i), vk::ImageLayout::eTransferDstOptimal,
+                                  vk::ImageLayout::ePresentSrcKHR);
+            transitionImageLayout(*drawCmdBufs[i], storageImage.getHandle(), vk::ImageLayout::eTransferSrcOptimal,
+                                  vk::ImageLayout::eGeneral);
 
             drawCmdBufs[i]->end();
         }
@@ -1701,13 +1751,15 @@ namespace vkr
 
     void SwapChain::draw()
     {
-        auto res = device.getHandle().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+        auto res = device.getHandle().waitForFences(inFlightFences[currentFrame], true,
+                                                    std::numeric_limits<uint64_t>::max());
         assert(res == vk::Result::eSuccess);
 
         uint32_t imageIndex = acquireNextImage();
 
         if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-            res = device.getHandle().waitForFences(imagesInFlight[imageIndex], true, std::numeric_limits<uint64_t>::max());
+            res = device.getHandle().waitForFences(imagesInFlight[imageIndex], true,
+                                                   std::numeric_limits<uint64_t>::max());
             assert(res == vk::Result::eSuccess);
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
@@ -1863,11 +1915,13 @@ namespace vkr
                 imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
                 break;
             case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-                imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                imageMemoryBarrier.dstAccessMask =
+                    imageMemoryBarrier.dstAccessMask | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
                 break;
             case vk::ImageLayout::eShaderReadOnlyOptimal:
                 if (imageMemoryBarrier.srcAccessMask == vk::AccessFlags{}) {
-                    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
+                    imageMemoryBarrier.srcAccessMask =
+                        vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite;
                 }
                 imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
                 break;
@@ -1895,7 +1949,8 @@ namespace vkr
         buffer = device.getHandle().createBufferUnique({ {}, size, usage });
     }
 
-    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
+    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+                   vk::MemoryPropertyFlags properties)
         : device(device.getHandle()), size(size)
     {
         // Create buffer
@@ -1925,7 +1980,8 @@ namespace vkr
         }
     }
 
-    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, void* data)
+    Buffer::Buffer(const Device& device, vk::DeviceSize size, vk::BufferUsageFlags usage,
+                   vk::MemoryPropertyFlags properties, void* data)
         : device(device.getHandle()), size(size)
     {
         // Create buffer
@@ -1972,8 +2028,9 @@ namespace vkr
 
         } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
             // If it is a device buffer, send it to the device with a copy command via the staging buffer.
-            auto stagingBuffer = Buffer(device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
-                                        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
+            auto stagingBuffer = Buffer(
+                device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
 
             vk::BufferCopy region{ 0, 0, size };
             auto commandBuffer = device.createCommandBuffer();
@@ -2023,12 +2080,14 @@ namespace vkr
 
     // DescriptorSetBindings
     void DescriptorSetBindings::addBindging(uint32_t binding, vk::DescriptorType type, uint32_t count,
-                                            vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler/*= nullptr*/)
+                                            vk::ShaderStageFlags stageFlags,
+                                            const vk::Sampler* pImmutableSampler/*= nullptr*/)
     {
         bindings.push_back({ binding, type, count, stageFlags, pImmutableSampler });
     }
 
-    vk::UniqueDescriptorSetLayout DescriptorSetBindings::createLayout(const Device& device, vk::DescriptorSetLayoutCreateFlags flags) const
+    vk::UniqueDescriptorSetLayout DescriptorSetBindings::createLayout(const Device& device,
+                                                                      vk::DescriptorSetLayoutCreateFlags flags) const
     {
         return device.getHandle().createDescriptorSetLayoutUnique({ flags, bindings });
     }
@@ -2065,7 +2124,8 @@ namespace vkr
     }
 
     vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-                                                            const vk::DescriptorBufferInfo* pBufferInfo, uint32_t arrayElement) const
+                                                            const vk::DescriptorBufferInfo* pBufferInfo,
+                                                            uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -2078,8 +2138,9 @@ namespace vkr
         }
     }
 
-    vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(vk::DescriptorSet dstSet, uint32_t dstBinding,
-                                                            const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement) const
+    vk::WriteDescriptorSet DescriptorSetBindings::makeWrite(
+        vk::DescriptorSet dstSet, uint32_t dstBinding,
+        const vk::WriteDescriptorSetAccelerationStructureKHR* pASInfo, uint32_t arrayElement) const
     {
         for (const auto& binding : bindings) {
             if (binding.binding == dstBinding) {
@@ -2123,7 +2184,8 @@ namespace vkr
     }
 
     void DescriptorSets::addBindging(uint32_t setIndex, uint32_t binding, vk::DescriptorType type, uint32_t count,
-                                     vk::ShaderStageFlags stageFlags, const vk::Sampler* pImmutableSampler /*= nullptr*/)
+                                     vk::ShaderStageFlags stageFlags,
+                                     const vk::Sampler* pImmutableSampler /*= nullptr*/)
     {
         assert(setIndex < numSets);
 
@@ -2154,7 +2216,8 @@ namespace vkr
         for (const auto& bindings : bindingsArray) {
             bindings->addRequiredPoolSizes(poolSizes);
         }
-        descPool = device.getHandle().createDescriptorPoolUnique({ vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, numSets, poolSizes });
+        descPool = device.getHandle().createDescriptorPoolUnique(
+            { vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, numSets, poolSizes });
 
         // Allocate Desc Sets
         descSets = device.getHandle().allocateDescriptorSetsUnique({ *descPool, getDescriptorSetLayouts() });
@@ -2165,7 +2228,8 @@ namespace vkr
     {
         const std::vector<char> code = readFile(filename);
 
-        return device.getHandle().createShaderModuleUnique({ {}, code.size(), reinterpret_cast<const uint32_t*>(code.data()) });
+        return device.getHandle().createShaderModuleUnique({ {}, code.size(),
+                                                           reinterpret_cast<const uint32_t*>(code.data()) });
     }
 
     void ShaderManager::addShader(const std::string& filename, vk::ShaderStageFlagBits stage, const char* pName,
@@ -2192,10 +2256,12 @@ namespace vkr
         rtGroups.push_back(groupInfo);
     }
 
-    void ShaderManager::initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset)
+    void ShaderManager::initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset,
+                                               uint32_t missOffset, uint32_t hitOffset)
     {
         // Get Ray Tracing Properties
-        auto properties = device.getPhysicalDevice().getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        auto properties = device.getPhysicalDevice().getProperties2<
+            vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
         auto rtProperties = properties.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
 
         // Calc SBT size
@@ -2211,19 +2277,23 @@ namespace vkr
 
         // Get shader group handles
         std::vector<uint8_t> shaderHandleStorage(sbtSize);
-        auto result = device.getHandle().getRayTracingShaderGroupHandlesKHR(pipeline, 0, groupCount, static_cast<size_t>(sbtSize),
+        auto result = device.getHandle().getRayTracingShaderGroupHandlesKHR(pipeline, 0, groupCount,
+                                                                            static_cast<size_t>(sbtSize),
                                                                             shaderHandleStorage.data());
         if (result != vk::Result::eSuccess) {
             throw std::runtime_error("failed to get ray tracing shader group handles.");
         }
 
         // Create SBT Buffers
-        raygenShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                            shaderHandleStorage.data() + static_cast<uint64_t>(raygenOffset) * handleSizeAligned);
-        missShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                          shaderHandleStorage.data() + static_cast<uint64_t>(missOffset) * handleSizeAligned);
-        hitShaderBindingTable = std::make_unique<Buffer>(device, handleSize, usage, memoryProperty,
-                                                         shaderHandleStorage.data() + static_cast<uint64_t>(hitOffset) * handleSizeAligned);
+        raygenShaderBindingTable = std::make_unique<Buffer>(
+            device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + static_cast<uint64_t>(raygenOffset) * handleSizeAligned);
+        missShaderBindingTable = std::make_unique<Buffer>(
+            device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + static_cast<uint64_t>(missOffset) * handleSizeAligned);
+        hitShaderBindingTable = std::make_unique<Buffer>(
+            device, handleSize, usage, memoryProperty,
+            shaderHandleStorage.data() + static_cast<uint64_t>(hitOffset) * handleSizeAligned);
 
         raygenRegion.setDeviceAddress(raygenShaderBindingTable->getDeviceAddress());
         raygenRegion.setStride(handleSizeAligned);
@@ -2320,10 +2390,12 @@ namespace vkr
         }
     }
 
-    void AccelerationStructure::createBuffer(const Device& device, vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo)
+    void AccelerationStructure::createBuffer(const Device& device,
+                                             vk::AccelerationStructureBuildSizesInfoKHR buildSizesInfo)
     {
         auto size = buildSizesInfo.accelerationStructureSize;
-        auto usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        auto usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+            | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         buffer = std::make_unique<Buffer>(device, size, usage, vk::MemoryPropertyFlagBits::eDeviceLocal);
     }
 
@@ -2441,9 +2513,10 @@ namespace vkr
             vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, asInstances.size());
 
         if (!scratchBuffer) {
-            scratchBuffer = std::make_unique<Buffer>(device, buildSizesInfo.buildScratchSize,
-                                                     vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                                                     vk::MemoryPropertyFlagBits::eDeviceLocal);
+            scratchBuffer = std::make_unique<Buffer>(
+                device, buildSizesInfo.buildScratchSize,
+                vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                vk::MemoryPropertyFlagBits::eDeviceLocal);
         }
 
         buildGeometryInfo.setDstAccelerationStructure(*accelerationStructure);
@@ -2610,19 +2683,22 @@ namespace vkr
                     auto& accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    normal = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    normal = reinterpret_cast<const float*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
                 }
                 if (attributes.find("TEXCOORD_0") != attributes.end()) {
                     auto& accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    uv = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    uv = reinterpret_cast<const float*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
                 }
                 if (attributes.find("COLOR_0") != attributes.end()) {
                     auto& accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    color = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    color = reinterpret_cast<const float*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
 
                     numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
                 }
@@ -2630,19 +2706,22 @@ namespace vkr
                     auto& accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    tangent = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    tangent = reinterpret_cast<const float*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
                 }
                 if (attributes.find("JOINTS_0") != attributes.end()) {
                     auto& accessor = gltfModel.accessors[attributes.find("JOINTS_0")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    joint0 = reinterpret_cast<const uint16_t*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    joint0 = reinterpret_cast<const uint16_t*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
                 }
                 if (attributes.find("WEIGHTS_0") != attributes.end()) {
                     auto& accessor = gltfModel.accessors[attributes.find("WEIGHTS_0")->second];
                     auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                     auto& buffer = gltfModel.buffers[bufferView.buffer];
-                    weight0 = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+                    weight0 = reinterpret_cast<const float*>(
+                        &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
                 }
 
                 bool hasSkin = (joint0 && weight0);
@@ -2712,7 +2791,8 @@ namespace vkr
                             break;
                         }
                         default:
-                            std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                            std::cerr << "Index component type " << accessor.componentType
+                                << " not supported!" << std::endl;
                             return;
                     }
                 }
@@ -2811,7 +2891,8 @@ namespace vkr
             // Copy from staging buffer
             using vkbu = vk::BufferUsageFlagBits;
             using vkmp = vk::MemoryPropertyFlagBits;
-            Buffer stageBuf{ device, tex.deviceSize, vkbu::eTransferSrc, vkmp::eHostVisible | vkmp::eHostCoherent, buffer };
+            Buffer stageBuf{ device, tex.deviceSize, vkbu::eTransferSrc,
+                             vkmp::eHostVisible | vkmp::eHostCoherent, buffer };
             tex.image->copyFrom(*cmdBuf, stageBuf);
 
             // Set image layout for shader
