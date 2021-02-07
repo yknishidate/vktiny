@@ -2581,7 +2581,12 @@ namespace vkr
         tinygltf::Model gltfModel;
 
         std::string err, warn;
-        bool result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filepath);
+        bool result;
+        if (filepath.substr(filepath.find_last_of(".") + 1) == "gltf") {
+            result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filepath);
+        } else if (filepath.substr(filepath.find_last_of(".") + 1) == "glb") {
+            result = gltfLoader.LoadBinaryFromFile(&gltfModel, &err, &warn, filepath);
+        }
         if (!result) {
             throw std::runtime_error("failed to load gltf file.");
         }
