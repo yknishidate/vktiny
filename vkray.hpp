@@ -2028,9 +2028,9 @@ namespace vkr
 
         } else if (properties & vk::MemoryPropertyFlagBits::eDeviceLocal) {
             // If it is a device buffer, send it to the device with a copy command via the staging buffer.
-            auto stagingBuffer = Buffer(
+            Buffer stagingBuffer{
                 device, size, usage | vk::BufferUsageFlagBits::eTransferSrc,
-                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data);
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, data };
 
             vk::BufferCopy region{ 0, 0, size };
             auto commandBuffer = device.createCommandBuffer();
