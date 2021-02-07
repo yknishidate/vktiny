@@ -22,8 +22,8 @@ void main()
 	vec4 target    = ubo.invProj * vec4(d.x, d.y, 1, 1) ;
 	vec4 direction = ubo.invView * vec4(normalize(target.xyz), 0) ;
 
-	float tmin = 0.001;
-	float tmax = 10000.0;
+	float tmin = 1;
+	float tmax = 100000.0;
 
     payLoad = vec3(0.0);
 

@@ -19,16 +19,18 @@ struct UniformData
 
 struct Camera
 {
+    const float scale{ 1000 };
+
     float phi{ 0 };
     float theta{ 0 };
 
     float fov{ 45 };
     float aspect{ 4.0f / 3.0f };
-    float znear{ 0.001 };
-    float zfar{ 1000 };
+    float znear{ 0.001f * scale };
+    float zfar{ 1000.0f * scale };
 
-    glm::vec4 pos{ 0, 0, 2, 1 };
-    glm::vec3 target{ 0, -0.25, 0 };
+    glm::vec4 pos{ 0, 0, 2 * scale, 1 };
+    glm::vec3 target{ 0, -100, 0 };
     glm::vec3 up{ 0, 1, 0 };
     glm::mat4 invView{ 1 };
     glm::mat4 invProj{ 1 };
@@ -55,7 +57,7 @@ struct Camera
 
     void update(float yoffset)
     {
-        pos.z -= yoffset / 4.0;
+        pos.z -= yoffset / 4.0 * scale;
         invView = glm::inverse(glm::lookAt(glm::vec3(rotY * rotX * pos), target, up));
         invProj = glm::inverse(glm::perspective(glm::radians(fov), aspect, znear, zfar));
     }
@@ -144,7 +146,7 @@ public:
 
     void run()
     {
-        window = std::make_unique<vkr::Window>("vkray", 800, 600);
+        window = std::make_unique<vkr::Window>("vkray", 1280, 720);
         instance = std::make_unique<vkr::Instance>(*window, true);
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device, *window);
@@ -163,20 +165,24 @@ public:
         storageImage = swapChain->createStorageImage();
 
         vkr::Model model;
-        model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
+        model.loadFromFile(*device, "samples/assets/Sponza/Sponza.gltf");
 
         const std::vector<vkr::Node>& nodes = model.getNodes();
         const std::vector<vkr::Mesh>& meshes = model.getMeshes();
         const std::vector<vkr::Material>& materials = model.getMaterials();
         const std::vector<vkr::Texture>& textures = model.getTextures();
 
-        // build BLASs
+        std::cout << "Nodes     : " << nodes.size() << std::endl;
+        std::cout << "Meshes    : " << meshes.size() << std::endl;
+        std::cout << "Materials : " << materials.size() << std::endl;
+        std::cout << "Textures  : " << textures.size() << std::endl;
+
+        // Build BLASs
         for (const auto& mesh : meshes) {
-            auto blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
-            blasArray.push_back(std::move(blas));
+            blasArray.push_back(std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh));
         }
 
-        // create AS instances
+        // Create AS instances
         std::vector<vkr::AccelerationStructureInstance> instances;
         for (const auto& node : nodes) {
             instances.push_back({ static_cast<uint32_t>(node.meshIndex), node.worldMatrix });
@@ -188,7 +194,7 @@ public:
         createInstanceDataBuffer(model);
         createUniformBuffer();
 
-        //Load shaders
+        // Load shaders
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
         shaderManager->addShader("samples/05_gltf_scene/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
         shaderManager->addShader("samples/05_gltf_scene/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
@@ -196,13 +202,13 @@ public:
 
         // Create Desc Sets
         descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
-        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR); // TLAS
-        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);             // Image
-        descSets->addBindging(0, 2, vkdt::eUniformBuffer, 1, vkss::eRaygenKHR);            // UBO
-        descSets->addBindging(0, 3, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);        // Vertex
-        descSets->addBindging(0, 4, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);        // Index
+        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);               // TLAS
+        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);                           // Image
+        descSets->addBindging(0, 2, vkdt::eUniformBuffer, 1, vkss::eRaygenKHR);                          // UBO
+        descSets->addBindging(0, 3, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);          // Vertex
+        descSets->addBindging(0, 4, vkdt::eStorageBuffer, meshes.size(), vkss::eClosestHitKHR);          // Index
         descSets->addBindging(0, 5, vkdt::eCombinedImageSampler, textures.size(), vkss::eClosestHitKHR); // Texture
-        descSets->addBindging(0, 6, vkdt::eUniformBuffer, nodes.size(), vkss::eClosestHitKHR); // Instance data
+        descSets->addBindging(0, 6, vkdt::eUniformBuffer, nodes.size(), vkss::eClosestHitKHR);           // Instance data
 
         descSets->initPipelineLayout();
 

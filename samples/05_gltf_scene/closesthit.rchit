@@ -44,30 +44,35 @@ hitAttributeEXT vec3 attribs;
 
 void main()
 {
+    // 1. pos
+//	vec3 pos    = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+//    payLoad = pos;
+
+    // 2. texture
     uint meshIndex = instanceData[gl_InstanceID].meshIndex;
     uint baseColorTextureIndex = instanceData[gl_InstanceID].baseColorTextureIndex;
-
-    vec3 lightPos = vec3(3, -10, 5);
-    vec3 lightColor = vec3(1);
-    vec3 ambient = vec3(0.5);
 
 	Vertex v0 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 0]);
 	Vertex v1 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 1]);
 	Vertex v2 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 2]);
 
     const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
-	vec3 pos    = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-	vec3 normal = normalize(v0.normal * barycentricCoords.x
-                            + v1.normal * barycentricCoords.y
-                            + v2.normal * barycentricCoords.z);
+
 	vec2 uv     = v0.uv     * barycentricCoords.x + v1.uv     * barycentricCoords.y + v2.uv     * barycentricCoords.z;
 
     vec3 baseColor = texture(textureSamplers[baseColorTextureIndex], uv).xyz;
     baseColor = pow(baseColor, vec3(2.2));
 
-    vec3 diffuse = baseColor * max(ambient, lightColor * dot(normal, normalize(lightPos - pos)));
+    payLoad = pow(baseColor, vec3(1 / 2.2));
 
-    payLoad = pow(diffuse, vec3(1 / 2.2));
-//    payLoad = vec3(pos.x, - pos.y, pos.z) + 0.5;
-//    payLoad = vec3(uv, 1);
+    // 3. lighting
+//    vec3 lightPos = vec3(3, -10, 5);
+//    vec3 lightColor = vec3(1);
+//    vec3 ambient = vec3(0.5);
+//	vec3 normal = normalize(v0.normal * barycentricCoords.x
+//                            + v1.normal * barycentricCoords.y
+//                            + v2.normal * barycentricCoords.z);
+//
+//    vec3 diffuse = baseColor * max(ambient, lightColor * dot(normal, normalize(lightPos - pos)));
+//    payLoad = pow(diffuse, vec3(1 / 2.2));
 }
