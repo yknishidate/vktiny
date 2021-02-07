@@ -1,4 +1,5 @@
 
+#define QUICK_VKRAY_IMPLEMENTATION
 #include "../../vkray.hpp"
 
 #include <chrono>

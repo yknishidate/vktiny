@@ -25,12 +25,6 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#define TINYGLTF_NOEXCEPTION
-#include "tiny_gltf.h"
-
 namespace vkr
 {
     class Window;
@@ -725,6 +719,11 @@ namespace vkr
 
 } // vkr
 
+namespace tinygltf
+{
+    class Model;
+}
+
 namespace vkr
 {
     // Model components
@@ -839,9 +838,9 @@ namespace vkr
         std::vector<int> nodeIndices;
     };
 
-
     class Model final
     {
+
     public:
 
         Model() = default;
@@ -913,6 +912,14 @@ namespace vkr
 //----------------//
 // implementation //
 //----------------//
+
+#ifdef QUICK_VKRAY_IMPLEMENTATION
+
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NOEXCEPTION
+#include "tiny_gltf.h"
 
 namespace vkr
 {
@@ -2930,3 +2937,4 @@ namespace vkr
     }
 
 } // vkr
+#endif // QUICK_VKRAY_IMPLEMENTATION
