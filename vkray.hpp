@@ -22,6 +22,8 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -914,7 +916,6 @@ namespace vkr
 
 namespace vkr
 {
-#if defined(_DEBUG)
     VKAPI_ATTR VkBool32 VKAPI_CALL
         debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -932,7 +933,6 @@ namespace vkr
 
         return VK_FALSE;
     }
-#endif
 
     void glfwErrorCallback(const int error, const char* const description)
     {
@@ -2631,9 +2631,9 @@ namespace vkr
                 translation = glm::make_vec3(node.translation.data());
                 nd.translation = translation;
             }
-            glm::mat4 rotation{ 1.0f };
+            glm::quat q;
             if (node.rotation.size() == 4) {
-                glm::quat q = glm::make_quat(node.rotation.data());
+                q = glm::make_quat(node.rotation.data());
                 nd.rotation = glm::mat4(q);
             }
             glm::vec3 scale{ 1.0f };
@@ -2642,9 +2642,14 @@ namespace vkr
                 nd.scale = scale;
             }
             if (node.matrix.size() == 16) {
-                // TODO なかったら変換から作成する
                 nd.worldMatrix = glm::make_mat4x4(node.matrix.data());
-            };
+            } else {
+                // TODO fix
+                glm::mat4 t = glm::translate(glm::mat4(1), nd.translation);
+                glm::mat4 r = glm::toMat4(nd.rotation);
+                glm::mat4 s = glm::scale(glm::mat4(1), nd.scale);
+                nd.worldMatrix = t * r * s;
+            }
 
             // Duplicate nodes for each new mesh
             for (auto meshIndex : gltfMeshToMeshes[node.mesh]) {

@@ -10,6 +10,9 @@ using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;
 using vksgt = vk::RayTracingShaderGroupTypeKHR;
 
+constexpr float WIDTH = 1280;
+constexpr float HEIGHT = 720;
+
 struct UniformData
 {
     glm::mat4 model;
@@ -19,18 +22,18 @@ struct UniformData
 
 struct Camera
 {
-    const float scale{ 1000 };
+    const float scale{ 10 };
 
     float phi{ 0 };
     float theta{ 0 };
 
     float fov{ 45 };
-    float aspect{ 4.0f / 3.0f };
+    float aspect{ WIDTH / HEIGHT };
     float znear{ 0.001f * scale };
     float zfar{ 1000.0f * scale };
 
     glm::vec4 pos{ 0, 0, 2 * scale, 1 };
-    glm::vec3 target{ 0, -100, 0 };
+    glm::vec3 target{ 0, -2, 0 };
     glm::vec3 up{ 0, 1, 0 };
     glm::mat4 invView{ 1 };
     glm::mat4 invProj{ 1 };
@@ -146,7 +149,7 @@ public:
 
     void run()
     {
-        window = std::make_unique<vkr::Window>("vkray", 1280, 720);
+        window = std::make_unique<vkr::Window>("vkray", WIDTH, HEIGHT);
         instance = std::make_unique<vkr::Instance>(*window, true);
         device = std::make_unique<vkr::Device>(*instance);
         swapChain = std::make_unique<vkr::SwapChain>(*device, *window);
