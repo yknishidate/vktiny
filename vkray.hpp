@@ -61,15 +61,7 @@ namespace vkr
         Window(const std::string& title, const uint32_t width, const uint32_t height,
                bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
 
-        ~Window()
-        {
-            if (window != nullptr) {
-                glfwDestroyWindow(window);
-            }
-
-            glfwTerminate();
-            glfwSetErrorCallback(nullptr);
-        }
+        ~Window();
 
         // non copyable / non movable
         Window(const Window&) = delete;
@@ -79,95 +71,31 @@ namespace vkr
 
         std::string getTitle() const { return title; }
 
-        float getContentScale() const
-        {
-            float xscale, yscale;
+        float getContentScale() const;
 
-            glfwGetWindowContentScale(window, &xscale, &yscale);
+        vk::Extent2D getFramebufferSize() const;
 
-            return xscale;
-        }
+        vk::Extent2D getWindowSize() const;
 
-        vk::Extent2D getFramebufferSize() const
-        {
-            int width, height;
+        const char* getKeyName(int key, int scancode) const;
 
-            glfwGetFramebufferSize(window, &width, &height);
+        std::vector<const char*> getRequiredInstanceExtensions() const;
 
-            return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-        }
+        double getTime() const;
 
-        vk::Extent2D getWindowSize() const
-        {
-            int width, height;
+        void close();
 
-            glfwGetWindowSize(window, &width, &height);
+        bool isMinimized() const;
 
-            return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-        }
+        bool shouldClose() const;
 
-        const char* getKeyName(int key, int scancode) const
-        {
-            return glfwGetKeyName(key, scancode);
-        }
+        void pollEvents() const;
 
-        std::vector<const char*> getRequiredInstanceExtensions() const
-        {
-            uint32_t glfwExtensionCount = 0;
+        void waitForEvents() const;
 
-            const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        glm::vec2 getCursorPos();
 
-            return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
-        }
-
-        double getTime() const
-        {
-            return glfwGetTime();
-        }
-
-        void close()
-        {
-            glfwSetWindowShouldClose(window, 1);
-        }
-
-        bool isMinimized() const
-        {
-            const auto size = getFramebufferSize();
-            return size.height == 0 && size.width == 0;
-        }
-
-        bool shouldClose() const
-        {
-            return glfwWindowShouldClose(window);
-        }
-
-        void pollEvents() const
-        {
-            glfwPollEvents();
-        }
-
-        void waitForEvents() const
-        {
-            glfwWaitEvents();
-        }
-
-        glm::vec2 getCursorPos()
-        {
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            return glm::vec2(xpos, ypos);
-        }
-
-        vk::SurfaceKHR createWindowSurface(vk::Instance instance) const
-        {
-            VkSurfaceKHR surface;
-
-            if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create window surface!");
-            }
-
-            return vk::SurfaceKHR(surface);
-        }
+        vk::SurfaceKHR createWindowSurface(vk::Instance instance) const;
 
         std::function<void(int key, int scancode, int action, int mods)> onKey;
         std::function<void(double xpos, double ypos)> onCursorPosition;
@@ -1201,6 +1129,106 @@ namespace vkr
         glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
         glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
         glfwSetScrollCallback(window, glfwScrollCallback);
+    }
+
+    Window::~Window()
+    {
+        if (window != nullptr) {
+            glfwDestroyWindow(window);
+        }
+
+        glfwTerminate();
+        glfwSetErrorCallback(nullptr);
+    }
+
+    float Window::getContentScale() const
+    {
+        float xscale, yscale;
+
+        glfwGetWindowContentScale(window, &xscale, &yscale);
+
+        return xscale;
+    }
+
+    vk::Extent2D Window::getFramebufferSize() const
+    {
+        int width, height;
+
+        glfwGetFramebufferSize(window, &width, &height);
+
+        return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    }
+
+    vk::Extent2D Window::getWindowSize() const
+    {
+        int width, height;
+
+        glfwGetWindowSize(window, &width, &height);
+
+        return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    }
+
+    const char* Window::getKeyName(int key, int scancode) const
+    {
+        return glfwGetKeyName(key, scancode);
+    }
+
+    std::vector<const char*> Window::getRequiredInstanceExtensions() const
+    {
+        uint32_t glfwExtensionCount = 0;
+
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    }
+
+    double Window::getTime() const
+    {
+        return glfwGetTime();
+    }
+
+    void Window::close()
+    {
+        glfwSetWindowShouldClose(window, 1);
+    }
+
+    bool Window::isMinimized() const
+    {
+        const auto size = getFramebufferSize();
+        return size.height == 0 && size.width == 0;
+    }
+
+    bool Window::shouldClose() const
+    {
+        return glfwWindowShouldClose(window);
+    }
+
+    void Window::pollEvents() const
+    {
+        glfwPollEvents();
+    }
+
+    void Window::waitForEvents() const
+    {
+        glfwWaitEvents();
+    }
+
+    glm::vec2 Window::getCursorPos()
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        return glm::vec2(xpos, ypos);
+    }
+
+    vk::SurfaceKHR Window::createWindowSurface(vk::Instance instance) const
+    {
+        VkSurfaceKHR surface;
+
+        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+
+        return vk::SurfaceKHR(surface);
     }
 
     // Instance

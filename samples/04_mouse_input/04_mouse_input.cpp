@@ -106,7 +106,6 @@ public:
         storageImage = swapChain->createStorageImage();
 
         // Create BLAS
-        vkr::Mesh mesh;
         glm::vec3 normal(1);
         glm::vec2 uv(1);
         std::vector<vkr::Vertex> vertices{
@@ -120,7 +119,7 @@ public:
             0, 2, 3,
             0, 3, 1
         };
-        mesh.create(*device, vertices, indices);
+        vkr::Mesh mesh(*device, vertices, indices);
 
         blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
 
