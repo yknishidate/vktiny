@@ -1635,12 +1635,10 @@ namespace vkr
 
         auto actualExtent = window.getFramebufferSize();
 
-        actualExtent.width = std::clamp(actualExtent.width,
-                                        capabilities.minImageExtent.width,
-                                        capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height,
-                                         capabilities.minImageExtent.height,
-                                         capabilities.maxImageExtent.height);
+        actualExtent.width = std::min(std::max(actualExtent.width, capabilities.minImageExtent.width),
+                                      capabilities.maxImageExtent.width);
+        actualExtent.height = std::min(std::max(actualExtent.height, capabilities.minImageExtent.height),
+                                       capabilities.maxImageExtent.height);
 
         return actualExtent;
     }
