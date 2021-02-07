@@ -8,7 +8,7 @@ A header only library to use Vulkan Ray Tracing quickly.
 -   Use `vulkan.hpp` (Vulkan C++ binding)
 -   Less reliance on third-party libraries
 -   Header only
--   Include glTF loader(**TODO**)
+-   Include glTF loader
 
 ## Examples
 
@@ -53,12 +53,22 @@ shaderManager.addShader("raygen.rgen.spv",
     vk::RayTracingShaderGroupTypeKHR::eGeneral);
 ```
 
+<br>
+
+glTF loading
+
+```cpp
+vkr::Model model;
+model.loadFromFile(device, "Sponza/Sponza.gltf");
+```
+
 ## Requirements
 
 Environment
 
 -   Vulkan SDK 1.2.162.0
 -   GPU / Driver that support Vulkan Ray Tracing Final Spec
+-   C++14 or later
 
 Libraries
 
