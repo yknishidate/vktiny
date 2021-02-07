@@ -250,14 +250,9 @@ namespace vkr
     {
     public:
 
-        explicit SwapChain(const Device& device, const Window& window);
+        SwapChain(const Device& device, const Window& window);
 
-        ~SwapChain()
-        {
-            for (size_t i = 0; i < maxFramesInFlight; i++) {
-                device.getHandle().destroyFence(inFlightFences[i]);
-            }
-        }
+        ~SwapChain();
 
         // non copyable / non movable
         SwapChain(const SwapChain&) = delete;
@@ -304,7 +299,7 @@ namespace vkr
             std::vector<vk::PresentModeKHR> presentModes;
         };
 
-        static SupportDetails querySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+        static SupportDetails querySwapChainSupport(vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface);
 
         static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
 
@@ -1585,6 +1580,13 @@ namespace vkr
             imageAvailableSemaphores[i] = device.getHandle().createSemaphoreUnique({});
             renderFinishedSemaphores[i] = device.getHandle().createSemaphoreUnique({});
             inFlightFences[i] = device.getHandle().createFence({ vk::FenceCreateFlagBits::eSignaled });
+        }
+    }
+
+    SwapChain::~SwapChain()
+    {
+        for (size_t i = 0; i < maxFramesInFlight; i++) {
+            device.getHandle().destroyFence(inFlightFences[i]);
         }
     }
 
