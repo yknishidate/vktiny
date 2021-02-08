@@ -42,6 +42,15 @@ private:
 
     std::unique_ptr<vkr::Image> storageImage;
 
+    std::unique_ptr<vkr::BottomLevelAccelerationStructure> blas;
+    std::unique_ptr<vkr::TopLevelAccelerationStructure> tlas;
+
+    std::unique_ptr<vkr::ShaderManager> shaderManager;
+
+    std::unique_ptr<vkr::DescriptorSets> descSets;
+
+    vk::UniquePipeline pipeline;
+
     void initWindow()
     {
         glfwInit();
@@ -58,6 +67,16 @@ private:
         swapChain = std::make_unique<vkr::SwapChain>(*device, vk::Extent2D{ WIDTH, HEIGHT });
 
         storageImage = swapChain->createStorageImage();
+
+        buildAccelStruct();
+
+        loadShaders();
+
+        createDescSets();
+
+        pipeline = descSets->createRayTracingPipeline(*shaderManager, 1);
+        shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
+        swapChain->initDrawCommandBuffers(*pipeline, *descSets, *shaderManager, *storageImage);
     }
 
     void createInstance()
@@ -91,11 +110,52 @@ private:
         surface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(_surface), _deleter);
     }
 
+    void buildAccelStruct()
+    {
+        // Create Mesh
+        std::vector<vkr::Vertex> vertices{
+            { {1.0f, 1.0f, 0.0f} },
+            { {-1.0f, 1.0f, 0.0f} },
+            { {0.0f, -1.0f, 0.0f} } };
+        std::vector<uint32_t> indices{ 0, 1, 2 };
+        vkr::Mesh mesh(*device, vertices, indices);
+
+        // Create BLAS
+        blas = std::make_unique<vkr::BottomLevelAccelerationStructure>(*device, mesh);
+
+        // Create TLAS
+        vkr::AccelerationStructureInstance instance{ 0, glm::mat4(1) };
+        tlas = std::make_unique<vkr::TopLevelAccelerationStructure>(*device, *blas, instance);
+    }
+
+    void loadShaders()
+    {
+        shaderManager = std::make_unique<vkr::ShaderManager>(*device);
+        shaderManager->addShader("samples/00_hello_triangle/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/00_hello_triangle/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("samples/00_hello_triangle/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+    }
+
+    void createDescSets()
+    {
+        descSets = std::make_unique<vkr::DescriptorSets>(*device, 1);
+        descSets->addBindging(0, 0, vkdt::eAccelerationStructureKHR, 1, vkss::eRaygenKHR);
+        descSets->addBindging(0, 1, vkdt::eStorageImage, 1, vkss::eRaygenKHR);
+        descSets->initPipelineLayout();
+
+        descSets->allocate();
+        descSets->addWriteInfo(0, 0, tlas->createWrite());
+        descSets->addWriteInfo(0, 1, storageImage->createDescriptorInfo());
+        descSets->update();
+    }
+
     void mainLoop()
     {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+            swapChain->draw();
         }
+        device->waitIdle();
     }
 
     void cleanup()
