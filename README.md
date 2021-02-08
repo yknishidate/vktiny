@@ -15,18 +15,16 @@ A header only library to use Vulkan Ray Tracing quickly.
 BLAS and TLAS Creation
 
 ```cpp
-std::vector<vkr::Vertex> vertices{
-    { {1.0f, 1.0f, 0.0f} },
-    { {-1.0f, 1.0f, 0.0f} },
-    { {0.0f, -1.0f, 0.0f} } };
-
+std::vector<vkr::Vertex> vertices{{ {1.0f, 1.0f, 0.0f} },
+                                  { {-1.0f, 1.0f, 0.0f} },
+                                  { {0.0f, -1.0f, 0.0f} } };
 std::vector<uint32_t> indices { 0, 1, 2 };
-
 vkr::Mesh mesh{ device, vertices, indices };
 
 vkr::BottomLevelAccelerationStructure blas{ device, mesh };
 
 vkr::AccelerationStructureInstance asInstance{ 0, glm::mat4(1) };
+
 vkr::TopLevelAccelerationStructure tlas{ device, blas, asInstance };
 ```
 
@@ -35,10 +33,9 @@ vkr::TopLevelAccelerationStructure tlas{ device, blas, asInstance };
 Vulkan Setup
 
 ```cpp
-vkr::Window    window    { "vkray", 800, 600 };
-vkr::Instance  instance  { window, true };
-vkr::Device    device    { instance };
-vkr::SwapChain swapChain { device, window };
+vkr::Instance  instance  { appInfo, enableValidationLayers, extensions };
+vkr::Device    device    { instance, *surface };
+vkr::SwapChain swapChain { device, vk::Extent2D{ WIDTH, HEIGHT } };
 ```
 
 <br>
