@@ -27,8 +27,6 @@
 
 namespace vkr
 {
-    class Window;
-
     class Instance;
 
     class Device;
@@ -50,74 +48,11 @@ namespace vkr
     struct Texture;
 
 
-    class Window final
-    {
-    public:
-
-        Window(const std::string& title, const uint32_t width, const uint32_t height,
-               bool cursorDisabled = false, bool fullscreen = false, bool resizable = false);
-
-        ~Window();
-
-        // non copyable / non movable
-        Window(const Window&) = delete;
-        Window(Window&&) = delete;
-        Window& operator = (const Window&) = delete;
-        Window& operator = (Window&&) = delete;
-
-        std::string getTitle() const { return title; }
-
-        float getContentScale() const;
-
-        vk::Extent2D getFramebufferSize() const;
-
-        vk::Extent2D getWindowSize() const;
-
-        const char* getKeyName(int key, int scancode) const;
-
-        std::vector<const char*> getRequiredInstanceExtensions() const;
-
-        double getTime() const;
-
-        void close();
-
-        bool isMinimized() const;
-
-        bool shouldClose() const;
-
-        void pollEvents() const;
-
-        void waitForEvents() const;
-
-        glm::vec2 getCursorPos();
-
-        vk::SurfaceKHR createWindowSurface(vk::Instance instance) const;
-
-        std::function<void(int key, int scancode, int action, int mods)> onKey;
-        std::function<void(double xpos, double ypos)> onCursorPosition;
-        std::function<void(int button, int action, int mods)> onMouseButton;
-        std::function<void(double xoffset, double yoffset)> onScroll;
-
-    private:
-
-        GLFWwindow* window;
-
-        std::string title;
-
-        uint32_t width;
-        uint32_t height;
-
-        bool cursorDisabled;
-        bool fullscreen;
-        bool resizable;
-    };
-
-
     class Instance final
     {
     public:
 
-        Instance(const Window& window, const bool enableValidationLayers);
+        Instance(const vk::ApplicationInfo& appInfo, const bool enableValidationLayers, const std::vector<const char*>& requiredInstanceExtensions);
 
         // non copyable / non movable
         Instance(const Instance&) = delete;
@@ -133,8 +68,6 @@ namespace vkr
 
         const std::vector<const char*>& getValidationLayers() const { return validationLayers; }
 
-        vk::UniqueSurfaceKHR createSurface() const;
-
         vk::PhysicalDevice pickSuitablePhysicalDevice() const;
 
     private:
@@ -144,8 +77,6 @@ namespace vkr
         static void checkVulkanMinimumVersion(uint32_t minVersion);
 
         static void checkVulkanValidationLayerSupport(const std::vector<const char*>& validationLayers);
-
-        const Window& window;
 
         vk::UniqueInstance instance;
 
@@ -165,7 +96,7 @@ namespace vkr
     {
     public:
 
-        explicit Device(const Instance& instance);
+        Device(const Instance& instance, vk::SurfaceKHR surface);
 
         // non copyable / non movable
         Device(const Device&) = delete;
@@ -177,7 +108,7 @@ namespace vkr
 
         vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
 
-        vk::SurfaceKHR getSurface() const { return *surface; }
+        vk::SurfaceKHR getSurface() const { return surface; }
 
         uint32_t getGraphicsFamilyIndex() const { return graphicsFamilyIndex; }
         uint32_t getComputeFamilyIndex() const { return computeFamilyIndex; }
@@ -216,14 +147,14 @@ namespace vkr
             VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
             VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
             VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-            VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+            VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         };
 
         vk::UniqueDevice device;
 
         vk::PhysicalDevice physicalDevice;
 
-        vk::UniqueSurfaceKHR surface;
+        vk::SurfaceKHR surface;
 
         vk::UniqueCommandPool commandPool;
 
@@ -243,7 +174,7 @@ namespace vkr
     {
     public:
 
-        SwapChain(const Device& device, const Window& window);
+        SwapChain(const Device& device, vk::Extent2D extent);
 
         ~SwapChain();
 
@@ -298,7 +229,7 @@ namespace vkr
 
         static vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& presentModes);
 
-        static vk::Extent2D chooseSwapExtent(const Window& window, const vk::SurfaceCapabilitiesKHR& capabilities);
+        static vk::Extent2D chooseSwapExtent(const vk::Extent2D extent, const vk::SurfaceCapabilitiesKHR& capabilities);
 
         static uint32_t chooseImageCount(const vk::SurfaceCapabilitiesKHR& capabilities);
 
@@ -942,42 +873,6 @@ namespace vkr
         return VK_FALSE;
     }
 
-    void glfwErrorCallback(const int error, const char* const description)
-    {
-        std::cerr << "ERROR: GLFW: " << description << " (code: " << error << ")" << std::endl;
-    }
-
-    void glfwKeyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
-    {
-        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-        if (this_->onKey) {
-            this_->onKey(key, scancode, action, mods);
-        }
-    }
-
-    void glfwCursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
-    {
-        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-        if (this_->onCursorPosition) {
-            this_->onCursorPosition(xpos, ypos);
-        }
-    }
-
-    void glfwMouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
-    {
-        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-        if (this_->onMouseButton) {
-            this_->onMouseButton(button, action, mods);
-        }
-    }
-
-    void glfwScrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
-    {
-        auto* const this_ = static_cast<Window*>(glfwGetWindowUserPointer(window));
-        if (this_->onScroll) {
-            this_->onScroll(xoffset, yoffset);
-        }
-    }
 
     std::vector<vk::QueueFamilyProperties>::const_iterator findQueue(
         const std::vector<vk::QueueFamilyProperties>& queueFamilies,
@@ -1119,156 +1014,17 @@ namespace vkr
     }
 
 
-    // Window
-    Window::Window(const std::string& title, const uint32_t width, const uint32_t height,
-                   bool cursorDisabled, bool fullscreen, bool resizable)
-        : title(title), width(width), height(height)
-        , cursorDisabled(cursorDisabled), fullscreen(fullscreen), resizable(resizable)
-    {
-        glfwSetErrorCallback(glfwErrorCallback);
-
-        if (!glfwInit()) {
-            throw std::runtime_error("glfwInit() failed");
-        }
-
-        if (!glfwVulkanSupported()) {
-            throw std::runtime_error("glfwVulkanSupported() failed");
-        }
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
-
-        auto* const monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
-
-        window = glfwCreateWindow(width, height, title.c_str(), monitor, nullptr);
-        if (window == nullptr) {
-            throw std::runtime_error("failed to create window");
-        }
-
-        if (cursorDisabled) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
-
-        glfwSetWindowUserPointer(window, this);
-        glfwSetKeyCallback(window, glfwKeyCallback);
-        glfwSetCursorPosCallback(window, glfwCursorPositionCallback);
-        glfwSetMouseButtonCallback(window, glfwMouseButtonCallback);
-        glfwSetScrollCallback(window, glfwScrollCallback);
-    }
-
-    Window::~Window()
-    {
-        if (window != nullptr) {
-            glfwDestroyWindow(window);
-        }
-
-        glfwTerminate();
-        glfwSetErrorCallback(nullptr);
-    }
-
-    float Window::getContentScale() const
-    {
-        float xscale, yscale;
-
-        glfwGetWindowContentScale(window, &xscale, &yscale);
-
-        return xscale;
-    }
-
-    vk::Extent2D Window::getFramebufferSize() const
-    {
-        int width, height;
-
-        glfwGetFramebufferSize(window, &width, &height);
-
-        return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-    }
-
-    vk::Extent2D Window::getWindowSize() const
-    {
-        int width, height;
-
-        glfwGetWindowSize(window, &width, &height);
-
-        return vk::Extent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-    }
-
-    const char* Window::getKeyName(int key, int scancode) const
-    {
-        return glfwGetKeyName(key, scancode);
-    }
-
-    std::vector<const char*> Window::getRequiredInstanceExtensions() const
-    {
-        uint32_t glfwExtensionCount = 0;
-
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        return std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
-    }
-
-    double Window::getTime() const
-    {
-        return glfwGetTime();
-    }
-
-    void Window::close()
-    {
-        glfwSetWindowShouldClose(window, 1);
-    }
-
-    bool Window::isMinimized() const
-    {
-        const auto size = getFramebufferSize();
-        return size.height == 0 && size.width == 0;
-    }
-
-    bool Window::shouldClose() const
-    {
-        return glfwWindowShouldClose(window);
-    }
-
-    void Window::pollEvents() const
-    {
-        glfwPollEvents();
-    }
-
-    void Window::waitForEvents() const
-    {
-        glfwWaitEvents();
-    }
-
-    glm::vec2 Window::getCursorPos()
-    {
-        double xpos, ypos;
-        glfwGetCursorPos(window, &xpos, &ypos);
-        return glm::vec2(xpos, ypos);
-    }
-
-    vk::SurfaceKHR Window::createWindowSurface(vk::Instance instance) const
-    {
-        VkSurfaceKHR surface;
-
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
-
-        return vk::SurfaceKHR(surface);
-    }
-
     // Instance
-    Instance::Instance(const Window& window, const bool enableValidationLayers)
-        : window(window)
-        , enableValidationLayers(enableValidationLayers)
+    Instance::Instance(const vk::ApplicationInfo& appInfo, const bool enableValidationLayers, const std::vector<const char*>& requiredInstanceExtensions)
+        : enableValidationLayers(enableValidationLayers)
     {
         static vk::DynamicLoader dl;
         auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-        const uint32_t version = VK_API_VERSION_1_2;
-        checkVulkanMinimumVersion(version);
+        checkVulkanMinimumVersion(appInfo.apiVersion);
 
-        auto extensions = window.getRequiredInstanceExtensions();
+        std::vector<const char*> extensions{ requiredInstanceExtensions };
 
         if (enableValidationLayers) {
             validationLayers.push_back("VK_LAYER_KHRONOS_validation");
@@ -1276,8 +1032,6 @@ namespace vkr
 
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-
-        vk::ApplicationInfo appInfo{ window.getTitle().c_str() , 0, "No Engine", 0, version };
 
         instance = vk::createInstanceUnique({ {}, &appInfo, validationLayers, extensions });
         VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
@@ -1291,14 +1045,6 @@ namespace vkr
         }
     }
 
-    vk::UniqueSurfaceKHR Instance::createSurface() const
-    {
-        vk::SurfaceKHR surface = window.createWindowSurface(*instance);
-
-        vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> _deleter(*instance);
-
-        return vk::UniqueSurfaceKHR{ surface, _deleter };
-    }
 
     vk::PhysicalDevice Instance::pickSuitablePhysicalDevice() const
     {
@@ -1361,9 +1107,9 @@ namespace vkr
     }
 
     // Device
-    Device::Device(const Instance& instance)
+    Device::Device(const Instance& instance, vk::SurfaceKHR surface)
+        : surface(surface)
     {
-        surface = instance.createSurface();
         physicalDevice = instance.pickSuitablePhysicalDevice();
 
         checkRequiredExtensions(physicalDevice);
@@ -1382,7 +1128,7 @@ namespace vkr
                                                 [&](const vk::QueueFamilyProperties& queueFamily) {
             VkBool32 presentSupport = false;
             const uint32_t i = static_cast<uint32_t>(&*queueFamilies.cbegin() - &queueFamily);
-            presentSupport = physicalDevice.getSurfaceSupportKHR(i, *surface);
+            presentSupport = physicalDevice.getSurfaceSupportKHR(i, surface);
             return queueFamily.queueCount > 0 && presentSupport;
         });
 
@@ -1509,7 +1255,7 @@ namespace vkr
     }
 
     // SwapChain
-    SwapChain::SwapChain(const Device& device, const Window& window)
+    SwapChain::SwapChain(const Device& device, vk::Extent2D extent)
         : device(device)
         , physicalDevice(device.getPhysicalDevice())
     {
@@ -1522,7 +1268,7 @@ namespace vkr
 
         const auto surfaceFormat = chooseSwapSurfaceFormat(details.formats);
         presentMode = chooseSwapPresentMode(details.presentModes);
-        extent = chooseSwapExtent(window, details.capabilities);
+        extent = chooseSwapExtent(extent, details.capabilities);
         imageCount = chooseImageCount(details.capabilities);
 
         // Create swap chain
@@ -1616,13 +1362,13 @@ namespace vkr
         return vk::PresentModeKHR::eFifo;
     }
 
-    vk::Extent2D SwapChain::chooseSwapExtent(const Window& window, const vk::SurfaceCapabilitiesKHR& capabilities)
+    vk::Extent2D SwapChain::chooseSwapExtent(const vk::Extent2D extent, const vk::SurfaceCapabilitiesKHR& capabilities)
     {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;
         }
 
-        auto actualExtent = window.getFramebufferSize();
+        vk::Extent2D actualExtent = extent;
 
         actualExtent.width = std::min(std::max(actualExtent.width, capabilities.minImageExtent.width),
                                       capabilities.maxImageExtent.width);
