@@ -52,7 +52,8 @@ namespace vkr
     {
     public:
 
-        Instance(const vk::ApplicationInfo& appInfo, const bool enableValidationLayers, const std::vector<const char*>& requiredInstanceExtensions);
+        Instance(const vk::ApplicationInfo& appInfo, const bool enableValidationLayers,
+                 const std::vector<const char*>& requiredInstanceExtensions);
 
         // non copyable / non movable
         Instance(const Instance&) = delete;
@@ -268,6 +269,8 @@ namespace vkr
     class Image
     {
     public:
+
+        Image() = default;
 
         /// <summary>
         /// Creates a image handle, but does not allocate memory.
@@ -1267,9 +1270,9 @@ namespace vkr
         const auto& surface = device.getSurface();
 
         const auto surfaceFormat = chooseSwapSurfaceFormat(details.formats);
-        presentMode = chooseSwapPresentMode(details.presentModes);
-        extent = chooseSwapExtent(extent, details.capabilities);
-        imageCount = chooseImageCount(details.capabilities);
+        this->presentMode = chooseSwapPresentMode(details.presentModes);
+        this->extent = chooseSwapExtent(extent, details.capabilities);
+        this->imageCount = chooseImageCount(details.capabilities);
 
         // Create swap chain
         vk::SwapchainCreateInfoKHR createInfo{};

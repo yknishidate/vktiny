@@ -6,8 +6,8 @@ using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;
 using vksgt = vk::RayTracingShaderGroupTypeKHR;
 
-constexpr float WIDTH = 1280;
-constexpr float HEIGHT = 720;
+constexpr int WIDTH = 1280;
+constexpr int HEIGHT = 720;
 
 class Application
 {
@@ -38,6 +38,10 @@ private:
 
     std::unique_ptr<vkr::Device> device;
 
+    std::unique_ptr<vkr::SwapChain> swapChain;
+
+    std::unique_ptr<vkr::Image> storageImage;
+
     void initWindow()
     {
         glfwInit();
@@ -51,7 +55,9 @@ private:
         createInstance();
         createSurface();
         device = std::make_unique<vkr::Device>(*instance, *surface);
+        swapChain = std::make_unique<vkr::SwapChain>(*device, vk::Extent2D{ WIDTH, HEIGHT });
 
+        storageImage = swapChain->createStorageImage();
     }
 
     void createInstance()
