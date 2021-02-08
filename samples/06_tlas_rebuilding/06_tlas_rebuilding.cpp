@@ -120,7 +120,6 @@ public:
         // Create BLAS
         vkr::Model model;
         model.loadFromFile(*device, "samples/assets/DamagedHelmet/DamagedHelmet.gltf");
-        //model.loadFromFile(*device, "samples/assets/FlightHelmet/FlightHelmet.gltf");
 
         auto& node = model.getNodes()[0];
         auto& mesh = model.getMeshes()[node.meshIndex];
@@ -164,7 +163,7 @@ public:
         descSets->update();
 
         // Create Ray Tracing Pipeline
-        pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
+        pipeline = descSets->createRayTracingPipeline(*shaderManager, 1);
 
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);

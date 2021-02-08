@@ -130,7 +130,7 @@ public:
         descSets->update();
 
         // Create Ray Tracing Pipeline
-        pipeline = device->createRayTracingPipeline(*descSets, *shaderManager, 1);
+        pipeline = descSets->createRayTracingPipeline(*shaderManager, 1);
 
         // Init Shader Binding Table
         shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);

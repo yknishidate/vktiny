@@ -10,10 +10,10 @@
 #include <optional>
 #include <stdexcept>
 #include <algorithm>
+#include <unordered_map>
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #include <GLFW/glfw3.h>
 
@@ -202,9 +202,6 @@ namespace vkr
             vk::CommandBufferUsageFlags usage = vk::CommandBufferUsageFlagBits::eOneTimeSubmit) const;
 
         void submitCommandBuffer(vk::CommandBuffer& commandBuffer) const;
-
-        vk::UniquePipeline createRayTracingPipeline(const DescriptorSets& descSets, const ShaderManager& shaderManager,
-                                                    uint32_t maxRecursionDepth);
 
     private:
 
@@ -552,6 +549,8 @@ namespace vkr
             device.getHandle().updateDescriptorSets(writeDescSets, 0);
             // TODO: Clear Write Descs?
         }
+
+        vk::UniquePipeline createRayTracingPipeline(const ShaderManager& shaderManager, uint32_t maxRecursionDepth);
 
     private:
 
@@ -914,6 +913,8 @@ namespace vkr
 //----------------//
 
 #ifdef QUICK_VKRAY_IMPLEMENTATION
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -1479,25 +1480,6 @@ namespace vkr
         assert(res == vk::Result::eSuccess);
     }
 
-
-    vk::UniquePipeline Device::createRayTracingPipeline(const DescriptorSets& descSets,
-                                                        const ShaderManager& shaderManager,
-                                                        uint32_t maxRecursionDepth)
-    {
-        auto result = device->createRayTracingPipelineKHRUnique(
-            nullptr, nullptr,
-            vk::RayTracingPipelineCreateInfoKHR{}
-            .setStages(shaderManager.getStages())
-            .setGroups(shaderManager.getRayTracingGroups())
-            .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
-            .setLayout(descSets.getPipelineLayout())
-        );
-        if (result.result == vk::Result::eSuccess) {
-            return std::move(result.value);
-        }
-
-        throw std::runtime_error("failed to create ray tracing pipeline.");
-    }
 
     void Device::checkRequiredExtensions(vk::PhysicalDevice physicalDevice) const
     {
@@ -2229,6 +2211,25 @@ namespace vkr
         // Allocate Desc Sets
         descSets = device.getHandle().allocateDescriptorSetsUnique({ *descPool, getDescriptorSetLayouts() });
     }
+
+    vk::UniquePipeline DescriptorSets::createRayTracingPipeline(const ShaderManager& shaderManager,
+                                                                uint32_t maxRecursionDepth)
+    {
+        auto result = device.getHandle().createRayTracingPipelineKHRUnique(
+            nullptr, nullptr,
+            vk::RayTracingPipelineCreateInfoKHR{}
+            .setStages(shaderManager.getStages())
+            .setGroups(shaderManager.getRayTracingGroups())
+            .setMaxPipelineRayRecursionDepth(maxRecursionDepth)
+            .setLayout(getPipelineLayout())
+        );
+        if (result.result == vk::Result::eSuccess) {
+            return std::move(result.value);
+        }
+
+        throw std::runtime_error("failed to create ray tracing pipeline.");
+    }
+
 
     // ShaderManager
     vk::UniqueShaderModule ShaderManager::createShaderModule(const std::string& filename)
