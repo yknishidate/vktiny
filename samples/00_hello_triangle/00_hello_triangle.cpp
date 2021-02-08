@@ -1,6 +1,7 @@
 
 #define QUICK_VKRAY_IMPLEMENTATION
 #include "../../vkray.hpp"
+#include <GLFW/glfw3.h>
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 600;

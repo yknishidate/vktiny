@@ -1,6 +1,7 @@
 
 #define QUICK_VKRAY_IMPLEMENTATION
 #include "../../vkray.hpp"
+#include <GLFW/glfw3.h>
 
 using vkss = vk::ShaderStageFlagBits;
 using vkdt = vk::DescriptorType;

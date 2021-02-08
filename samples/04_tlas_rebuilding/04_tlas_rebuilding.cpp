@@ -2,6 +2,7 @@
 #define QUICK_VKRAY_IMPLEMENTATION
 #include "../../vkray.hpp"
 
+#include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
