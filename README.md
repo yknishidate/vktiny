@@ -73,11 +73,14 @@ Environment
 Libraries
 
 -   vulkan.hpp (included in the SDK)
--   GLFW
 -   GLM
--   tinygltf (inclued in this repository)
-    -   jsonhpp (inclued in this repository)
-    -   stb_image (inclued in this repository)
+-   tinygltf
+    -   jsonhpp
+    -   stb_image
+
+Samples dependency
+
+-   GLFW
 
 ## References
 
@@ -88,3 +91,4 @@ Libraries
 -   [rtxON](https://github.com/iOrange/rtxON)
 -   [RayTracingInVulkan](https://github.com/GPSnoopy/RayTracingInVulkan)
 -   [SaschaWillems/Vulkan](https://github.com/SaschaWillems/Vulkan)
+-   [vk_raytrace](https://github.com/nvpro-samples/vk_raytrace)
