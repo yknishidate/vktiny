@@ -531,7 +531,7 @@ namespace vkr
                        vk::RayTracingShaderGroupTypeKHR groupType);
 
         void initShaderBindingTable(const vk::Pipeline& pipeline,
-                                    uint32_t raygenOffset, uint32_t missOffset, uint32_t hitOffset);
+                                    uint32_t raygenCount, uint32_t missCount, uint32_t hitCount);
 
     private:
 
@@ -2011,8 +2011,8 @@ namespace vkr
         rtGroups.push_back(groupInfo);
     }
 
-    void ShaderManager::initShaderBindingTable(const vk::Pipeline& pipeline, uint32_t raygenOffset,
-                                               uint32_t missOffset, uint32_t hitOffset)
+    void ShaderManager::initShaderBindingTable(const vk::Pipeline& pipeline,
+                                               uint32_t raygenCount, uint32_t missCount, uint32_t hitCount)
     {
         // Get Ray Tracing Properties
         auto properties = device.getPhysicalDevice().getProperties2<
@@ -2040,15 +2040,18 @@ namespace vkr
         }
 
         // Create SBT Buffers
+        uint64_t raygenOffset = 0;
+        uint64_t missOffset = raygenCount;
+        uint64_t hitOffset = raygenCount + missCount;
         raygenShaderBindingTable = std::make_unique<Buffer>(
-            device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + static_cast<uint64_t>(raygenOffset) * handleSizeAligned);
+            device, handleSize * raygenCount, usage, memoryProperty,
+            shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
         missShaderBindingTable = std::make_unique<Buffer>(
-            device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + static_cast<uint64_t>(missOffset) * handleSizeAligned);
+            device, handleSize * missCount, usage, memoryProperty,
+            shaderHandleStorage.data() + missOffset * handleSizeAligned);
         hitShaderBindingTable = std::make_unique<Buffer>(
-            device, handleSize, usage, memoryProperty,
-            shaderHandleStorage.data() + static_cast<uint64_t>(hitOffset) * handleSizeAligned);
+            device, handleSize * hitCount, usage, memoryProperty,
+            shaderHandleStorage.data() + hitOffset * handleSizeAligned);
 
         raygenRegion.setDeviceAddress(raygenShaderBindingTable->getDeviceAddress());
         raygenRegion.setStride(handleSizeAligned);

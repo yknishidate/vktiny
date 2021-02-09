@@ -149,7 +149,7 @@ private:
         createDescSets();
 
         pipeline = descSets->createRayTracingPipeline(*shaderManager, 1);
-        shaderManager->initShaderBindingTable(*pipeline, 0, 1, 2);
+        shaderManager->initShaderBindingTable(*pipeline, 1, 1, 1);
         swapChain->initDrawCommandBuffers(*pipeline, *descSets, *shaderManager, *storageImage);
 
         glfwSetWindowUserPointer(window, this);
