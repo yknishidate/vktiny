@@ -168,10 +168,10 @@ private:
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-#ifdef NDEBUG
-        const bool enableValidationLayers = false;
+#ifdef _DEBUG
+        bool enableValidationLayers = true;
 #else
-        const bool enableValidationLayers = true;
+        enableValidationLayers = false;
 #endif
 
         vk::ApplicationInfo appInfo;

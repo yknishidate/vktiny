@@ -8,9 +8,10 @@ constexpr int HEIGHT = 600;
 
 int main()
 {
-    bool enableValidationLayers = false;
 #ifdef _DEBUG
-    enableValidationLayers = true;
+    bool enableValidationLayers = true;
+#else
+    enableValidationLayers = false;
 #endif
 
     glfwInit();
