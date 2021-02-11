@@ -168,9 +168,9 @@ private:
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 #ifdef _DEBUG
-        bool enableValidationLayers = true;
+        const bool enableValidationLayers = true;
 #else
-        enableValidationLayers = false;
+        const bool enableValidationLayers = false;
 #endif
 
         vk::ApplicationInfo appInfo;
