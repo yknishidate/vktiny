@@ -1169,8 +1169,8 @@ namespace vkr
 
         vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceDescriptorIndexingFeaturesEXT,
             vk::PhysicalDeviceBufferDeviceAddressFeatures, vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
-            vk::PhysicalDeviceAccelerationStructureFeaturesKHR> createInfoChain{ createInfo, indexingFeatures,
-                                                                                 {true}, {true}, {true} };
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR, vk::PhysicalDeviceShaderClockFeaturesKHR> createInfoChain{ createInfo, indexingFeatures,
+                                                                                 {true}, {true}, {true}, {true, true} };
 
         device = physicalDevice.createDeviceUnique(createInfoChain.get<vk::DeviceCreateInfo>());
 
