@@ -1,6 +1,6 @@
 # vktiny
 
-vulkan tiny framework
+vulkan tiny wrapper
 
 ## usage
 
