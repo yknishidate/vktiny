@@ -64,6 +64,16 @@ Buffer& ResourceManager::addStorageBuffer(vk::DeviceSize size,
     return buffer;
 }
 
+TopLevelAccelStruct& ResourceManager::addTopLevelAccelStruct(
+    const BottomLevelAccelStruct& bottomLevelAS)
+{
+    topLevelAccelStructs.emplace_back();
+    TopLevelAccelStruct& topLevelAccelStruct = topLevelAccelStructs.back();
+    topLevelAccelStruct.initialize(*device, *physicalDevice, bottomLevelAS);
+    addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAccelStruct.createWrite());
+    return topLevelAccelStruct;
+}
+
 void ResourceManager::addDescriptor(vk::DescriptorType type, vk::WriteDescriptorSet write)
 {
     // Count desc type

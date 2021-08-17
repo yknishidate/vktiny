@@ -29,41 +29,7 @@ public:
                              vk::MemoryPropertyFlags properties,
                              void* data = nullptr);
 
-    TopLevelAccelStruct& addTopLevelAccelStruct(const BottomLevelAccelStruct& bottomLevelAS)
-    {
-        topLevelAccelStructs.emplace_back();
-        TopLevelAccelStruct& topLevelAccelStruct = topLevelAccelStructs.back();
-        topLevelAccelStruct.initialize(*device, *physicalDevice, bottomLevelAS);
-        addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAccelStruct.createWrite());
-        return topLevelAccelStruct;
-    }
-
-    //AccelStruct& addAccelStruct(const std::vector<Vertex>& vertices, const Buffer& vertexBuffer,
-    //                            const std::vector<Index>& indices, const Buffer& indexBuffer)
-    //{
-    //    vk::AccelerationStructureGeometryTrianglesDataKHR triangleData;
-    //    triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
-    //    triangleData.setVertexData(vertexBuffer.getDeviceAddress());
-    //    triangleData.setVertexStride(sizeof(Vertex));
-    //    triangleData.setMaxVertex(vertices.size());
-    //    triangleData.setIndexType(vk::IndexType::eUint32);
-    //    triangleData.setIndexData(indexBuffer.getDeviceAddress());
-
-    //    vk::AccelerationStructureGeometryKHR geometry;
-    //    geometry.setGeometryType(vk::GeometryTypeKHR::eTriangles);
-    //    geometry.setGeometry({ triangleData });
-    //    geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
-
-    //    uint32_t primitiveCount = indices.size() / 3;
-    //    bottomLevelAS.createBuffer(*device, physicalDevice, geometry,
-    //                               vk::AccelerationStructureTypeKHR::eBottomLevel, primitiveCount);
-    //    bottomLevelAS.create();
-    //    vk::UniqueCommandBuffer cmdBuf = createCommandBuffer();
-    //    bottomLevelAS.build(*cmdBuf);
-    //    submitCommandBuffer(*cmdBuf);
-    //}
-
-    //Mesh& addMesh();
+    TopLevelAccelStruct& addTopLevelAccelStruct(const BottomLevelAccelStruct& bottomLevelAS);
 
     const auto& getDescSet() const { return *descSets.front(); }
     const auto& getDescSetLayout() const { return *descSetLayout; }
@@ -78,10 +44,6 @@ private:
     std::list<Buffer> uniformBuffers;
     std::list<Buffer> storageBuffers;
     std::list<TopLevelAccelStruct> topLevelAccelStructs;
-
-    //std::vector<Mesh> meshes;
-    //std::vector<Material> materials;
-    //std::vector<Texture> textures;
 
     // Descriptor
     void createDescriptorPool(uint32_t maxSets);
