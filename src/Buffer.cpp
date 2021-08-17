@@ -1,4 +1,4 @@
-#include "vktiny/Buffer.hpp"
+#include "Buffer.hpp"
 
 void Buffer::initialize(const Device& device,
                         const PhysicalDevice& physicalDevice,

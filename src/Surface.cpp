@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vktiny/Surface.hpp"
+#include "Surface.hpp"
 
 void Surface::initialize(const Instance& instance, GLFWwindow* window)
 {

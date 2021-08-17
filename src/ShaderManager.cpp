@@ -1,5 +1,5 @@
-#include "vktiny/ShaderManager.hpp"
-#include "vktiny/Pipeline.hpp"
+#include "ShaderManager.hpp"
+#include "Pipeline.hpp"
 
 std::vector<char> readFile(const std::string& filename)
 {

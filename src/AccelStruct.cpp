@@ -1,3 +1,3 @@
 
-#include "vktiny/AccelStruct.hpp"
+#include "AccelStruct.hpp"
 

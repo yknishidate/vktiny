@@ -1,4 +1,4 @@
-#include "vktiny/Image.hpp"
+#include "Image.hpp"
 
 void Image::initialize(const Device& device, const PhysicalDevice& physicalDevice,
                        vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)

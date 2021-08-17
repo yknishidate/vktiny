@@ -1,6 +1,6 @@
 #include <set>
 #include <iostream>
-#include "vktiny/Device.hpp"
+#include "Device.hpp"
 
 void Device::initialize(const Instance& instance,
                         const PhysicalDevice& physicalDevice,

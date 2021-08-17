@@ -1,4 +1,4 @@
-#include "vktiny/DebugMessenger.hpp"
+#include "DebugMessenger.hpp"
 #include <iostream>
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(

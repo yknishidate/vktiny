@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vktiny/PhysicalDevice.hpp"
+#include "PhysicalDevice.hpp"
 
 void PhysicalDevice::initialize(const Instance& instance)
 {

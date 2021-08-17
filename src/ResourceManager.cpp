@@ -1,2 +1,2 @@
-#include "vktiny/ResourceManager.hpp"
+#include "ResourceManager.hpp"
 
