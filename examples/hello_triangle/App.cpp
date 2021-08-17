@@ -1,18 +1,18 @@
-#include "BaseApp.hpp"
+#include "App.hpp"
 #include <iostream>
 #include <set>
 
 using vkIU = vk::ImageUsageFlagBits;
 using vkIL = vk::ImageLayout;
 
-void BaseApp::run()
+void App::run()
 {
     initVulkan();
     prepare();
     mainLoop();
 }
 
-void BaseApp::initVulkan()
+void App::initVulkan()
 {
     // Add device extensions
     std::vector<const char*> deviceExtensions;
@@ -43,7 +43,7 @@ void BaseApp::initVulkan()
     rtPipeline.initialize(context);
 }
 
-void BaseApp::mainLoop()
+void App::mainLoop()
 {
     while (context.running()) {
         context.pollEvents();
@@ -52,7 +52,7 @@ void BaseApp::mainLoop()
     context.getDevice().waitIdle();
 }
 
-void BaseApp::prepare()
+void App::prepare()
 {
     // Create render image
     renderImage = &resourceManager.addStorageImage(
@@ -109,7 +109,7 @@ void BaseApp::prepare()
     }
 }
 
-void BaseApp::draw()
+void App::draw()
 {
     // Begin
     Swapchain::FrameInfo frameInfo = context.getSwapchain().beginFrame();

@@ -1,9 +1,9 @@
-#include "BaseApp.hpp"
+#include "App.hpp"
 #include <iostream>
 
 int main()
 {
-    BaseApp app;
+    App app;
     try {
         app.run();
     } catch (const std::exception& e) {

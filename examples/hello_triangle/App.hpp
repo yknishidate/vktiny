@@ -4,7 +4,7 @@
 #include "Pipeline.hpp"
 #include "Context.hpp"
 
-class BaseApp
+class App
 {
 public:
     void run();
