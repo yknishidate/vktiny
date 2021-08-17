@@ -4,6 +4,7 @@
 #include "Pipeline.hpp"
 #include "Context.hpp"
 #include "Mesh.hpp"
+#include "AccelStruct.hpp"
 
 class App
 {
@@ -31,4 +32,5 @@ private:
     Buffer* indexBuffer;
     std::vector<Vertex> vertices;
     std::vector<Index> indices;
+    BottomLevelAccelStruct bottomLevelAS;
 };

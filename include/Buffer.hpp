@@ -8,10 +8,14 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer(Buffer&&) = default;
 
+    vk::Buffer get() const { return *buffer; }
+
     void initialize(const Device& device, const PhysicalDevice& physicalDevice,
                     vk::DeviceSize size, vk::BufferUsageFlags usage,
                     vk::MemoryPropertyFlags properties);
+
     void copy(void* data);
+
     vk::WriteDescriptorSet createWrite();
     uint64_t getDeviceAddress() const { return deviceAddress; }
 

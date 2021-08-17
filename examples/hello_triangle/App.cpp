@@ -68,16 +68,22 @@ void App::prepare()
     vertices.push_back(Vertex{ {-1.0, 0.0, 0.0} });
     vertexBuffer = &resourceManager.addStorageBuffer(
         sizeof(Vertex) * vertices.size(),
-        vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eStorageBuffer,
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
         vkMP::eHostVisible | vkMP::eHostCoherent,
         vertices.data());
 
     indices = { 0, 1, 2 };
     indexBuffer = &resourceManager.addStorageBuffer(
         sizeof(Index) * indices.size(),
-        vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eStorageBuffer,
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
         vkMP::eHostVisible | vkMP::eHostCoherent,
         indices.data());
+
+    bottomLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(),
+                             vertices, *vertexBuffer,
+                             indices, *indexBuffer);
 
     resourceManager.prepare();
 

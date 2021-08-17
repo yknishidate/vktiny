@@ -29,10 +29,32 @@ public:
                              vk::MemoryPropertyFlags properties,
                              void* data = nullptr);
 
-    AccelStruct& addAccelStruct()
-    {
+    TopLevelAccelStruct& addTopLevelAccelStruct();
 
-    }
+    //AccelStruct& addAccelStruct(const std::vector<Vertex>& vertices, const Buffer& vertexBuffer,
+    //                            const std::vector<Index>& indices, const Buffer& indexBuffer)
+    //{
+    //    vk::AccelerationStructureGeometryTrianglesDataKHR triangleData;
+    //    triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
+    //    triangleData.setVertexData(vertexBuffer.getDeviceAddress());
+    //    triangleData.setVertexStride(sizeof(Vertex));
+    //    triangleData.setMaxVertex(vertices.size());
+    //    triangleData.setIndexType(vk::IndexType::eUint32);
+    //    triangleData.setIndexData(indexBuffer.getDeviceAddress());
+
+    //    vk::AccelerationStructureGeometryKHR geometry;
+    //    geometry.setGeometryType(vk::GeometryTypeKHR::eTriangles);
+    //    geometry.setGeometry({ triangleData });
+    //    geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+    //    uint32_t primitiveCount = indices.size() / 3;
+    //    bottomLevelAS.createBuffer(*device, physicalDevice, geometry,
+    //                               vk::AccelerationStructureTypeKHR::eBottomLevel, primitiveCount);
+    //    bottomLevelAS.create();
+    //    vk::UniqueCommandBuffer cmdBuf = createCommandBuffer();
+    //    bottomLevelAS.build(*cmdBuf);
+    //    submitCommandBuffer(*cmdBuf);
+    //}
 
     //Mesh& addMesh();
 
