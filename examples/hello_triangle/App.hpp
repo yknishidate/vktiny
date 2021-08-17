@@ -9,10 +9,14 @@ class App
 public:
     void run();
 
-protected:
+private:
+    void initVulkan();
+    void prepare();
+    void mainLoop();
+    void draw();
+
     int width = 1280;
     int height = 720;
-
     Context context;
 
     ResourceManager resourceManager;
@@ -21,10 +25,4 @@ protected:
 
     Image* renderImage;
     std::vector<vk::UniqueCommandBuffer> drawCommandBuffers;
-
-private:
-    void initVulkan();
-    void prepare();
-    void mainLoop();
-    void draw();
 };
