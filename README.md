@@ -1,6 +1,6 @@
 # vktiny
 
-vulkan tiny wrapper
+tiny vulkan wrapper
 
 ## usage
 
