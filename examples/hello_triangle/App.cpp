@@ -2,8 +2,10 @@
 #include <iostream>
 #include <set>
 
-using vkIU = vk::ImageUsageFlagBits;
 using vkIL = vk::ImageLayout;
+using vkIU = vk::ImageUsageFlagBits;
+using vkBU = vk::BufferUsageFlagBits;
+using vkMP = vk::MemoryPropertyFlagBits;
 
 void App::run()
 {
@@ -54,19 +56,36 @@ void App::mainLoop()
 
 void App::prepare()
 {
-    // Create render image
+    // Add resources
     renderImage = &resourceManager.addStorageImage(
         context.getSwapchain().getExtent(),
         context.getSwapchain().getFormat(),
         vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst,
         vkIL::eGeneral);
 
+    vertices.push_back(Vertex{ {0.0, 1.0, 0.0} });
+    vertices.push_back(Vertex{ {1.0, 0.0, 0.0} });
+    vertices.push_back(Vertex{ {-1.0, 0.0, 0.0} });
+    vertexBuffer = &resourceManager.addStorageBuffer(
+        sizeof(Vertex) * vertices.size(),
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eStorageBuffer,
+        vkMP::eHostVisible | vkMP::eHostCoherent,
+        vertices.data());
+
+    indices = { 0, 1, 2 };
+    indexBuffer = &resourceManager.addStorageBuffer(
+        sizeof(Index) * indices.size(),
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eStorageBuffer,
+        vkMP::eHostVisible | vkMP::eHostCoherent,
+        indices.data());
+
+    resourceManager.prepare();
+
     // Load shaders
     rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
     rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
     rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
 
-    resourceManager.prepare();
     rtPipeline.prepare(rtShaderManager, resourceManager);
     rtShaderManager.initShaderBindingTable(rtPipeline);
 

@@ -3,6 +3,7 @@
 #include "ShaderManager.hpp"
 #include "Pipeline.hpp"
 #include "Context.hpp"
+#include "Mesh.hpp"
 
 class App
 {
@@ -22,7 +23,12 @@ private:
     ResourceManager resourceManager;
     RayTracingShaderManager rtShaderManager;
     RayTracingPipeline rtPipeline;
-
-    Image* renderImage;
     std::vector<vk::UniqueCommandBuffer> drawCommandBuffers;
+
+    using Index = uint32_t;
+    Image* renderImage;
+    Buffer* vertexBuffer;
+    Buffer* indexBuffer;
+    std::vector<Vertex> vertices;
+    std::vector<Index> indices;
 };

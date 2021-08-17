@@ -50,6 +50,7 @@ void Buffer::allocate(vk::Device device, const PhysicalDevice& physicalDevice,
 vk::WriteDescriptorSet Buffer::createWrite()
 {
     bufferInfo = vk::DescriptorBufferInfo{ *buffer, 0, size };
+
     vk::WriteDescriptorSet bufferWrite;
     bufferWrite.setDescriptorCount(1);
     bufferWrite.setBufferInfo(bufferInfo);

@@ -100,10 +100,10 @@ private:
     const Device* device;
     const PhysicalDevice* physicalDevice;
 
-    std::vector<Image> storageImages;
-    std::vector<Buffer> uniformBuffers;
-    std::vector<Buffer> storageBuffers;
-    std::vector<AccelStruct> accelStructs;
+    std::list<Image> storageImages;
+    std::list<Buffer> uniformBuffers;
+    std::list<Buffer> storageBuffers;
+    std::list<AccelStruct> accelStructs;
 
     //std::vector<Mesh> meshes;
     //std::vector<Material> materials;
@@ -113,8 +113,8 @@ private:
     void createDescriptorPool(uint32_t maxSets)
     {
         std::vector<vk::DescriptorPoolSize> sizes;
-        for (auto& pair : descCount) {
-            sizes.emplace_back(pair.first, pair.second);
+        for (auto& [type, count] : descCount) {
+            sizes.emplace_back(type, count);
         }
 
         vk::DescriptorPoolCreateInfo poolInfo;

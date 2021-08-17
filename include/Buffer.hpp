@@ -4,6 +4,10 @@
 class Buffer
 {
 public:
+    Buffer() = default;
+    Buffer(const Buffer&) = delete;
+    Buffer(Buffer&&) = default;
+
     void initialize(const Device& device, const PhysicalDevice& physicalDevice,
                     vk::DeviceSize size, vk::BufferUsageFlags usage,
                     vk::MemoryPropertyFlags properties);
