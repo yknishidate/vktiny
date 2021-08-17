@@ -8,63 +8,26 @@
 class ResourceManager
 {
 public:
-    void initialize(const Context& context)
-    {
-        this->device = &context.getDevice();
-        this->physicalDevice = &context.getPhysicalDevice();
-    }
+    void initialize(const Context& context);
 
-    void prepare(uint32_t maxSets = 1)
-    {
-        createDescriptorPool(maxSets);
-        createDescSetLayout();
-        descSets = device->get().allocateDescriptorSetsUnique({ *descPool, *descSetLayout });
-        updateDescSets();
-    }
+    void prepare(uint32_t maxSets = 1);
 
     using vkDT = vk::DescriptorType;
     using vkSS = vk::ShaderStageFlagBits;
-    Image& addStorageImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
-                           vk::ImageLayout imageLayout = vk::ImageLayout::eUndefined)
-    {
-        storageImages.emplace_back();
+    Image& addStorageImage(vk::Extent2D extent,
+                           vk::Format format,
+                           vk::ImageUsageFlags usage,
+                           vk::ImageLayout imageLayout = vk::ImageLayout::eUndefined);
 
-        Image& image = storageImages.back();
-        image.initialize(*device, *physicalDevice, extent, format, usage);
-        image.createImageView();
-        if (imageLayout != vk::ImageLayout::eUndefined) {
-            image.transitionImageLayout(vk::ImageLayout::eGeneral);
-        }
-        addDescriptor(vkDT::eStorageImage, image.createWrite());
-        return image;
-    }
+    Buffer& addUniformBuffer(vk::DeviceSize size,
+                             vk::BufferUsageFlags usage,
+                             vk::MemoryPropertyFlags properties,
+                             void* data = nullptr);
 
-    Buffer& addUniformBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                             vk::MemoryPropertyFlags properties, void* data = nullptr)
-    {
-        uniformBuffers.emplace_back();
-
-        Buffer& buffer = uniformBuffers.back();
-        buffer.initialize(*device, *physicalDevice, size, usage, properties);
-        if (data) {
-            buffer.copy(data);
-        }
-        addDescriptor(vkDT::eUniformBuffer, buffer.createWrite());
-        return buffer;
-    }
-
-    Buffer& addStorageBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                             vk::MemoryPropertyFlags properties, void* data = nullptr)
-    {
-        storageBuffers.emplace_back();
-        Buffer& buffer = storageBuffers.back();
-        buffer.initialize(*device, *physicalDevice, size, usage, properties);
-        if (data) {
-            buffer.copy(data);
-        }
-        addDescriptor(vkDT::eStorageBuffer, buffer.createWrite());
-        return buffer;
-    }
+    Buffer& addStorageBuffer(vk::DeviceSize size,
+                             vk::BufferUsageFlags usage,
+                             vk::MemoryPropertyFlags properties,
+                             void* data = nullptr);
 
     AccelStruct& addAccelStruct()
     {
@@ -77,25 +40,7 @@ public:
     const auto& getDescSetLayout() const { return *descSetLayout; }
 
 private:
-    void addDescriptor(vk::DescriptorType type, vk::WriteDescriptorSet write)
-    {
-        // Count desc type
-        if (descCount.contains(type)) {
-            descCount[type] += 1;
-        } else {
-            descCount[type] = 1;
-        }
-
-        // Add bindings
-        bindings.emplace_back(currentBinding, type, 1, vkSS::eAll);
-
-        // Add desc set write
-        write.setDstBinding(currentBinding);
-        write.setDescriptorType(type);
-        descWrites.push_back(write);
-
-        currentBinding++;
-    }
+    void addDescriptor(vk::DescriptorType type, vk::WriteDescriptorSet write);
 
     const Device* device;
     const PhysicalDevice* physicalDevice;
@@ -110,34 +55,9 @@ private:
     //std::vector<Texture> textures;
 
     // Descriptor
-    void createDescriptorPool(uint32_t maxSets)
-    {
-        std::vector<vk::DescriptorPoolSize> sizes;
-        for (auto& [type, count] : descCount) {
-            sizes.emplace_back(type, count);
-        }
-
-        vk::DescriptorPoolCreateInfo poolInfo;
-        poolInfo.setPoolSizes(sizes);
-        poolInfo.setMaxSets(maxSets);
-        poolInfo.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-        descPool = device->get().createDescriptorPoolUnique(poolInfo);
-    }
-
-    void createDescSetLayout()
-    {
-        vk::DescriptorSetLayoutCreateInfo layoutInfo;
-        layoutInfo.setBindings(bindings);
-        descSetLayout = device->get().createDescriptorSetLayoutUnique(layoutInfo);
-    }
-
-    void updateDescSets(uint32_t descSetIndex = 0)
-    {
-        for (auto& write : descWrites) {
-            write.setDstSet(*descSets[descSetIndex]);
-        }
-        device->get().updateDescriptorSets(descWrites, nullptr);
-    }
+    void createDescriptorPool(uint32_t maxSets);
+    void createDescSetLayout();
+    void updateDescSets(uint32_t descSetIndex = 0);
 
     int currentBinding = 0;
     vk::UniqueDescriptorPool descPool;
