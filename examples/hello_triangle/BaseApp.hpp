@@ -1,13 +1,4 @@
 #pragma once
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
-#include "Instance.hpp"
-#include "DebugMessenger.hpp"
-#include "Surface.hpp"
-#include "PhysicalDevice.hpp"
-#include "Device.hpp"
-#include "Swapchain.hpp"
 #include "ResourceManager.hpp"
 #include "ShaderManager.hpp"
 #include "Pipeline.hpp"

@@ -21,8 +21,13 @@ target_link_libraries(vktiny PUBLIC glfw)
 target_link_libraries(vktiny PUBLIC spdlog)
 
 # examples
-file(GLOB hello_triangle_sources examples/hello_triangle/*.cpp)
+file(GLOB hello_triangle_sources examples/hello_triangle/*.cpp examples/hello_triangle/*.hpp)
 add_executable(hello_triangle ${hello_triangle_sources})
 target_link_libraries(hello_triangle vktiny)
+
+file(GLOB minimal_sources examples/minimal/*.cpp examples/minimal/*.hpp)
+add_executable(minimal ${minimal_sources})
+target_link_libraries(minimal vktiny)
+
 file(COPY "${CMAKE_SOURCE_DIR}/shader" DESTINATION ${CMAKE_BINARY_DIR})
 # file(COPY "${CMAKE_SOURCE_DIR}/Asset" DESTINATION ${CMAKE_BINARY_DIR})
