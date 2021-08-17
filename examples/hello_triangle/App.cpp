@@ -63,9 +63,9 @@ void App::prepare()
         vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst,
         vkIL::eGeneral);
 
-    vertices.push_back(Vertex{ {0.0, 1.0, 0.0} });
-    vertices.push_back(Vertex{ {1.0, 0.0, 0.0} });
-    vertices.push_back(Vertex{ {-1.0, 0.0, 0.0} });
+    vertices.push_back(Vertex{ { 0.0, -0.3, 0.0} });
+    vertices.push_back(Vertex{ { 0.3,  0.3, 0.0} });
+    vertices.push_back(Vertex{ {-0.3,  0.3, 0.0} });
     vertexBuffer = &resourceManager.addStorageBuffer(
         sizeof(Vertex) * vertices.size(),
         vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
@@ -91,8 +91,8 @@ void App::prepare()
 
     // Load shaders
     rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
-    rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
     rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
+    rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
 
     rtPipeline.prepare(rtShaderManager, resourceManager);
     rtShaderManager.initShaderBindingTable(rtPipeline);
