@@ -1,8 +1,0 @@
-x64/
-*.vcxproj*
-assets/
-.vscode/
-*.bat
-vkgltf*
-99*/
-main.cpp
