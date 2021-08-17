@@ -19,3 +19,7 @@ add_subdirectory(glfw)
 # spdlog
 add_library(spdlog INTERFACE)
 target_include_directories(spdlog INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include)
+
+# tinygltf
+add_library(tinygltf INTERFACE)
+target_include_directories(tinygltf INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinygltf)

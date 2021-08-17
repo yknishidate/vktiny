@@ -19,6 +19,7 @@ target_link_libraries(vktiny PUBLIC glm)
 target_link_libraries(vktiny PUBLIC vulkan)
 target_link_libraries(vktiny PUBLIC glfw)
 target_link_libraries(vktiny PUBLIC spdlog)
+target_link_libraries(vktiny PUBLIC tinygltf)
 
 # examples
 file(GLOB hello_triangle_sources examples/hello_triangle/*.cpp examples/hello_triangle/*.hpp)
