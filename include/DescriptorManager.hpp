@@ -16,25 +16,25 @@ public:
     void prepare(uint32_t maxSets = 1);
 
     // TODO: create multi sets
-    void addStorageBuffer(Buffer& buffer, uint32_t binding, uint32_t set)
+    void addStorageBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
     {
         storageBuffers.push_back(&buffer);
         addDescriptor(vkDT::eStorageBuffer, buffer.createWrite(), binding);
     }
 
-    void addUniformBuffer(Buffer& buffer, uint32_t binding, uint32_t set)
+    void addUniformBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
     {
         uniformBuffers.push_back(&buffer);
         addDescriptor(vkDT::eUniformBuffer, buffer.createWrite(), binding);
     }
 
-    void addStorageImage(Image& image, uint32_t binding, uint32_t set)
+    void addStorageImage(Image& image, uint32_t binding, uint32_t set = 0)
     {
         storageImages.push_back(&image);
         addDescriptor(vkDT::eStorageImage, image.createWrite(), binding);
     }
 
-    void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS, uint32_t binding, uint32_t set)
+    void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS, uint32_t binding, uint32_t set = 0)
     {
         topLevelAccelStructs.push_back(&topLevelAS);
         addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding);

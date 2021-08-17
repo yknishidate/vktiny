@@ -6,9 +6,9 @@ void Pipeline::initialize(const Context& context)
 }
 
 void RayTracingPipeline::prepare(const RayTracingShaderManager& shaderManager,
-                                 const ResourceManager& resourceManager)
+                                 const DescriptorManager& descriptorManager)
 {
-    layout = device.createPipelineLayoutUnique({ {}, resourceManager.getDescSetLayout() });
+    layout = device.createPipelineLayoutUnique({ {}, descriptorManager.getDescSetLayout() });
 
     vk::RayTracingPipelineCreateInfoKHR createInfo;
     createInfo.setStages(shaderManager.getStages());

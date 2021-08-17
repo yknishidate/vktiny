@@ -2,7 +2,7 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include "Device.hpp"
-#include "ResourceManager.hpp"
+#include "DescriptorManager.hpp"
 #include "ShaderManager.hpp"
 #include "Context.hpp"
 
@@ -26,7 +26,7 @@ public:
     void setMaxRecursion(uint32_t maxRecursion) { this->maxRecursion = maxRecursion; }
 
     void prepare(const RayTracingShaderManager& shaderManager,
-                 const ResourceManager& resourceManager);
+                 const DescriptorManager& descriptorManager);
 
 private:
     uint32_t maxRecursion = 4;

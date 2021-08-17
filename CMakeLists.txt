@@ -22,10 +22,6 @@ target_link_libraries(vktiny PUBLIC spdlog)
 target_link_libraries(vktiny PUBLIC tinygltf)
 
 # examples
-file(GLOB hello_triangle_sources examples/hello_triangle/*.cpp examples/hello_triangle/*.hpp)
-add_executable(hello_triangle ${hello_triangle_sources})
-target_link_libraries(hello_triangle vktiny)
-
 file(GLOB raytracing_triangle_sources examples/raytracing_triangle/*.cpp examples/raytracing_triangle/*.hpp)
 add_executable(raytracing_triangle ${raytracing_triangle_sources})
 target_link_libraries(raytracing_triangle vktiny)

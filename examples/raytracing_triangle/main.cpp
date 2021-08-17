@@ -1,6 +1,6 @@
 #include <iostream>
 #include "Context.hpp"
-#include "ResourceManager.hpp"
+#include "DescriptorManager.hpp"
 #include "ShaderManager.hpp"
 #include "Pipeline.hpp"
 #include "AccelStruct.hpp"
@@ -40,8 +40,8 @@ int main()
     context.initialize(VK_API_VERSION_1_2, true, width, height,
                        deviceExtensions, deviceCreatePNext);
 
-    ResourceManager resourceManager;
-    resourceManager.initialize(context);
+    DescriptorManager descManager;
+    descManager.initialize(context);
 
     RayTracingShaderManager rtShaderManager;
     rtShaderManager.initialize(context);
@@ -50,48 +50,59 @@ int main()
     rtPipeline.initialize(context);
 
     // Create render image
-    Image& renderImage = resourceManager.addStorageImage(
-        context.getSwapchain().getExtent(),
-        context.getSwapchain().getFormat(),
-        vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst,
-        vkIL::eGeneral);
+    Image renderImage;
+    renderImage.initialize(context.getDevice(), context.getPhysicalDevice(),
+                           context.getSwapchain().getExtent(),
+                           context.getSwapchain().getFormat(),
+                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
+    renderImage.createImageView();
+    renderImage.transitionImageLayout(vk::ImageLayout::eGeneral);
 
-
+    // Create vertices and indices
     std::vector<Vertex> vertices;
     vertices.push_back(Vertex{ { 0.0, -0.3, 0.0} });
     vertices.push_back(Vertex{ { 0.3,  0.3, 0.0} });
     vertices.push_back(Vertex{ {-0.3,  0.3, 0.0} });
-    Buffer& vertexBuffer = resourceManager.addStorageBuffer(
-        sizeof(Vertex) * vertices.size(),
-        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
-        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-        vkMP::eHostVisible | vkMP::eHostCoherent,
-        vertices.data());
-
     std::vector<Index> indices{ 0, 1, 2 };
-    Buffer& indexBuffer = resourceManager.addStorageBuffer(
-        sizeof(Index) * indices.size(),
-        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
-        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-        vkMP::eHostVisible | vkMP::eHostCoherent,
-        indices.data());
 
-    // bottomLevelAS is not accessed by shaders, so this is not managed by the resource manager
+    // Create vertex buffer
+    Buffer vertexBuffer;
+    vertexBuffer.initialize(context.getDevice(), context.getPhysicalDevice(),
+                            sizeof(Vertex) * vertices.size(),
+                            vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+                            vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+                            vkMP::eHostVisible | vkMP::eHostCoherent);
+    vertexBuffer.copy(vertices.data());
+
+    // Create index buffer
+    Buffer indexBuffer;
+    indexBuffer.initialize(context.getDevice(), context.getPhysicalDevice(),
+                           sizeof(Index) * indices.size(),
+                           vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+                           vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+                           vkMP::eHostVisible | vkMP::eHostCoherent);
+    indexBuffer.copy(indices.data());
+
+    // Create bottom level accel struct
     BottomLevelAccelStruct bottomLevelAS;
     bottomLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(),
                              vertices, vertexBuffer,
                              indices, indexBuffer);
 
-    TopLevelAccelStruct& topLevelAS = resourceManager.addTopLevelAccelStruct(bottomLevelAS);
+    TopLevelAccelStruct topLevelAS;
+    topLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(), bottomLevelAS);
 
-    resourceManager.prepare();
+    // Add descriptor binding
+    descManager.addStorageImage(renderImage, 0);
+    descManager.addTopLevelAccelStruct(topLevelAS, 3);
+    descManager.prepare();
 
     // Load shaders
     rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
     rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
     rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
 
-    rtPipeline.prepare(rtShaderManager, resourceManager);
+    rtPipeline.prepare(rtShaderManager, descManager);
     rtShaderManager.initShaderBindingTable(rtPipeline);
 
     // Build draw command buffers
@@ -107,7 +118,7 @@ int main()
         cmdBuf.bindPipeline(bindPoint, rtPipeline.get());
 
         cmdBuf.bindDescriptorSets(bindPoint, rtPipeline.getLayout(), 0,
-                                  resourceManager.getDescSet(), nullptr);
+                                  descManager.getDescSet(), nullptr);
 
         cmdBuf.traceRaysKHR(rtShaderManager.getRaygenRegion(),
                             rtShaderManager.getMissRegion(),
