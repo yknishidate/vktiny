@@ -33,4 +33,5 @@ private:
     std::vector<Vertex> vertices;
     std::vector<Index> indices;
     BottomLevelAccelStruct bottomLevelAS;
+    TopLevelAccelStruct* topLevelAS;
 };

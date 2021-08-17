@@ -29,7 +29,14 @@ public:
                              vk::MemoryPropertyFlags properties,
                              void* data = nullptr);
 
-    TopLevelAccelStruct& addTopLevelAccelStruct();
+    TopLevelAccelStruct& addTopLevelAccelStruct(const BottomLevelAccelStruct& bottomLevelAS)
+    {
+        topLevelAccelStructs.emplace_back();
+        TopLevelAccelStruct& topLevelAccelStruct = topLevelAccelStructs.back();
+        topLevelAccelStruct.initialize(*device, *physicalDevice, bottomLevelAS);
+        addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAccelStruct.createWrite());
+        return topLevelAccelStruct;
+    }
 
     //AccelStruct& addAccelStruct(const std::vector<Vertex>& vertices, const Buffer& vertexBuffer,
     //                            const std::vector<Index>& indices, const Buffer& indexBuffer)
@@ -70,7 +77,7 @@ private:
     std::list<Image> storageImages;
     std::list<Buffer> uniformBuffers;
     std::list<Buffer> storageBuffers;
-    std::list<AccelStruct> accelStructs;
+    std::list<TopLevelAccelStruct> topLevelAccelStructs;
 
     //std::vector<Mesh> meshes;
     //std::vector<Material> materials;

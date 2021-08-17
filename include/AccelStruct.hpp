@@ -7,24 +7,10 @@
 class AccelStruct
 {
 public:
-
     using vkBU = vk::BufferUsageFlagBits;
     using vkMP = vk::MemoryPropertyFlagBits;
 
-    //void initialize(const Device& device,
-    //                const PhysicalDevice& physicalDevice,
-    //                vk::AccelerationStructureGeometryKHR geometry,
-    //                vk::AccelerationStructureTypeKHR type,
-    //                uint32_t primitiveCount)
-    //{
-    //    this->device = &device;
-    //    this->physicalDevice = &physicalDevice;
-    //    this->type = type;
-    //    this->primitiveCount = primitiveCount;
-
-    //    createBuffer(geometry);
-    //    create();
-    //}
+    const Buffer& getBuffer() const { return buffer; }
 
     vk::WriteDescriptorSet createWrite()
     {
@@ -36,7 +22,6 @@ public:
     }
 
 protected:
-
     vk::DeviceSize getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
                            uint32_t primitiveCount)
     {
@@ -47,14 +32,6 @@ protected:
 
     void createBuffer(vk::DeviceSize size)
     {
-        //geometryInfo.setType(type);
-        //geometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
-        //geometryInfo.setGeometries(geometry);
-
-        //auto buildSizes = device->get().getAccelerationStructureBuildSizesKHR(
-        //    vk::AccelerationStructureBuildTypeKHR::eDevice, geometryInfo, primitiveCount);
-        //this->size = buildSizes.accelerationStructureSize;
-
         buffer.initialize(*device, *physicalDevice, size,
                           vkBU::eAccelerationStructureStorageKHR | vkBU::eShaderDeviceAddress,
                           vkMP::eDeviceLocal);
@@ -86,18 +63,11 @@ protected:
         commandBuffer.buildAccelerationStructuresKHR(geometryInfo, &rangeInfo);
     }
 
-
     const Device* device;
     const PhysicalDevice* physicalDevice;
 
     vk::UniqueAccelerationStructureKHR accelStruct;
     Buffer buffer;
-
-    //vk::AccelerationStructureTypeKHR type;
-    //uint32_t primitiveCount;
-    //vk::DeviceSize size;
-    //vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo;
-    //uint64_t deviceAddress;
 
     vk::WriteDescriptorSetAccelerationStructureKHR asInfo;
 };
@@ -126,16 +96,14 @@ public:
         geometry.setGeometry({ triangleData });
         geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
 
-        uint32_t primitiveCount = indices.size() / 3;
-
         auto type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-
         vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo;
         geometryInfo.setType(type);
         geometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
         geometryInfo.setGeometries(geometry);
 
         // Create buffer and accel struct
+        uint32_t primitiveCount = indices.size() / 3;
         vk::DeviceSize size = getSize(geometryInfo, primitiveCount);
         createBuffer(size);
         createAccelStruct(size, type);
@@ -152,10 +120,53 @@ class TopLevelAccelStruct : public AccelStruct
 public:
     void initialize(const Device& device,
                     const PhysicalDevice& physicalDevice,
-                    vk::AccelerationStructureGeometryKHR geometry,
-                    vk::AccelerationStructureTypeKHR type,
-                    uint32_t primitiveCount)
+                    const BottomLevelAccelStruct& bottomLevelAS)
     {
+        this->device = &device;
+        this->physicalDevice = &physicalDevice;
 
+        VkTransformMatrixKHR transformMatrix = { 1.0f, 0.0f, 0.0f, 0.0f,
+                                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                                 0.0f, 0.0f, 1.0f, 0.0f };
+
+        vk::AccelerationStructureInstanceKHR asInstance;
+        asInstance.setTransform(transformMatrix);
+        asInstance.setMask(0xFF);
+        asInstance.setAccelerationStructureReference(bottomLevelAS.getBuffer().getDeviceAddress());
+        asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+
+        Buffer instancesBuffer;
+        instancesBuffer.initialize(device, physicalDevice,
+                                   sizeof(vk::AccelerationStructureInstanceKHR),
+                                   vkBU::eAccelerationStructureBuildInputReadOnlyKHR
+                                   | vkBU::eShaderDeviceAddress,
+                                   vkMP::eHostVisible | vkMP::eHostCoherent);
+        instancesBuffer.copy(&asInstance);
+
+        vk::AccelerationStructureGeometryInstancesDataKHR instancesData;
+        instancesData.setArrayOfPointers(false);
+        instancesData.setData(instancesBuffer.getDeviceAddress());
+
+        vk::AccelerationStructureGeometryKHR geometry;
+        geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+        geometry.setGeometry({ instancesData });
+        geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+        auto type = vk::AccelerationStructureTypeKHR::eTopLevel;
+        vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo;
+        geometryInfo.setType(type);
+        geometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+        geometryInfo.setGeometries(geometry);
+
+        // Create buffer and accel struct
+        uint32_t primitiveCount = 1;
+        vk::DeviceSize size = getSize(geometryInfo, primitiveCount);
+        createBuffer(size);
+        createAccelStruct(size, type);
+
+        // Build
+        auto cmdBuf = device.beginGraphicsCommand();
+        build(*cmdBuf, geometryInfo, size, primitiveCount);
+        device.endGraphicsCommand(*cmdBuf);
     }
 };

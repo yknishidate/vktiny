@@ -81,9 +81,11 @@ void App::prepare()
         vkMP::eHostVisible | vkMP::eHostCoherent,
         indices.data());
 
+    // bottomLevelAS is not accessed by shaders, so this is not managed by the resource manager
     bottomLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(),
                              vertices, *vertexBuffer,
                              indices, *indexBuffer);
+    topLevelAS = &resourceManager.addTopLevelAccelStruct(bottomLevelAS);
 
     resourceManager.prepare();
 
