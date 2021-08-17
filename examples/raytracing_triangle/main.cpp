@@ -3,9 +3,12 @@
 #include "ResourceManager.hpp"
 #include "ShaderManager.hpp"
 #include "Pipeline.hpp"
+#include "AccelStruct.hpp"
 
-using vkIU = vk::ImageUsageFlagBits;
 using vkIL = vk::ImageLayout;
+using vkIU = vk::ImageUsageFlagBits;
+using vkBU = vk::BufferUsageFlagBits;
+using vkMP = vk::MemoryPropertyFlagBits;
 
 int main()
 {
@@ -53,12 +56,41 @@ int main()
         vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst,
         vkIL::eGeneral);
 
-    // Load shaders
-    rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
-    rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
-    rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
+
+    std::vector<Vertex> vertices;
+    vertices.push_back(Vertex{ { 0.0, -0.3, 0.0} });
+    vertices.push_back(Vertex{ { 0.3,  0.3, 0.0} });
+    vertices.push_back(Vertex{ {-0.3,  0.3, 0.0} });
+    Buffer& vertexBuffer = resourceManager.addStorageBuffer(
+        sizeof(Vertex) * vertices.size(),
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+        vkMP::eHostVisible | vkMP::eHostCoherent,
+        vertices.data());
+
+    std::vector<Index> indices{ 0, 1, 2 };
+    Buffer& indexBuffer = resourceManager.addStorageBuffer(
+        sizeof(Index) * indices.size(),
+        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+        vkMP::eHostVisible | vkMP::eHostCoherent,
+        indices.data());
+
+    // bottomLevelAS is not accessed by shaders, so this is not managed by the resource manager
+    BottomLevelAccelStruct bottomLevelAS;
+    bottomLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(),
+                             vertices, vertexBuffer,
+                             indices, indexBuffer);
+
+    TopLevelAccelStruct& topLevelAS = resourceManager.addTopLevelAccelStruct(bottomLevelAS);
 
     resourceManager.prepare();
+
+    // Load shaders
+    rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
+    rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
+    rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
+
     rtPipeline.prepare(rtShaderManager, resourceManager);
     rtShaderManager.initShaderBindingTable(rtPipeline);
 
