@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Surface.hpp"
+#include "vktiny/Surface.hpp"
 
 namespace vkt
 {

@@ -1,4 +1,4 @@
-#include "vktiny.hpp"
+#include "vktiny/vktiny.hpp"
 
 using vkIL = vk::ImageLayout;
 using vkIU = vk::ImageUsageFlagBits;
