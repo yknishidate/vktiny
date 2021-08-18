@@ -1,4 +1,5 @@
 #include "vktiny/Vulkan/Image.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
 
 namespace vkt
 {
@@ -6,13 +7,14 @@ namespace vkt
                            vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
     {
         this->context = &context;
+        this->extent = extent;
         this->format = format;
         this->imageLayout = vk::ImageLayout::eUndefined;
-        create(extent, format, usage);
+        create(usage);
         allocate();
     }
 
-    void Image::create(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
+    void Image::create(vk::ImageUsageFlags usage)
     {
         vk::ImageCreateInfo createInfo;
         createInfo.setImageType(vk::ImageType::e2D);
@@ -45,6 +47,23 @@ namespace vkt
         view = context->getVkDevice().createImageViewUnique(createInfo);
     }
 
+    void Image::createSampler()
+    {
+        vk::SamplerCreateInfo samplerInfo{};
+        samplerInfo.magFilter = vk::Filter::eLinear;
+        samplerInfo.minFilter = vk::Filter::eLinear;
+        samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+        samplerInfo.addressModeU = vk::SamplerAddressMode::eMirroredRepeat;
+        samplerInfo.addressModeV = vk::SamplerAddressMode::eMirroredRepeat;
+        samplerInfo.addressModeW = vk::SamplerAddressMode::eMirroredRepeat;
+        samplerInfo.compareOp = vk::CompareOp::eNever;
+        samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+        samplerInfo.maxAnisotropy = 1.0;
+        samplerInfo.anisotropyEnable = false;
+        samplerInfo.maxLod = 1.0f;
+        sampler = context->getVkDevice().createSamplerUnique(samplerInfo);
+    }
+
     vk::WriteDescriptorSet Image::createWrite()
     {
         imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
@@ -65,6 +84,21 @@ namespace vkt
         copyRegion.setExtent({ extent.width, extent.height, 1 });
         cmdBuf.copyImage(srcImage, vkIL::eTransferSrcOptimal,
                          dstImage, vkIL::eTransferDstOptimal, copyRegion);
+    }
+
+    void Image::copyBuffer(const Buffer& buffer)
+    {
+        vk::UniqueCommandBuffer cmdBuf = context->getDevice().beginGraphicsCommand();
+
+        vk::BufferImageCopy region{};
+        region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = vk::Extent3D{ extent.width, extent.height, 1 };
+        cmdBuf->copyBufferToImage(buffer.get(), *image, vk::ImageLayout::eTransferDstOptimal, region);
+
+        context->getDevice().endGraphicsCommand(*cmdBuf);
     }
 
     void Image::transitionLayout(vk::CommandBuffer cmdBuf, vk::Image image,

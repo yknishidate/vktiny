@@ -32,6 +32,7 @@ void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
 
     loadMeshes(gltfModel);
     loadMaterials(gltfModel);
+    loadTextures(gltfModel);
 }
 
 void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
@@ -158,5 +159,37 @@ void vkt::Scene::loadMaterials(tinygltf::Model& gltfModel)
         }
 
         materials.push_back(material);
+    }
+}
+
+void vkt::Scene::loadTextures(tinygltf::Model& gltfModel)
+{
+    for (auto& image : gltfModel.images) {
+        Image tex;
+
+        if (image.component == 3) {
+            throw std::runtime_error("3 component image is not supported"); // TODO support RGB
+        }
+
+        auto imageData = &image.image[0];
+        uint32_t size = image.image.size();
+
+        // Create image
+        // TODO: image aspect
+        vk::Extent2D extent{ static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height) };
+        tex.initialize(*context, extent, vk::Format::eR8G8B8A8Unorm,
+                       vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+        tex.transitionLayout(vk::ImageLayout::eTransferDstOptimal);
+
+        // Copy from staging buffer
+        Buffer stageBuffer;
+        stageBuffer.initialize(*context, size, vk::BufferUsageFlagBits::eTransferSrc,
+                               vk::MemoryPropertyFlagBits::eHostVisible |
+                               vk::MemoryPropertyFlagBits::eHostCoherent,
+                               imageData);
+        tex.copyBuffer(stageBuffer);
+        tex.transitionLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+        tex.createSampler();
+        textures.push_back(std::move(tex));
     }
 }

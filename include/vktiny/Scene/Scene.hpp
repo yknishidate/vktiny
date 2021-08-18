@@ -35,6 +35,7 @@ namespace vkt
     private:
         void loadMeshes(tinygltf::Model& gltfModel);
         void loadMaterials(tinygltf::Model& gltfModel);
+        void loadTextures(tinygltf::Model& gltfModel);
 
         const Context* context;
         vk::BufferUsageFlags meshUsage;
