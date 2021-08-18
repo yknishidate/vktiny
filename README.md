@@ -43,7 +43,7 @@ descManager.initialize(context);
 descManager.addStorageBuffer(vertexBuffer, /*binding = */0);
 ```
 
-Shader loading
+Pipeline creation
 
 ```cpp
 RayTracingPipeline rtPipeline;
