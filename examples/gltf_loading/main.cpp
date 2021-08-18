@@ -60,17 +60,13 @@ int main()
     vk::BufferUsageFlags usage{ vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                                 vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress };
     vk::MemoryPropertyFlags props{ vkMP::eHostVisible | vkMP::eHostCoherent };
-    vkt::Buffer vertexBuffer;
-    vkt::Buffer indexBuffer;
-    vertexBuffer.initialize(context, sizeof(vkt::Vertex) * vertices.size(),
-                            usage, props, vertices.data());
-    indexBuffer.initialize(context, sizeof(vkt::Index) * indices.size(),
-                           usage, props, indices.data());
+    vkt::Mesh mesh;
+    mesh.initialize(context, vertices, indices, usage, props);
 
     // Create accel structs
     vkt::BottomLevelAccelStruct bottomLevelAS;
     vkt::TopLevelAccelStruct topLevelAS;
-    bottomLevelAS.initialize(context, vertices, vertexBuffer, indices, indexBuffer);
+    bottomLevelAS.initialize(context, mesh);
     topLevelAS.initialize(context, bottomLevelAS);
 
     // Add descriptor bindings
@@ -79,9 +75,9 @@ int main()
     descManager.prepare();
 
     // Load shaders
-    rtPipeline.addRaygenShader("shader/raytracing_triangle/spv/raygen.rgen.spv");
-    rtPipeline.addMissShader("shader/raytracing_triangle/spv/miss.rmiss.spv");
-    rtPipeline.addChitShader("shader/raytracing_triangle/spv/closesthit.rchit.spv");
+    rtPipeline.addRaygenShader("shader/gltf_loading/spv/raygen.rgen.spv");
+    rtPipeline.addMissShader("shader/gltf_loading/spv/miss.rmiss.spv");
+    rtPipeline.addChitShader("shader/gltf_loading/spv/closesthit.rchit.spv");
     rtPipeline.prepare(descManager);
 
     // Build draw command buffers

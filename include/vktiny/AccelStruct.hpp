@@ -112,6 +112,14 @@ namespace vkt
             build(*cmdBuf, geometryInfo, size, primitiveCount);
             context.getDevice().endGraphicsCommand(*cmdBuf);
         }
+
+        void initialize(const Context& context,
+                        const Mesh& mesh)
+        {
+            initialize(context,
+                       mesh.getVertices(), mesh.getVertexBuffer(),
+                       mesh.getIndices(), mesh.getIndexBuffer());
+        }
     };
 
     class TopLevelAccelStruct : public AccelStruct
