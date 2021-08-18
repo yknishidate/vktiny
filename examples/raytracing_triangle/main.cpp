@@ -1,9 +1,4 @@
-#include <iostream>
-#include "Context.hpp"
-#include "DescriptorManager.hpp"
-#include "ShaderManager.hpp"
-#include "Pipeline.hpp"
-#include "AccelStruct.hpp"
+#include "vktiny.hpp"
 
 using vkIL = vk::ImageLayout;
 using vkIU = vk::ImageUsageFlagBits;
@@ -56,27 +51,21 @@ int main()
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
     // Create vertices and indices
-    std::vector<vkt::Vertex> vertices{
-        { { 0.0, -0.3, 0.0} },
-        { { 0.3,  0.3, 0.0} },
-        { {-0.3,  0.3, 0.0} } };
+    std::vector<vkt::Vertex> vertices{ { { 0.0, -0.3, 0.0} },
+                                       { { 0.3,  0.3, 0.0} },
+                                       { {-0.3,  0.3, 0.0} } };
     std::vector<vkt::Index> indices{ 0, 1, 2 };
 
-    // Create vertex buffer
+    // Create vertex and index buffer
+    vk::BufferUsageFlags usage{ vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+                                vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress };
+    vk::MemoryPropertyFlags props{ vkMP::eHostVisible | vkMP::eHostCoherent };
     vkt::Buffer vertexBuffer;
-    vertexBuffer.initialize(context, sizeof(vkt::Vertex) * vertices.size(),
-                            vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
-                            vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-                            vkMP::eHostVisible | vkMP::eHostCoherent,
-                            vertices.data());
-
-    // Create index buffer
     vkt::Buffer indexBuffer;
+    vertexBuffer.initialize(context, sizeof(vkt::Vertex) * vertices.size(),
+                            usage, props, vertices.data());
     indexBuffer.initialize(context, sizeof(vkt::Index) * indices.size(),
-                           vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
-                           vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-                           vkMP::eHostVisible | vkMP::eHostCoherent,
-                           indices.data());
+                           usage, props, indices.data());
 
     // Create accel structs
     vkt::BottomLevelAccelStruct bottomLevelAS;
