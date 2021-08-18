@@ -81,9 +81,7 @@ int main()
     // Create accel structs
     BottomLevelAccelStruct bottomLevelAS;
     TopLevelAccelStruct topLevelAS;
-    bottomLevelAS.initialize(context,
-                             vertices, vertexBuffer,
-                             indices, indexBuffer);
+    bottomLevelAS.initialize(context, vertices, vertexBuffer, indices, indexBuffer);
     topLevelAS.initialize(context, bottomLevelAS);
 
     // Add descriptor bindings
