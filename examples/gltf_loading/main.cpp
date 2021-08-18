@@ -7,6 +7,33 @@ using vkIU = vk::ImageUsageFlagBits;
 using vkBU = vk::BufferUsageFlagBits;
 using vkMP = vk::MemoryPropertyFlagBits;
 
+struct MeshBuffers
+{
+    vk::DeviceAddress vertices;
+    vk::DeviceAddress indices;
+};
+
+vkt::Buffer createBufferReferences(const vkt::Context& context,
+                                   const std::vector<vkt::Mesh>& meshes)
+{
+    std::vector<MeshBuffers> meshData;
+    uint32_t meshCount = static_cast<uint32_t>(meshes.size());
+
+    for (const auto& mesh : meshes) {
+        MeshBuffers data;
+        data.vertices = mesh.getVertexBuffer().getDeviceAddress();
+        data.indices = mesh.getIndexBuffer().getDeviceAddress();
+        meshData.emplace_back(data);
+    }
+
+    vkt::Buffer sceneDesc;
+    sceneDesc.initialize(context, sizeof(MeshBuffers) * meshCount,
+                         vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+                         vkMP::eHostVisible | vkMP::eHostCoherent,
+                         meshData.data());
+    return sceneDesc;
+}
+
 int main()
 {
     int width = 1280;
@@ -77,6 +104,9 @@ int main()
     vkt::TopLevelAccelStruct topLevelAS;
     bottomLevelAS.initialize(context, scene.getMeshes().front());
     topLevelAS.initialize(context, bottomLevelAS);
+
+    // Create scene desc
+    vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
 
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);

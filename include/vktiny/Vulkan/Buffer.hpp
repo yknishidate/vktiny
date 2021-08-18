@@ -19,6 +19,22 @@ namespace vkt
 
         void copy(void* data);
 
+        void copyOnHost(void* data)
+        {
+            if (!mapped) {
+                mapped = context->getVkDevice().mapMemory(*memory, 0, size);
+            }
+            memcpy(mapped, data, static_cast<size_t>(size));
+        }
+
+        void copyOnDevice(void* data)
+        {
+            //Buffer stagingBuffer;
+            //stagingBuffer.initialize(*context, size, vk::BufferUsageFlagBits::eTransferSrc, // TODO: add usage?
+            //                         vkMP::eHostVisible | vkMP::eHostCoherent, data);
+            //copyFrom(stagingBuffer);
+        }
+
         vk::WriteDescriptorSet createWrite(); // TODO: remove this
         uint64_t getDeviceAddress() const { return deviceAddress; }
 
