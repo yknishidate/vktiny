@@ -65,8 +65,8 @@ void Image::copyImage(vk::CommandBuffer cmdBuf, vk::Image srcImage, vk::Image ds
                      dstImage, vkIL::eTransferDstOptimal, copyRegion);
 }
 
-void Image::transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image,
-                                  vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+void Image::transitionLayout(vk::CommandBuffer cmdBuf, vk::Image image,
+                             vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 {
     vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
     vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
@@ -113,10 +113,10 @@ void Image::transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image,
     cmdBuf.pipelineBarrier(srcStageMask, dstStageMask, {}, {}, {}, barrier);
 }
 
-void Image::transitionImageLayout(vk::ImageLayout newLayout)
+void Image::transitionLayout(vk::ImageLayout newLayout)
 {
     vk::UniqueCommandBuffer cmdBuf = context->getDevice().beginGraphicsCommand();
-    Image::transitionImageLayout(*cmdBuf, *image, imageLayout, newLayout);
+    Image::transitionLayout(*cmdBuf, *image, imageLayout, newLayout);
     context->getDevice().endGraphicsCommand(*cmdBuf);
     imageLayout = newLayout;
 }

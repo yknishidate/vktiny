@@ -14,9 +14,9 @@ public:
 
     static void copyImage(vk::CommandBuffer cmdBuf, vk::Image srcImage, vk::Image dstImage,
                           vk::Extent2D extent);
-    static void transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image,
-                                      vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-    void transitionImageLayout(vk::ImageLayout newLayout);
+    static void transitionLayout(vk::CommandBuffer cmdBuf, vk::Image image,
+                                 vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+    void transitionLayout(vk::ImageLayout newLayout);
 
     vk::Image get() const { return *image; }
 
