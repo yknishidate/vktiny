@@ -51,9 +51,9 @@ int main()
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
     // Create vertices and indices
-    std::vector<vkt::Vertex> vertices{ { { 0.0, -0.3, 0.0} },
-                                       { { 0.3,  0.3, 0.0} },
-                                       { {-0.3,  0.3, 0.0} } };
+    std::vector<vkt::Vertex> vertices{ { { 0.0,  0.3, 0.0} },
+                                       { { 0.3, -0.3, 0.0} },
+                                       { {-0.3, -0.3, 0.0} } };
     std::vector<vkt::Index> indices{ 0, 1, 2 };
 
     // Create vertex and index buffer
