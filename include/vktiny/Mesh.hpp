@@ -32,8 +32,33 @@ namespace vkt
     class Mesh
     {
     public:
+        Mesh() = default;
+
+        void initialize(const Context& context,
+                        const std::vector<Vertex>& vertices,
+                        const std::vector<Index>& indices,
+                        vk::BufferUsageFlags usage,
+                        vk::MemoryPropertyFlags properties)
+        {
+            this->vertices = vertices;
+            this->indices = indices;
+            vertexBuffer.initialize(context,
+                                    sizeof(vkt::Vertex) * vertices.size(),
+                                    usage, properties, this->vertices.data());
+            indexBuffer.initialize(context,
+                                   sizeof(vkt::Index) * indices.size(),
+                                   usage, properties, this->indices.data());
+        }
+
+        const auto& getVertices() const { return vertices; }
+        const auto& getIndices() const { return indices; }
+        const auto& getVertexBuffer() const { return vertexBuffer; }
+        const auto& getIndexBuffer() const { return indexBuffer; }
 
     private:
-
+        std::vector<Vertex> vertices;
+        std::vector<Index> indices;
+        Buffer vertexBuffer;
+        Buffer indexBuffer;
     };
 }
