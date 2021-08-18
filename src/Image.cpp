@@ -1,17 +1,17 @@
+#include "Context.hpp"
 #include "Image.hpp"
 
-void Image::initialize(const Device& device, const PhysicalDevice& physicalDevice,
+void Image::initialize(const Context& context,
                        vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
 {
-    this->device = &device;
+    this->context = &context;
     this->format = format;
     this->imageLayout = vk::ImageLayout::eUndefined;
-    create(device.get(), extent, format, usage);
-    allocate(device.get(), physicalDevice);
+    create(extent, format, usage);
+    allocate();
 }
 
-void Image::create(vk::Device device, vk::Extent2D extent,
-                   vk::Format format, vk::ImageUsageFlags usage)
+void Image::create(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
 {
     vk::ImageCreateInfo createInfo;
     createInfo.setImageType(vk::ImageType::e2D);
@@ -21,16 +21,17 @@ void Image::create(vk::Device device, vk::Extent2D extent,
     createInfo.setFormat(format);
     createInfo.setTiling(vk::ImageTiling::eOptimal);
     createInfo.setUsage(usage);
-    image = device.createImageUnique(createInfo);
+    image = context->getVkDevice().createImageUnique(createInfo);
 }
 
-void Image::allocate(vk::Device device, const PhysicalDevice& physicalDevice)
+void Image::allocate()
 {
-    auto requirements = device.getImageMemoryRequirements(*image);
-    auto memoryType = physicalDevice.findMemoryType(requirements.memoryTypeBits,
-                                                    vk::MemoryPropertyFlagBits::eDeviceLocal);
-    memory = device.allocateMemoryUnique({ requirements.size, memoryType });
-    device.bindImageMemory(*image, *memory, 0);
+    auto requirements = context->getVkDevice().getImageMemoryRequirements(*image);
+    auto memoryType = context->getPhysicalDevice().findMemoryType(
+        requirements.memoryTypeBits,
+        vk::MemoryPropertyFlagBits::eDeviceLocal);
+    memory = context->getVkDevice().allocateMemoryUnique({ requirements.size, memoryType });
+    context->getVkDevice().bindImageMemory(*image, *memory, 0);
 }
 
 void Image::createImageView()
@@ -40,7 +41,7 @@ void Image::createImageView()
     createInfo.setViewType(vk::ImageViewType::e2D);
     createInfo.setFormat(format);
     createInfo.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
-    view = device->get().createImageViewUnique(createInfo);
+    view = context->getVkDevice().createImageViewUnique(createInfo);
 }
 
 vk::WriteDescriptorSet Image::createWrite()
@@ -115,8 +116,8 @@ void Image::transitionImageLayout(vk::CommandBuffer cmdBuf, vk::Image image,
 
 void Image::transitionImageLayout(vk::ImageLayout newLayout)
 {
-    vk::UniqueCommandBuffer cmdBuf = device->beginGraphicsCommand();
+    vk::UniqueCommandBuffer cmdBuf = context->getDevice().beginGraphicsCommand();
     Image::transitionImageLayout(*cmdBuf, *image, imageLayout, newLayout);
-    device->endGraphicsCommand(*cmdBuf);
+    context->getDevice().endGraphicsCommand(*cmdBuf);
     imageLayout = newLayout;
 }

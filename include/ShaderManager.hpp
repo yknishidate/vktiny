@@ -20,8 +20,7 @@ protected:
     uint32_t addShaderStage(vk::ShaderStageFlagBits shaderStageFlag,
                             const vk::ShaderModule& shaderModule);
 
-    const Device* device;
-    const PhysicalDevice* physicalDevice;
+    const Context* context;
 
     std::vector<vk::UniqueShaderModule> modules;
     std::vector<vk::PipelineShaderStageCreateInfo> stages;

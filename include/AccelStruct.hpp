@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Buffer.hpp"
-#include "Device.hpp"
+#include "Context.hpp"
 #include "Mesh.hpp"
 
 class AccelStruct
@@ -25,14 +25,14 @@ protected:
     vk::DeviceSize getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
                            uint32_t primitiveCount)
     {
-        auto buildSizes = device->get().getAccelerationStructureBuildSizesKHR(
+        auto buildSizes = context->getVkDevice().getAccelerationStructureBuildSizesKHR(
             vk::AccelerationStructureBuildTypeKHR::eDevice, geometryInfo, primitiveCount);
         return buildSizes.accelerationStructureSize;
     }
 
     void createBuffer(vk::DeviceSize size)
     {
-        buffer.initialize(*device, *physicalDevice, size,
+        buffer.initialize(*context, size,
                           vkBU::eAccelerationStructureStorageKHR | vkBU::eShaderDeviceAddress,
                           vkMP::eDeviceLocal);
     }
@@ -43,7 +43,7 @@ protected:
         createInfo.setBuffer(buffer.get());
         createInfo.setSize(size);
         createInfo.setType(type);
-        accelStruct = device->get().createAccelerationStructureKHRUnique(createInfo);
+        accelStruct = context->getVkDevice().createAccelerationStructureKHRUnique(createInfo);
     }
 
     void build(vk::CommandBuffer commandBuffer,
@@ -52,7 +52,7 @@ protected:
                uint32_t primitiveCount)
     {
         Buffer scratchBuffer;
-        scratchBuffer.initialize(*device, *physicalDevice, size,
+        scratchBuffer.initialize(*context, size,
                                  vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                                  vkMP::eDeviceLocal);
         geometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
@@ -63,8 +63,7 @@ protected:
         commandBuffer.buildAccelerationStructuresKHR(geometryInfo, &rangeInfo);
     }
 
-    const Device* device;
-    const PhysicalDevice* physicalDevice;
+    const Context* context;
 
     vk::UniqueAccelerationStructureKHR accelStruct;
     Buffer buffer;
@@ -75,13 +74,11 @@ protected:
 class BottomLevelAccelStruct : public AccelStruct
 {
 public:
-    void initialize(const Device& device,
-                    const PhysicalDevice& physicalDevice,
+    void initialize(const Context& context,
                     const std::vector<Vertex>& vertices, const Buffer& vertexBuffer,
                     const std::vector<Index>& indices, const Buffer& indexBuffer)
     {
-        this->device = &device;
-        this->physicalDevice = &physicalDevice;
+        this->context = &context;
 
         vk::AccelerationStructureGeometryTrianglesDataKHR triangleData;
         triangleData.setVertexFormat(vk::Format::eR32G32B32Sfloat);
@@ -109,21 +106,19 @@ public:
         createAccelStruct(size, type);
 
         // Build
-        auto cmdBuf = device.beginGraphicsCommand();
+        auto cmdBuf = context.getDevice().beginGraphicsCommand();
         build(*cmdBuf, geometryInfo, size, primitiveCount);
-        device.endGraphicsCommand(*cmdBuf);
+        context.getDevice().endGraphicsCommand(*cmdBuf);
     }
 };
 
 class TopLevelAccelStruct : public AccelStruct
 {
 public:
-    void initialize(const Device& device,
-                    const PhysicalDevice& physicalDevice,
+    void initialize(const Context& context,
                     const BottomLevelAccelStruct& bottomLevelAS)
     {
-        this->device = &device;
-        this->physicalDevice = &physicalDevice;
+        this->context = &context;
 
         VkTransformMatrixKHR transformMatrix = { 1.0f, 0.0f, 0.0f, 0.0f,
                                                  0.0f, 1.0f, 0.0f, 0.0f,
@@ -136,7 +131,7 @@ public:
         asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
 
         Buffer instancesBuffer;
-        instancesBuffer.initialize(device, physicalDevice,
+        instancesBuffer.initialize(context,
                                    sizeof(vk::AccelerationStructureInstanceKHR),
                                    vkBU::eAccelerationStructureBuildInputReadOnlyKHR
                                    | vkBU::eShaderDeviceAddress,
@@ -165,8 +160,8 @@ public:
         createAccelStruct(size, type);
 
         // Build
-        auto cmdBuf = device.beginGraphicsCommand();
+        auto cmdBuf = context.getDevice().beginGraphicsCommand();
         build(*cmdBuf, geometryInfo, size, primitiveCount);
-        device.endGraphicsCommand(*cmdBuf);
+        context.getDevice().endGraphicsCommand(*cmdBuf);
     }
 };

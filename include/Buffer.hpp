@@ -1,5 +1,5 @@
 #pragma once
-#include "Device.hpp"
+#include "Context.hpp"
 
 class Buffer
 {
@@ -10,7 +10,7 @@ public:
 
     vk::Buffer get() const { return *buffer; }
 
-    void initialize(const Device& device, const PhysicalDevice& physicalDevice,
+    void initialize(const Context& context,
                     vk::DeviceSize size, vk::BufferUsageFlags usage,
                     vk::MemoryPropertyFlags properties);
 
@@ -20,11 +20,10 @@ public:
     uint64_t getDeviceAddress() const { return deviceAddress; }
 
 private:
-    void create(vk::Device device, vk::DeviceSize size, vk::BufferUsageFlags usage);
-    void allocate(vk::Device device, const PhysicalDevice& physicalDevice,
-                  vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+    void create(vk::DeviceSize size, vk::BufferUsageFlags usage);
+    void allocate(vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 
-    vk::Device device;
+    const Context* context;
 
     vk::UniqueBuffer buffer;
     vk::UniqueDeviceMemory memory;

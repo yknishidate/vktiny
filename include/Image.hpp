@@ -1,10 +1,12 @@
 #pragma once
-#include "Device.hpp"
+
+#include <vulkan/vulkan.hpp>
+class Context;
 
 class Image
 {
 public:
-    void initialize(const Device& device, const PhysicalDevice& physicalDevice,
+    void initialize(const Context& context,
                     vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage);
 
     void createImageView();
@@ -20,11 +22,11 @@ public:
     vk::Image get() const { return *image; }
 
 private:
-    void create(vk::Device device, vk::Extent2D extent,
+    void create(vk::Extent2D extent,
                 vk::Format format, vk::ImageUsageFlags usage);
-    void allocate(vk::Device device, const PhysicalDevice& physicalDevice);
+    void allocate();
 
-    const Device* device;
+    const Context* context;
     vk::UniqueImage image;
     vk::UniqueImageView view;
     vk::UniqueDeviceMemory memory;

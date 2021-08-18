@@ -17,8 +17,7 @@ std::vector<char> readFile(const std::string& filename)
 
 void ShaderManager::initialize(const Context& context)
 {
-    this->device = &context.getDevice();
-    this->physicalDevice = &context.getPhysicalDevice();
+    this->context = &context;
 }
 
 vk::ShaderModule& ShaderManager::addShaderModule(const std::string& filepath)
@@ -27,7 +26,7 @@ vk::ShaderModule& ShaderManager::addShaderModule(const std::string& filepath)
     vk::ShaderModuleCreateInfo createInfo;
     createInfo.setCodeSize(code.size());
     createInfo.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
-    modules.push_back(device->get().createShaderModuleUnique(createInfo));
+    modules.push_back(context->getVkDevice().createShaderModuleUnique(createInfo));
     return *modules.back();
 }
 
@@ -96,7 +95,7 @@ void RayTracingShaderManager::addChitAndAhitShader(const std::string chitFilepat
 void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
 {
     // Get raytracing props
-    const auto& props = physicalDevice->get().getProperties2<
+    const auto& props = context->getVkPhysicalDevice().getProperties2<
         vk::PhysicalDeviceProperties2,
         vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
     const auto& rtProps = props.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
@@ -115,7 +114,7 @@ void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
     // Get shader group handles
     // TODO: reduce args
     std::vector<uint8_t> shaderHandleStorage(sbtSize);
-    auto result = device->get().getRayTracingShaderGroupHandlesKHR(
+    auto result = context->getVkDevice().getRayTracingShaderGroupHandlesKHR(
         pipeline.get(), 0, groupCount, static_cast<size_t>(sbtSize), shaderHandleStorage.data());
     if (result != vk::Result::eSuccess) {
         throw std::runtime_error("failed to get ray tracing shader group handles.");
@@ -126,13 +125,13 @@ void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
     uint64_t missOffset = raygenCount;
     uint64_t hitOffset = raygenCount + missCount;
 
-    raygenSBT.initialize(*device, *physicalDevice, handleSize * raygenCount, usage, memProps);
+    raygenSBT.initialize(*context, handleSize * raygenCount, usage, memProps);
     raygenSBT.copy(shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
 
-    missSBT.initialize(*device, *physicalDevice, handleSize * missCount, usage, memProps);
+    missSBT.initialize(*context, handleSize * missCount, usage, memProps);
     missSBT.copy(shaderHandleStorage.data() + missOffset * handleSizeAligned);
 
-    hitSBT.initialize(*device, *physicalDevice, handleSize * hitCount, usage, memProps);
+    hitSBT.initialize(*context, handleSize * hitCount, usage, memProps);
     hitSBT.copy(shaderHandleStorage.data() + hitOffset * handleSizeAligned);
 
     raygenRegion.setDeviceAddress(raygenSBT.getDeviceAddress());

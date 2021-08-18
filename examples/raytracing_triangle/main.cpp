@@ -51,7 +51,7 @@ int main()
 
     // Create render image
     Image renderImage;
-    renderImage.initialize(context.getDevice(), context.getPhysicalDevice(),
+    renderImage.initialize(context,
                            context.getSwapchain().getExtent(),
                            context.getSwapchain().getFormat(),
                            vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
@@ -67,7 +67,7 @@ int main()
 
     // Create vertex buffer
     Buffer vertexBuffer;
-    vertexBuffer.initialize(context.getDevice(), context.getPhysicalDevice(),
+    vertexBuffer.initialize(context,
                             sizeof(Vertex) * vertices.size(),
                             vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                             vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
@@ -76,7 +76,7 @@ int main()
 
     // Create index buffer
     Buffer indexBuffer;
-    indexBuffer.initialize(context.getDevice(), context.getPhysicalDevice(),
+    indexBuffer.initialize(context,
                            sizeof(Index) * indices.size(),
                            vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                            vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
@@ -85,12 +85,12 @@ int main()
 
     // Create bottom level accel struct
     BottomLevelAccelStruct bottomLevelAS;
-    bottomLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(),
+    bottomLevelAS.initialize(context,
                              vertices, vertexBuffer,
                              indices, indexBuffer);
 
     TopLevelAccelStruct topLevelAS;
-    topLevelAS.initialize(context.getDevice(), context.getPhysicalDevice(), bottomLevelAS);
+    topLevelAS.initialize(context, bottomLevelAS);
 
     // Add descriptor binding
     descManager.addStorageImage(renderImage, 0);

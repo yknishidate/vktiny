@@ -18,8 +18,11 @@ public:
     void pollEvents() const;
 
     auto& getSwapchain() { return swapchain; }
+
     const auto& getDevice() const { return device; }
     const auto& getPhysicalDevice() const { return physicalDevice; }
+    auto getVkDevice() const { return device.get(); }
+    auto getVkPhysicalDevice() const { return physicalDevice.get(); }
 
 private:
     GLFWwindow* window;
