@@ -53,3 +53,25 @@ rtPipeline.addMissShader("shader/spv/miss.rmiss.spv");
 rtPipeline.addChitShader("shader/spv/closesthit.rchit.spv");
 rtPipeline.prepare(descManager);
 ```
+
+gltf loading
+
+```cpp
+// Load scene
+vkt::Scene scene;
+scene.setMeshUsage(vkBU::eAccelerationStructureBuildInputReadOnlyKHR);
+scene.setMeshProperties(vkMP::eHostVisible | vkMP::eHostCoherent);
+scene.loadFile(context, "asset/Duck/Duck.gltf");
+
+// Output scene info
+for (auto&& mesh : scene.getMeshes()) {
+    spdlog::info("mesh");
+    spdlog::info("  vertices: {}", mesh.getVertices().size());
+    spdlog::info("  indices: {}", mesh.getIndices().size());
+}
+for (auto&& mat : scene.getMaterials()) {
+    spdlog::info("material");
+    spdlog::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
+    spdlog::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
+}
+```
