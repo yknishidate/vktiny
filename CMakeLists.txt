@@ -23,12 +23,12 @@ target_link_libraries(vktiny PUBLIC tinygltf)
 
 # examples
 ## raytracing_triangle
-file(GLOB raytracing_triangle_sources examples/raytracing_triangle/*.cpp examples/raytracing_triangle/*.hpp)
+file(GLOB raytracing_triangle_sources examples/src/raytracing_triangle/*.cpp examples/raytracing_triangle/*.hpp)
 add_executable(raytracing_triangle ${raytracing_triangle_sources})
 target_link_libraries(raytracing_triangle vktiny)
 
 ## gltf_laoding
-file(GLOB gltf_loading_sources examples/gltf_loading/*.cpp)
+file(GLOB gltf_loading_sources examples/src/gltf_loading/*.cpp)
 add_executable(gltf_loading ${gltf_loading_sources})
 target_link_libraries(gltf_loading vktiny)
 
