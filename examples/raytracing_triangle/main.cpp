@@ -130,7 +130,7 @@ int main()
         context.pollEvents();
 
         // Begin
-        vkt::Swapchain::FrameInfo frameInfo = context.getSwapchain().beginFrame();
+        vkt::FrameInfo frameInfo = context.getSwapchain().beginFrame();
         const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
 
         // Render

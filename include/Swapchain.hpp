@@ -7,6 +7,14 @@
 
 namespace vkt
 {
+    struct FrameInfo
+    {
+        uint32_t imageIndex;
+        vk::Semaphore imageAvailableSemaphore;
+        vk::Semaphore renderFinishedSemaphore;
+        vk::Fence inFlightFence;
+    };
+
     class Swapchain
     {
     public:
@@ -46,14 +54,6 @@ namespace vkt
             }
             throw std::runtime_error("failed to acquire next image!");
         }
-
-        struct FrameInfo
-        {
-            uint32_t imageIndex;
-            vk::Semaphore imageAvailableSemaphore;
-            vk::Semaphore renderFinishedSemaphore;
-            vk::Fence inFlightFence;
-        };
 
         FrameInfo beginFrame()
         {
