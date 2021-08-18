@@ -32,7 +32,6 @@ std::vector<Vertex> vertices{
 // Create vertex buffer
 Buffer vertexBuffer;
 vertexBuffer.initialize(context, sizeof(Vertex) * vertices.size(),
-                        vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                         vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                         vkMP::eHostVisible | vkMP::eHostCoherent,
                         vertices.data());
