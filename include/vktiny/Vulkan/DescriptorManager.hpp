@@ -10,6 +10,12 @@ namespace vkt
     class DescriptorManager
     {
     public:
+        DescriptorManager() = default;
+        DescriptorManager(const DescriptorManager&) = delete;
+        DescriptorManager(DescriptorManager&&) = default;
+        DescriptorManager& operator = (const DescriptorManager&) = delete;
+        DescriptorManager& operator = (DescriptorManager&&) = default;
+
         using vkDT = vk::DescriptorType;
         using vkSS = vk::ShaderStageFlagBits;
 

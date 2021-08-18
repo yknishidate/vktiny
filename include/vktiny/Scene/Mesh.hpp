@@ -19,6 +19,10 @@ namespace vkt
     {
     public:
         Mesh() = default;
+        Mesh(const Mesh&) = delete;
+        Mesh(Mesh&&) = default;
+        Mesh& operator = (const Mesh&) = delete;
+        Mesh& operator = (Mesh&&) = default;
 
         void initialize(const Context& context,
                         const std::vector<Vertex>& vertices,

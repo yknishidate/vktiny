@@ -7,6 +7,12 @@ namespace vkt
     class Instance
     {
     public:
+        Instance() = default;
+        Instance(const Instance&) = delete;
+        Instance(Instance&&) = default;
+        Instance& operator = (const Instance&) = delete;
+        Instance& operator = (Instance&&) = default;
+
         void initialize(uint32_t apiVersion,
                         std::vector<const char*> layers = {},
                         std::vector<const char*> extensions = {});

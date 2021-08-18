@@ -1,0 +1,61 @@
+#pragma once
+#include "vktiny/math.hpp"
+
+namespace vkt
+{
+    class Camera
+    {
+    public:
+        Camera() = default;
+        Camera(const Camera&) = delete;
+        Camera(Camera&&) = default;
+        Camera& operator = (const Camera&) = delete;
+        Camera& operator = (Camera&&) = default;
+
+        virtual ~Camera() = default;
+
+        virtual void update() = 0;
+        virtual void processCursorMotion(glm::vec2 cursorMotion) {}
+        virtual void processMouseWheel(float value) {}
+        virtual void processKeyState() {}
+
+        glm::vec4 position;
+        glm::mat4 view;
+        glm::mat4 proj;
+        glm::vec3 up;
+
+        float fov = 45;
+        float aspect = 1;
+    };
+
+    class OrbitalCamera : public Camera
+    {
+    public:
+        OrbitalCamera(int width, int height);
+
+        void update() override;
+        void processCursorMotion(glm::vec2 cursorMotion) override;
+        void processMouseWheel(float value) override;
+
+        glm::vec3 target;
+        float phi = 0;
+        float theta = 0;
+    };
+
+    class FPSCamera : public Camera
+    {
+    public:
+        FPSCamera(int width, int height);
+
+        void update() override;
+        void processCursorMotion(glm::vec2 cursorMotion) override;
+        void processMouseWheel(float value) override;
+        void processKeyState() override;
+
+        glm::vec3 front;
+        float rotSpeed = 0.1;
+        float moveSpeed = 0.2;
+        float pitch = 0;
+        float yaw = 0;
+    };
+}

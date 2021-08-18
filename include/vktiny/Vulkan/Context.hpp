@@ -8,6 +8,12 @@ namespace vkt
     class Context
     {
     public:
+        Context() = default;
+        Context(const Context&) = delete;
+        Context(Context&&) = default;
+        Context& operator = (const Context&) = delete;
+        Context& operator = (Context&&) = default;
+
         ~Context();
 
         void initialize(uint32_t apiVersion,

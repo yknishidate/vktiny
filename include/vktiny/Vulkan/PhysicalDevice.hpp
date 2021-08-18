@@ -8,6 +8,12 @@ namespace vkt
     class PhysicalDevice
     {
     public:
+        PhysicalDevice() = default;
+        PhysicalDevice(const PhysicalDevice&) = delete;
+        PhysicalDevice(PhysicalDevice&&) = default;
+        PhysicalDevice& operator = (const PhysicalDevice&) = delete;
+        PhysicalDevice& operator = (PhysicalDevice&&) = default;
+
         void initialize(const Instance& instance);
 
         vk::PhysicalDevice get() const { return physicalDevice; }

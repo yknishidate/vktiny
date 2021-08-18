@@ -11,6 +11,12 @@ namespace vkt
     class ShaderManager
     {
     public:
+        ShaderManager() = default;
+        ShaderManager(const ShaderManager&) = delete;
+        ShaderManager(ShaderManager&&) = default;
+        ShaderManager& operator = (const ShaderManager&) = delete;
+        ShaderManager& operator = (ShaderManager&&) = default;
+
         void initialize(const Context& context);
 
         const auto& getStages() const { return stages; }

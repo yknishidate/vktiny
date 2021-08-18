@@ -9,6 +9,12 @@ namespace vkt
     class AccelStruct
     {
     public:
+        AccelStruct() = default;
+        AccelStruct(const AccelStruct&) = delete;
+        AccelStruct(AccelStruct&&) = default;
+        AccelStruct& operator = (const AccelStruct&) = delete;
+        AccelStruct& operator = (AccelStruct&&) = default;
+
         using vkBU = vk::BufferUsageFlagBits;
         using vkMP = vk::MemoryPropertyFlagBits;
 

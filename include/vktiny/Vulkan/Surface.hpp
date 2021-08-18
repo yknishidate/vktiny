@@ -9,6 +9,12 @@ namespace vkt
     class Surface
     {
     public:
+        Surface() = default;
+        Surface(const Surface&) = delete;
+        Surface(Surface&&) = default;
+        Surface& operator = (const Surface&) = delete;
+        Surface& operator = (Surface&&) = default;
+
         void initialize(const Instance& instance, GLFWwindow* window);
 
         vk::SurfaceKHR get() const { return surface.get(); }

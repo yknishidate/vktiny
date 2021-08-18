@@ -9,6 +9,12 @@ namespace vkt
     class Device
     {
     public:
+        Device() = default;
+        Device(const Device&) = delete;
+        Device(Device&&) = default;
+        Device& operator = (const Device&) = delete;
+        Device& operator = (Device&&) = default;
+
         void initialize(const Instance& instance,
                         const PhysicalDevice& physicalDevice,
                         const Surface& surface,

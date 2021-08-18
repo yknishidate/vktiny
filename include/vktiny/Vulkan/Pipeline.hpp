@@ -11,6 +11,12 @@ namespace vkt
     class Pipeline
     {
     public:
+        Pipeline() = default;
+        Pipeline(const Pipeline&) = delete;
+        Pipeline(Pipeline&&) = default;
+        Pipeline& operator = (const Pipeline&) = delete;
+        Pipeline& operator = (Pipeline&&) = default;
+
         virtual void initialize(const Context& context);
 
         vk::Pipeline get() const { return pipeline.get(); }

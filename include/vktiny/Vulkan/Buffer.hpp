@@ -9,6 +9,8 @@ namespace vkt
         Buffer() = default;
         Buffer(const Buffer&) = delete;
         Buffer(Buffer&&) = default;
+        Buffer& operator = (const Buffer&) = delete;
+        Buffer& operator = (Buffer&&) = default;
 
         vk::Buffer get() const { return *buffer; }
 

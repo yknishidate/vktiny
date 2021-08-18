@@ -8,6 +8,12 @@ namespace vkt
     class DebugMessenger
     {
     public:
+        DebugMessenger() = default;
+        DebugMessenger(const DebugMessenger&) = delete;
+        DebugMessenger(DebugMessenger&&) = default;
+        DebugMessenger& operator = (const DebugMessenger&) = delete;
+        DebugMessenger& operator = (DebugMessenger&&) = default;
+
         void initialize(const Instance& instance);
 
     private:

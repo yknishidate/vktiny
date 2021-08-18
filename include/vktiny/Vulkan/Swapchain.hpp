@@ -18,6 +18,12 @@ namespace vkt
     class Swapchain
     {
     public:
+        Swapchain() = default;
+        Swapchain(const Swapchain&) = delete;
+        Swapchain(Swapchain&&) = default;
+        Swapchain& operator = (const Swapchain&) = delete;
+        Swapchain& operator = (Swapchain&&) = default;
+
         ~Swapchain()
         {
             for (size_t i = 0; i < maxFramesInFlight; i++) {

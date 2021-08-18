@@ -1,11 +1,16 @@
 #include "vktiny/vktiny.hpp"
 #include <spdlog/spdlog.h>
 #include <glm/gtx/string_cast.hpp>
+#include <utility>
 
 using vkIL = vk::ImageLayout;
 using vkIU = vk::ImageUsageFlagBits;
 using vkBU = vk::BufferUsageFlagBits;
 using vkMP = vk::MemoryPropertyFlagBits;
+
+vkt::Context context;
+const int width = 1280;
+const int height = 720;
 
 struct MeshBuffers
 {
@@ -13,30 +18,8 @@ struct MeshBuffers
     vk::DeviceAddress indices;
 };
 
-vkt::Buffer createBufferReferences(const vkt::Context& context,
-                                   const std::vector<vkt::Mesh>& meshes)
+void initContext()
 {
-    std::vector<MeshBuffers> meshData;
-    for (const auto& mesh : meshes) {
-        MeshBuffers data;
-        data.vertices = mesh.getVertexBuffer().getDeviceAddress();
-        data.indices = mesh.getIndexBuffer().getDeviceAddress();
-        meshData.emplace_back(data);
-    }
-
-    vkt::Buffer sceneDesc;
-    sceneDesc.initialize(context, sizeof(MeshBuffers) * static_cast<uint32_t>(meshes.size()),
-                         vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-                         vkMP::eHostVisible | vkMP::eHostCoherent,
-                         meshData.data());
-    return sceneDesc;
-}
-
-int main()
-{
-    int width = 1280;
-    int height = 720;
-
     // Add device extensions
     std::vector<const char*> deviceExtensions;
     deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -60,26 +43,12 @@ int main()
     void* deviceCreatePNext = &bufferDeviceAddressFeature;
 
     // Init vulkan context
-    vkt::Context context;
     context.initialize(VK_API_VERSION_1_2, true, width, height,
                        deviceExtensions, features, deviceCreatePNext);
+}
 
-    vkt::DescriptorManager descManager;
-    descManager.initialize(context);
-
-    vkt::RayTracingPipeline rtPipeline;
-    rtPipeline.initialize(context);
-
-    // Create render image(binding = 0)
-    vkt::Image renderImage;
-    renderImage.initialize(context,
-                           context.getSwapchain().getExtent(),
-                           context.getSwapchain().getFormat(),
-                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
-    renderImage.createImageView();
-    renderImage.transitionLayout(vk::ImageLayout::eGeneral);
-
-    // Load scene
+vkt::Scene loadScene()
+{
     vkt::Scene scene;
     scene.setMeshUsage(vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                        vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress);
@@ -97,6 +66,74 @@ int main()
         vkt::log::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
         vkt::log::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
     }
+
+    return scene;
+}
+
+vkt::Image createRenderImage()
+{
+    vkt::Image renderImage;
+    renderImage.initialize(context,
+                           context.getSwapchain().getExtent(),
+                           context.getSwapchain().getFormat(),
+                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
+    renderImage.createImageView();
+    renderImage.transitionLayout(vk::ImageLayout::eGeneral);
+    return renderImage;
+}
+
+vkt::Buffer createBufferReferences(const vkt::Context& context,
+                                   const std::vector<vkt::Mesh>& meshes)
+{
+    std::vector<MeshBuffers> meshData;
+    for (const auto& mesh : meshes) {
+        MeshBuffers data;
+        data.vertices = mesh.getVertexBuffer().getDeviceAddress();
+        data.indices = mesh.getIndexBuffer().getDeviceAddress();
+        meshData.emplace_back(data);
+    }
+
+    vkt::Buffer sceneDesc;
+    sceneDesc.initialize(context, sizeof(MeshBuffers) * static_cast<uint32_t>(meshes.size()),
+                         vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+                         vkMP::eHostVisible | vkMP::eHostCoherent,
+                         meshData.data());
+    return sceneDesc;
+}
+
+void draw(std::vector<vk::UniqueCommandBuffer>& drawCommandBuffers)
+{
+    // Begin
+    vkt::FrameInfo frameInfo = context.getSwapchain().beginFrame();
+    const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
+
+    // Render
+    vk::PipelineStageFlags waitStage{ vk::PipelineStageFlagBits::eRayTracingShaderKHR };
+    vk::SubmitInfo submitInfo;
+    submitInfo.setWaitSemaphores(frameInfo.imageAvailableSemaphore);
+    submitInfo.setWaitDstStageMask(waitStage);
+    submitInfo.setCommandBuffers(cmdBuf);
+    submitInfo.setSignalSemaphores(frameInfo.renderFinishedSemaphore);
+    context.getDevice().getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
+
+    // End
+    context.getSwapchain().endFrame(frameInfo.imageIndex, cmdBuf);
+}
+
+int main()
+{
+    initContext();
+
+    vkt::DescriptorManager descManager;
+    vkt::RayTracingPipeline rtPipeline;
+    descManager.initialize(context);
+    rtPipeline.initialize(context);
+
+    // Load scene
+    vkt::Scene scene = loadScene();
+
+    // Create render image(binding = 0)
+    vkt::Image renderImage = createRenderImage();
 
     // Create accel structs(binding = 1)
     vkt::BottomLevelAccelStruct bottomLevelAS;
@@ -153,22 +190,7 @@ int main()
 
     while (context.running()) {
         context.pollEvents();
-
-        // Begin
-        vkt::FrameInfo frameInfo = context.getSwapchain().beginFrame();
-        const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
-
-        // Render
-        vk::PipelineStageFlags waitStage{ vk::PipelineStageFlagBits::eRayTracingShaderKHR };
-        vk::SubmitInfo submitInfo;
-        submitInfo.setWaitSemaphores(frameInfo.imageAvailableSemaphore);
-        submitInfo.setWaitDstStageMask(waitStage);
-        submitInfo.setCommandBuffers(cmdBuf);
-        submitInfo.setSignalSemaphores(frameInfo.renderFinishedSemaphore);
-        context.getDevice().getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
-
-        // End
-        context.getSwapchain().endFrame(frameInfo.imageIndex, cmdBuf);
+        draw(drawCommandBuffers);
     }
     context.getDevice().waitIdle();
 }
