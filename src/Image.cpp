@@ -1,4 +1,3 @@
-#include "Context.hpp"
 #include "Image.hpp"
 
 void Image::initialize(const Context& context,

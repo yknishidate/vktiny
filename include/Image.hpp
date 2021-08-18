@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-class Context;
+#include "Context.hpp"
 
 class Image
 {
