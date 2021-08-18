@@ -50,23 +50,30 @@ int main()
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
-    // Create vertices and indices
-    std::vector<vkt::Vertex> vertices{ { { 0.0, -0.3, 0.0} },
-                                       { { 0.3,  0.3, 0.0} },
-                                       { {-0.3,  0.3, 0.0} } };
-    std::vector<vkt::Index> indices{ 0, 1, 2 };
+    // Load scene
+    vkt::Scene scene;
+    scene.setMeshUsage(vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+                       vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress);
+    scene.setMeshProperties(vkMP::eHostVisible | vkMP::eHostCoherent);
+    scene.loadFile(context, "asset/Duck/Duck.gltf");
 
-    // Create vertex and index buffer
-    vk::BufferUsageFlags usage{ vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
-                                vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress };
-    vk::MemoryPropertyFlags props{ vkMP::eHostVisible | vkMP::eHostCoherent };
-    vkt::Mesh mesh;
-    mesh.initialize(context, vertices, indices, usage, props);
+    // =======================================================================
+    for (auto&& mesh : scene.getMeshes()) {
+        spdlog::info("mesh");
+        //for (auto&& vert : mesh.getVertices()) {
+        //    auto&& pos = vert.pos;
+        //    spdlog::info("pos: {} {} {}", pos.x, pos.y, pos.z);
+        //}
+        //for (auto&& index : mesh.getIndices()) {
+        //    spdlog::info("index: {}", index);
+        //}
+    }
+    // =======================================================================
 
     // Create accel structs
     vkt::BottomLevelAccelStruct bottomLevelAS;
     vkt::TopLevelAccelStruct topLevelAS;
-    bottomLevelAS.initialize(context, mesh);
+    bottomLevelAS.initialize(context, scene.getMeshes().front());
     topLevelAS.initialize(context, bottomLevelAS);
 
     // Add descriptor bindings

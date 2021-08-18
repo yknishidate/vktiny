@@ -4,14 +4,32 @@
 #include "vktiny/Scene/Mesh.hpp"
 #include "vktiny/Scene/Material.hpp"
 #include "vktiny/Vulkan/Image.hpp"
-#include "tiny_gltf.h"
+
+namespace tinygltf
+{
+    class Model;
+}
 
 namespace vkt
 {
     class Scene
     {
     public:
+        Scene() = default;
+
         void loadFile(const Context& context, const std::string& filepath);
+
+        void setMeshUsage(vk::BufferUsageFlags meshUsage)
+        {
+            this->meshUsage = meshUsage;
+        }
+
+        void setMeshProperties(vk::MemoryPropertyFlags meshProps)
+        {
+            this->meshProps = meshProps;
+        }
+
+        const auto& getMeshes() const { return meshes; }
 
     private:
         void loadMeshes(tinygltf::Model& gltfModel);

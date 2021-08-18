@@ -21,5 +21,10 @@ add_library(spdlog INTERFACE)
 target_include_directories(spdlog INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include)
 
 # tinygltf
+# add_library(tinygltf INTERFACE)
+# target_include_directories(tinygltf INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinygltf)
+
 add_library(tinygltf INTERFACE)
-target_include_directories(tinygltf INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinygltf)
+set(TINYGLTF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tinygltf)
+target_sources(tinygltf INTERFACE ${TINYGLTF_DIR}/tiny_gltf.h ${TINYGLTF_DIR}/json.hpp)
+target_include_directories(tinygltf INTERFACE ${TINYGLTF_DIR})

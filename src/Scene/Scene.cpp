@@ -1,5 +1,11 @@
 #include "vktiny/Scene/Scene.hpp"
 
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NOEXCEPTION
+#include "tiny_gltf.h"
+
 void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
 {
     this->context = &context;

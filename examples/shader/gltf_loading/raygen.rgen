@@ -12,11 +12,11 @@ void main()
     const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeEXT.xy);
     vec2 d = inUV * 2.0 - 1.0;
 
-    vec4 origin = vec4(0, 0, 5, 1);
-    vec4 target = vec4(d.x, d.y, 0, 1) ;
+    vec4 origin = vec4(0, 0, 500, 1);
+    vec4 target = vec4(d.x * 100, d.y * 100, 0, 1) ;
     vec4 direction = vec4(normalize(target.xyz - origin.xyz), 1) ;
 
-    payLoad = vec3(1.0, 0.5, 0.0);
+    payLoad = vec3(1.0, 0.0, 1.0);
     traceRayEXT(
         topLevelAS,
         gl_RayFlagsOpaqueEXT,

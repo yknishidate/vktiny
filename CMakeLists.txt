@@ -34,4 +34,4 @@ target_link_libraries(gltf_loading vktiny)
 
 # copy files
 file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
-# file(COPY "${CMAKE_SOURCE_DIR}/Asset" DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})
