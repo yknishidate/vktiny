@@ -20,35 +20,45 @@ namespace vkt
         // TODO: create multi sets
         void addStorageBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
-            addDescriptor(vkDT::eStorageBuffer, buffer.createWrite(), binding);
+            addDescriptors(vkDT::eStorageBuffer, buffer.createWrite(), binding, 1);
         }
 
         void addUniformBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
-            addDescriptor(vkDT::eUniformBuffer, buffer.createWrite(), binding);
+            addDescriptors(vkDT::eUniformBuffer, buffer.createWrite(), binding, 1);
         }
 
         void addStorageImage(Image& image, uint32_t binding, uint32_t set = 0)
         {
-            addDescriptor(vkDT::eStorageImage, image.createWrite(), binding);
+            addDescriptors(vkDT::eStorageImage, image.createWrite(), binding, 1);
         }
 
-        void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS, uint32_t binding, uint32_t set = 0)
+        void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS,
+                                    uint32_t binding, uint32_t set = 0)
         {
-            addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding);
+            addDescriptors(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding, 1);
         }
 
-        //void addCombinedImageSamplers(std::)
-        //{
-        //    combinedImageSamplers.insert(combinedImageSamplers.end(), b.begin(), b.end());
-        //    vkDT::eCombinedImageSampler
-        //}
+        void addCombinedImageSamplers(std::vector<Image>& images,
+                                      uint32_t binding, uint32_t set = 0)
+        {
+            // TODO: reserve info
+            std::vector<vk::DescriptorImageInfo> info;
+            for (auto& image : images) {
+                info.push_back(image.getDescInfo());
+            }
+            vk::WriteDescriptorSet write;
+            write.setDescriptorCount(images.size());
+            write.setImageInfo(info);
+            addDescriptors(vkDT::eCombinedImageSampler, write, binding, images.size());
+        }
 
         const auto& getDescSet() const { return *descSets.front(); }
         const auto& getDescSetLayout() const { return *descSetLayout; }
 
     private:
-        void addDescriptor(vk::DescriptorType type, vk::WriteDescriptorSet write, uint32_t binding);
+        void addDescriptors(vk::DescriptorType type, vk::WriteDescriptorSet write,
+                            uint32_t binding, uint32_t count);
 
         const Device* device;
         const PhysicalDevice* physicalDevice;

@@ -16,19 +16,20 @@ namespace vkt
         updateDescSets();
     }
 
-    void DescriptorManager::addDescriptor(vk::DescriptorType type,
-                                          vk::WriteDescriptorSet write,
-                                          uint32_t binding)
+    void DescriptorManager::addDescriptors(vk::DescriptorType type,
+                                           vk::WriteDescriptorSet write,
+                                           uint32_t binding,
+                                           uint32_t count)
     {
         // Count desc type
         if (descCount.contains(type)) {
-            descCount[type] += 1;
+            descCount[type] += count;
         } else {
-            descCount[type] = 1;
+            descCount[type] = count;
         }
 
         // Add bindings
-        bindings.emplace_back(binding, type, 1, vkSS::eAll);
+        bindings.emplace_back(binding, type, count, vkSS::eAll);
 
         // Add desc set write
         write.setDstBinding(binding);

@@ -16,6 +16,7 @@ namespace vkt
         void createImageView();
         void createSampler();
 
+        vk::DescriptorImageInfo getDescInfo();
         vk::WriteDescriptorSet createWrite();
 
         static void copyImage(vk::CommandBuffer cmdBuf,

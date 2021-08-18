@@ -64,6 +64,12 @@ namespace vkt
         sampler = context->getVkDevice().createSamplerUnique(samplerInfo);
     }
 
+    vk::DescriptorImageInfo Image::getDescInfo()
+    {
+        imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
+        return imageInfo;
+    }
+
     vk::WriteDescriptorSet Image::createWrite()
     {
         imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
