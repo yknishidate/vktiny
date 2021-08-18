@@ -88,14 +88,14 @@ int main()
 
     // Output scene info
     for (auto&& mesh : scene.getMeshes()) {
-        spdlog::info("mesh");
-        spdlog::info("  vertices: {}", mesh.getVertices().size());
-        spdlog::info("  indices: {}", mesh.getIndices().size());
+        vkt::log::info("mesh");
+        vkt::log::info("  vertices: {}", mesh.getVertices().size());
+        vkt::log::info("  indices: {}", mesh.getIndices().size());
     }
     for (auto&& mat : scene.getMaterials()) {
-        spdlog::info("material");
-        spdlog::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
-        spdlog::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
+        vkt::log::info("material");
+        vkt::log::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
+        vkt::log::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
     }
 
     // Create accel structs(binding = 1)
