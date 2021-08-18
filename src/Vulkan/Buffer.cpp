@@ -1,4 +1,4 @@
-#include "vktiny/Buffer.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
 
 namespace vkt
 {

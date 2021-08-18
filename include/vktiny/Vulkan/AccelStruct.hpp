@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Buffer.hpp"
-#include "Context.hpp"
-#include "Mesh.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
+#include "vktiny/Vulkan/Context.hpp"
+#include "vktiny/Scene/Mesh.hpp"
 
 namespace vkt
 {

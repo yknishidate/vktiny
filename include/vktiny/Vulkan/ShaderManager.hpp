@@ -1,6 +1,6 @@
 #pragma once
-#include "Buffer.hpp"
-#include "Context.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
+#include "vktiny/Vulkan/Context.hpp"
 #include <fstream>
 
 

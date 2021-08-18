@@ -3,5 +3,5 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
-#include "Context.hpp"
-#include "Pipeline.hpp"
+#include "vktiny/Vulkan/Context.hpp"
+#include "vktiny/Vulkan/Pipeline.hpp"

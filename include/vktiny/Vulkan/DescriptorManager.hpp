@@ -1,8 +1,8 @@
 #pragma once
-#include "Buffer.hpp"
-#include "Image.hpp"
-#include "AccelStruct.hpp"
-#include "Context.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
+#include "vktiny/Vulkan/Image.hpp"
+#include "vktiny/Vulkan/AccelStruct.hpp"
+#include "vktiny/Vulkan/Context.hpp"
 #include <unordered_map>
 
 namespace vkt

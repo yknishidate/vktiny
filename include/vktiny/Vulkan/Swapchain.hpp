@@ -2,7 +2,7 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
-#include "Device.hpp"
+#include "vktiny/Vulkan/Device.hpp"
 #include <utility>
 
 namespace vkt

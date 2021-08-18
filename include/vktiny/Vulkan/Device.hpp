@@ -1,8 +1,8 @@
 #pragma once
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-#include "PhysicalDevice.hpp"
-#include "Surface.hpp"
+#include "vktiny/Vulkan/PhysicalDevice.hpp"
+#include "vktiny/Vulkan/Surface.hpp"
 
 namespace vkt
 {

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vktiny/Swapchain.hpp"
+#include "vktiny/Vulkan/Swapchain.hpp"
 
 namespace vkt
 {

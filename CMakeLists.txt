@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(external)
 
 # core lib
-file(GLOB sources src/*.cpp)
-file(GLOB headers include/vktiny/*.hpp)
+file(GLOB_RECURSE sources src/*.cpp)
+file(GLOB_RECURSE headers include/vktiny/*.hpp)
 
 add_library(vktiny STATIC ${sources} ${headers})
 target_include_directories(vktiny PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

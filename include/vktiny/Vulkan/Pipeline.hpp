@@ -1,10 +1,10 @@
 #pragma once
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-#include "Device.hpp"
-#include "DescriptorManager.hpp"
-#include "ShaderManager.hpp"
-#include "Context.hpp"
+#include "vktiny/Vulkan/Device.hpp"
+#include "vktiny/Vulkan/DescriptorManager.hpp"
+#include "vktiny/Vulkan/ShaderManager.hpp"
+#include "vktiny/Vulkan/Context.hpp"
 
 namespace vkt
 {

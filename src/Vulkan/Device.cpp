@@ -1,6 +1,6 @@
 #include <set>
 #include <iostream>
-#include "vktiny/Device.hpp"
+#include "vktiny/Vulkan/Device.hpp"
 
 namespace vkt
 {

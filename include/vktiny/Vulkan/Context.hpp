@@ -1,7 +1,7 @@
 #pragma once
-#include "DebugMessenger.hpp"
-#include "Device.hpp"
-#include "Swapchain.hpp"
+#include "vktiny/Vulkan/DebugMessenger.hpp"
+#include "vktiny/Vulkan/Device.hpp"
+#include "vktiny/Vulkan/Swapchain.hpp"
 
 namespace vkt
 {

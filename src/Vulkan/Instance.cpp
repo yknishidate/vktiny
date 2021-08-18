@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vktiny/Instance.hpp"
+#include "vktiny/Vulkan/Instance.hpp"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 

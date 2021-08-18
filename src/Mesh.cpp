@@ -1,1 +1,0 @@
-#include "vktiny/Mesh.hpp"

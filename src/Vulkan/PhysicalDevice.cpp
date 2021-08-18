@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vktiny/PhysicalDevice.hpp"
+#include "vktiny/Vulkan/PhysicalDevice.hpp"
 
 namespace vkt
 {

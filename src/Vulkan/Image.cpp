@@ -1,4 +1,4 @@
-#include "vktiny/Image.hpp"
+#include "vktiny/Vulkan/Image.hpp"
 
 namespace vkt
 {

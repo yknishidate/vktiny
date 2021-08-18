@@ -1,5 +1,5 @@
 #pragma once
-#include "Buffer.hpp"
+#include "vktiny/Vulkan/Buffer.hpp"
 #include <glm/glm.hpp>
 
 namespace vkt

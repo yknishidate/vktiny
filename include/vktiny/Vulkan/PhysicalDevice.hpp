@@ -1,7 +1,7 @@
 #pragma once
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-#include "Instance.hpp"
+#include "vktiny/Vulkan/Instance.hpp"
 
 namespace vkt
 {

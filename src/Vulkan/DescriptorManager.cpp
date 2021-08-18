@@ -1,4 +1,4 @@
-#include "vktiny/DescriptorManager.hpp"
+#include "vktiny/Vulkan/DescriptorManager.hpp"
 
 namespace vkt
 {
