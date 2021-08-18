@@ -120,6 +120,19 @@ void draw(std::vector<vk::UniqueCommandBuffer>& drawCommandBuffers)
     context.getSwapchain().endFrame(frameInfo.imageIndex, cmdBuf);
 }
 
+void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)
+{
+    vkt::Image::transitionLayout(cmdBuf, src,
+                                 vkIL::eUndefined, vkIL::eTransferSrcOptimal);
+    vkt::Image::transitionLayout(cmdBuf, dst,
+                                 vkIL::eUndefined, vkIL::eTransferDstOptimal);
+    vkt::Image::copyImage(cmdBuf, src, dst, context.getSwapchain().getExtent());
+    vkt::Image::transitionLayout(cmdBuf, src,
+                                 vkIL::eTransferSrcOptimal, vkIL::eGeneral);
+    vkt::Image::transitionLayout(cmdBuf, dst,
+                                 vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+}
+
 int main()
 {
     initContext();
@@ -161,30 +174,15 @@ int main()
     auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
     for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
         const auto& cmdBuf = drawCommandBuffers[i].get();
-        const auto& swapchainImage = context.getSwapchain().getImages()[i];
-        const auto& extent = context.getSwapchain().getExtent();
-
         cmdBuf.begin(vk::CommandBufferBeginInfo{});
-
         cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.get());
-
         cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.getLayout(), 0,
                                   descManager.getDescSet(), nullptr);
-
         cmdBuf.traceRaysKHR(rtPipeline.getRaygenRegion(),
                             rtPipeline.getMissRegion(),
                             rtPipeline.getHitRegion(),
                             {}, width, height, 1);
-
-        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
-                                     vkIL::eUndefined, vkIL::eTransferSrcOptimal);
-        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
-                                     vkIL::eUndefined, vkIL::eTransferDstOptimal);
-        vkt::Image::copyImage(cmdBuf, renderImage.get(), swapchainImage, extent);
-        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
-                                     vkIL::eTransferSrcOptimal, vkIL::eGeneral);
-        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
-                                     vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+        copyImage(cmdBuf, renderImage.get(), context.getSwapchain().getImages()[i]);
         cmdBuf.end();
     }
 
