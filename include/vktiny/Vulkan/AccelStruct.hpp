@@ -59,6 +59,7 @@ namespace vkt
     {
     public:
         void initialize(const Context& context,
-                        const BottomLevelAccelStruct& bottomLevelAS);
+                        const BottomLevelAccelStruct& bottomLevelAS,
+                        const glm::mat4& transform = glm::mat4{ 1.0 });
     };
 }

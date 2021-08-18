@@ -80,16 +80,29 @@ void vkt::BottomLevelAccelStruct::initialize(const Context& context, const Mesh&
                mesh.getIndices(), mesh.getIndexBuffer());
 }
 
-void vkt::TopLevelAccelStruct::initialize(const Context& context, const BottomLevelAccelStruct& bottomLevelAS)
+glm::mat4 flipY(const glm::mat4& transformMatrix)
+{
+    glm::mat4 flipped = transformMatrix;
+    flipped[1][1] *= -1.0;
+    return flipped;
+}
+
+vk::TransformMatrixKHR toVkMatrix(const glm::mat4& transformMatrix)
+{
+    const glm::mat4 transposedMatrix = glm::transpose(transformMatrix);
+    std::array<std::array<float, 4>, 3> data;
+    std::memcpy(&data, &transposedMatrix, sizeof(vk::TransformMatrixKHR));
+    return vk::TransformMatrixKHR(data);
+}
+
+void vkt::TopLevelAccelStruct::initialize(const Context& context,
+                                          const BottomLevelAccelStruct& bottomLevelAS,
+                                          const glm::mat4& transform)
 {
     this->context = &context;
 
-    vk::TransformMatrixKHR transformMatrix{ {std::array{1.0f, 0.0f, 0.0f, 0.0f},
-                                             std::array{0.0f, 1.0f, 0.0f, 0.0f},
-                                             std::array{0.0f, 0.0f, 1.0f, 0.0f} } };
-
     vk::AccelerationStructureInstanceKHR asInstance;
-    asInstance.setTransform(transformMatrix);
+    asInstance.setTransform(toVkMatrix(flipY(transform)));
     asInstance.setMask(0xFF);
     asInstance.setAccelerationStructureReference(
         bottomLevelAS.getBuffer().getDeviceAddress());
