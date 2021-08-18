@@ -43,9 +43,6 @@ int main()
     DescriptorManager descManager;
     descManager.initialize(context);
 
-    RayTracingShaderManager rtShaderManager;
-    rtShaderManager.initialize(context);
-
     RayTracingPipeline rtPipeline;
     rtPipeline.initialize(context);
 
@@ -59,29 +56,27 @@ int main()
     renderImage.transitionImageLayout(vk::ImageLayout::eGeneral);
 
     // Create vertices and indices
-    std::vector<Vertex> vertices;
-    vertices.push_back(Vertex{ { 0.0, -0.3, 0.0} });
-    vertices.push_back(Vertex{ { 0.3,  0.3, 0.0} });
-    vertices.push_back(Vertex{ {-0.3,  0.3, 0.0} });
+    std::vector<Vertex> vertices{
+        { { 0.0, -0.3, 0.0} },
+        { { 0.3,  0.3, 0.0} },
+        { {-0.3,  0.3, 0.0} } };
     std::vector<Index> indices{ 0, 1, 2 };
 
     // Create vertex buffer
     Buffer vertexBuffer;
-    vertexBuffer.initialize(context,
-                            sizeof(Vertex) * vertices.size(),
+    vertexBuffer.initialize(context, sizeof(Vertex) * vertices.size(),
                             vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                             vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-                            vkMP::eHostVisible | vkMP::eHostCoherent);
-    vertexBuffer.copy(vertices.data());
+                            vkMP::eHostVisible | vkMP::eHostCoherent,
+                            vertices.data());
 
     // Create index buffer
     Buffer indexBuffer;
-    indexBuffer.initialize(context,
-                           sizeof(Index) * indices.size(),
+    indexBuffer.initialize(context, sizeof(Index) * indices.size(),
                            vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                            vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
-                           vkMP::eHostVisible | vkMP::eHostCoherent);
-    indexBuffer.copy(indices.data());
+                           vkMP::eHostVisible | vkMP::eHostCoherent,
+                           indices.data());
 
     // Create bottom level accel struct
     BottomLevelAccelStruct bottomLevelAS;
@@ -92,18 +87,16 @@ int main()
     TopLevelAccelStruct topLevelAS;
     topLevelAS.initialize(context, bottomLevelAS);
 
-    // Add descriptor binding
+    // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);
     descManager.addTopLevelAccelStruct(topLevelAS, 1);
     descManager.prepare();
 
     // Load shaders
-    rtShaderManager.addRaygenShader("shader/spv/raygen.rgen.spv");
-    rtShaderManager.addMissShader("shader/spv/miss.rmiss.spv");
-    rtShaderManager.addChitShader("shader/spv/closesthit.rchit.spv");
-
-    rtPipeline.prepare(rtShaderManager, descManager);
-    rtShaderManager.initShaderBindingTable(rtPipeline);
+    rtPipeline.addRaygenShader("shader/spv/raygen.rgen.spv");
+    rtPipeline.addMissShader("shader/spv/miss.rmiss.spv");
+    rtPipeline.addChitShader("shader/spv/closesthit.rchit.spv");
+    rtPipeline.prepare(descManager);
 
     // Build draw command buffers
     auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
@@ -120,9 +113,9 @@ int main()
         cmdBuf.bindDescriptorSets(bindPoint, rtPipeline.getLayout(), 0,
                                   descManager.getDescSet(), nullptr);
 
-        cmdBuf.traceRaysKHR(rtShaderManager.getRaygenRegion(),
-                            rtShaderManager.getMissRegion(),
-                            rtShaderManager.getHitRegion(),
+        cmdBuf.traceRaysKHR(rtPipeline.getRaygenRegion(),
+                            rtPipeline.getMissRegion(),
+                            rtPipeline.getHitRegion(),
                             {}, width, height, 1);
 
         Image::transitionImageLayout(cmdBuf, renderImage.get(),
