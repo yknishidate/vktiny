@@ -36,18 +36,18 @@ int main()
     void* deviceCreatePNext = &bufferDeviceAddressFeature;
 
     // Init vulkan context
-    Context context;
+    vkt::Context context;
     context.initialize(VK_API_VERSION_1_2, true, width, height,
                        deviceExtensions, deviceCreatePNext);
 
-    DescriptorManager descManager;
+    vkt::DescriptorManager descManager;
     descManager.initialize(context);
 
-    RayTracingPipeline rtPipeline;
+    vkt::RayTracingPipeline rtPipeline;
     rtPipeline.initialize(context);
 
     // Create render image
-    Image renderImage;
+    vkt::Image renderImage;
     renderImage.initialize(context,
                            context.getSwapchain().getExtent(),
                            context.getSwapchain().getFormat(),
@@ -56,31 +56,31 @@ int main()
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
     // Create vertices and indices
-    std::vector<Vertex> vertices{
+    std::vector<vkt::Vertex> vertices{
         { { 0.0, -0.3, 0.0} },
         { { 0.3,  0.3, 0.0} },
         { {-0.3,  0.3, 0.0} } };
-    std::vector<Index> indices{ 0, 1, 2 };
+    std::vector<vkt::Index> indices{ 0, 1, 2 };
 
     // Create vertex buffer
-    Buffer vertexBuffer;
-    vertexBuffer.initialize(context, sizeof(Vertex) * vertices.size(),
+    vkt::Buffer vertexBuffer;
+    vertexBuffer.initialize(context, sizeof(vkt::Vertex) * vertices.size(),
                             vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                             vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                             vkMP::eHostVisible | vkMP::eHostCoherent,
                             vertices.data());
 
     // Create index buffer
-    Buffer indexBuffer;
-    indexBuffer.initialize(context, sizeof(Index) * indices.size(),
+    vkt::Buffer indexBuffer;
+    indexBuffer.initialize(context, sizeof(vkt::Index) * indices.size(),
                            vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
                            vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                            vkMP::eHostVisible | vkMP::eHostCoherent,
                            indices.data());
 
     // Create accel structs
-    BottomLevelAccelStruct bottomLevelAS;
-    TopLevelAccelStruct topLevelAS;
+    vkt::BottomLevelAccelStruct bottomLevelAS;
+    vkt::TopLevelAccelStruct topLevelAS;
     bottomLevelAS.initialize(context, vertices, vertexBuffer, indices, indexBuffer);
     topLevelAS.initialize(context, bottomLevelAS);
 
@@ -114,15 +114,15 @@ int main()
                             rtPipeline.getHitRegion(),
                             {}, width, height, 1);
 
-        Image::transitionLayout(cmdBuf, renderImage.get(),
-                                vkIL::eUndefined, vkIL::eTransferSrcOptimal);
-        Image::transitionLayout(cmdBuf, swapchainImage,
-                                vkIL::eUndefined, vkIL::eTransferDstOptimal);
-        Image::copyImage(cmdBuf, renderImage.get(), swapchainImage, extent);
-        Image::transitionLayout(cmdBuf, renderImage.get(),
-                                vkIL::eTransferSrcOptimal, vkIL::eGeneral);
-        Image::transitionLayout(cmdBuf, swapchainImage,
-                                vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
+                                     vkIL::eUndefined, vkIL::eTransferSrcOptimal);
+        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
+                                     vkIL::eUndefined, vkIL::eTransferDstOptimal);
+        vkt::Image::copyImage(cmdBuf, renderImage.get(), swapchainImage, extent);
+        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
+                                     vkIL::eTransferSrcOptimal, vkIL::eGeneral);
+        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
+                                     vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
         cmdBuf.end();
     }
 
@@ -130,7 +130,7 @@ int main()
         context.pollEvents();
 
         // Begin
-        Swapchain::FrameInfo frameInfo = context.getSwapchain().beginFrame();
+        vkt::Swapchain::FrameInfo frameInfo = context.getSwapchain().beginFrame();
         const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
 
         // Render

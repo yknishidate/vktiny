@@ -15,146 +15,152 @@ std::vector<char> readFile(const std::string& filename)
     return buffer;
 }
 
-void ShaderManager::initialize(const Context& context)
+namespace vkt
 {
-    this->context = &context;
-}
-
-vk::ShaderModule& ShaderManager::addShaderModule(const std::string& filepath)
-{
-    const std::vector<char> code = readFile(filepath);
-    vk::ShaderModuleCreateInfo createInfo;
-    createInfo.setCodeSize(code.size());
-    createInfo.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
-    modules.push_back(context->getVkDevice().createShaderModuleUnique(createInfo));
-    return *modules.back();
-}
-
-uint32_t ShaderManager::addShaderStage(vk::ShaderStageFlagBits shaderStageFlag,
-                                       const vk::ShaderModule& shaderModule)
-{
-    stages.push_back({ {}, shaderStageFlag, shaderModule, "main" });
-    return static_cast<uint32_t>(stages.size() - 1);
-}
-
-void RayTracingShaderManager::addRaygenShader(const std::string filepath)
-{
-    raygenCount++;
-
-    auto& shaderModule = addShaderModule(filepath);
-    uint32_t stageIndex = addShaderStage(vkSS::eRaygenKHR, shaderModule);
-    auto& shaderGroup = addShaderGroup(vkSGT::eGeneral);
-    shaderGroup.generalShader = stageIndex;
-}
-
-void RayTracingShaderManager::addMissShader(const std::string filepath)
-{
-    missCount++;
-
-    auto& shaderModule = addShaderModule(filepath);
-    uint32_t stageIndex = addShaderStage(vkSS::eMissKHR, shaderModule);
-    auto& shaderGroup = addShaderGroup(vkSGT::eGeneral);
-    shaderGroup.generalShader = stageIndex;
-}
-
-void RayTracingShaderManager::addChitShader(const std::string filepath)
-{
-    hitCount++;
-
-    auto& shaderModule = addShaderModule(filepath);
-    uint32_t stageIndex = addShaderStage(vkSS::eClosestHitKHR, shaderModule);
-    auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
-    shaderGroup.generalShader = stageIndex;
-}
-
-void RayTracingShaderManager::addAhitShader(const std::string filepath)
-{
-    hitCount++;
-
-    auto& shaderModule = addShaderModule(filepath);
-    uint32_t stageIndex = addShaderStage(vkSS::eAnyHitKHR, shaderModule);
-    auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
-    shaderGroup.generalShader = stageIndex;
-}
-
-void RayTracingShaderManager::addChitAndAhitShader(const std::string chitFilepath, const std::string ahitFilepath)
-{
-    hitCount += 2;
-
-    auto& chitShaderModule = addShaderModule(chitFilepath);
-    uint32_t chitIndex = addShaderStage(vkSS::eClosestHitKHR, chitShaderModule);
-
-    auto& ahitShaderModule = addShaderModule(ahitFilepath);
-    uint32_t ahitIndex = addShaderStage(vkSS::eAnyHitKHR, ahitShaderModule);
-
-    auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
-    shaderGroup.closestHitShader = chitIndex;
-    shaderGroup.anyHitShader = ahitIndex;
-}
-
-void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
-{
-    // Get raytracing props
-    const auto& props = context->getVkPhysicalDevice().getProperties2<
-        vk::PhysicalDeviceProperties2,
-        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
-    const auto& rtProps = props.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
-
-    // Calc SBT size
-    const uint32_t handleSize = rtProps.shaderGroupHandleSize;
-    const uint32_t handleSizeAligned = rtProps.shaderGroupHandleAlignment;
-    const uint32_t groupCount = static_cast<uint32_t>(rtGroups.size());
-    const uint32_t sbtSize = groupCount * handleSizeAligned;
-
-    using vkBU = vk::BufferUsageFlagBits;
-    using vkMP = vk::MemoryPropertyFlagBits;
-    const vk::BufferUsageFlags usage = vkBU::eShaderBindingTableKHR | vkBU::eShaderDeviceAddress;
-    const vk::MemoryPropertyFlags memProps = vkMP::eHostVisible | vkMP::eHostCoherent;
-
-    // Get shader group handles
-    // TODO: reduce args
-    std::vector<uint8_t> shaderHandleStorage(sbtSize);
-    auto result = context->getVkDevice().getRayTracingShaderGroupHandlesKHR(
-        pipeline.get(), 0, groupCount, static_cast<size_t>(sbtSize), shaderHandleStorage.data());
-    if (result != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to get ray tracing shader group handles.");
+    void ShaderManager::initialize(const Context& context)
+    {
+        this->context = &context;
     }
 
-    // Create SBT Buffers
-    uint64_t raygenOffset = 0;
-    uint64_t missOffset = raygenCount;
-    uint64_t hitOffset = raygenCount + missCount;
+    vk::ShaderModule& ShaderManager::addShaderModule(const std::string& filepath)
+    {
+        const std::vector<char> code = readFile(filepath);
+        vk::ShaderModuleCreateInfo createInfo;
+        createInfo.setCodeSize(code.size());
+        createInfo.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
+        modules.push_back(context->getVkDevice().createShaderModuleUnique(createInfo));
+        return *modules.back();
+    }
 
-    raygenSBT.initialize(*context, handleSize * raygenCount, usage, memProps);
-    raygenSBT.copy(shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
+    uint32_t ShaderManager::addShaderStage(vk::ShaderStageFlagBits shaderStageFlag,
+                                           const vk::ShaderModule& shaderModule)
+    {
+        stages.push_back({ {}, shaderStageFlag, shaderModule, "main" });
+        return static_cast<uint32_t>(stages.size() - 1);
+    }
 
-    missSBT.initialize(*context, handleSize * missCount, usage, memProps);
-    missSBT.copy(shaderHandleStorage.data() + missOffset * handleSizeAligned);
+    void RayTracingShaderManager::addRaygenShader(const std::string filepath)
+    {
+        raygenCount++;
 
-    hitSBT.initialize(*context, handleSize * hitCount, usage, memProps);
-    hitSBT.copy(shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+        auto& shaderModule = addShaderModule(filepath);
+        uint32_t stageIndex = addShaderStage(vkSS::eRaygenKHR, shaderModule);
+        auto& shaderGroup = addShaderGroup(vkSGT::eGeneral);
+        shaderGroup.generalShader = stageIndex;
+    }
 
-    raygenRegion.setDeviceAddress(raygenSBT.getDeviceAddress());
-    raygenRegion.setStride(handleSizeAligned);
-    raygenRegion.setSize(handleSizeAligned);
+    void RayTracingShaderManager::addMissShader(const std::string filepath)
+    {
+        missCount++;
 
-    missRegion.setDeviceAddress(missSBT.getDeviceAddress());
-    missRegion.setStride(handleSizeAligned);
-    missRegion.setSize(handleSizeAligned);
+        auto& shaderModule = addShaderModule(filepath);
+        uint32_t stageIndex = addShaderStage(vkSS::eMissKHR, shaderModule);
+        auto& shaderGroup = addShaderGroup(vkSGT::eGeneral);
+        shaderGroup.generalShader = stageIndex;
+    }
 
-    hitRegion.setDeviceAddress(hitSBT.getDeviceAddress());
-    hitRegion.setStride(handleSizeAligned);
-    hitRegion.setSize(handleSizeAligned);
-}
+    void RayTracingShaderManager::addChitShader(const std::string filepath)
+    {
+        hitCount++;
 
-vk::RayTracingShaderGroupCreateInfoKHR& RayTracingShaderManager::addShaderGroup(
-    vk::RayTracingShaderGroupTypeKHR type)
-{
-    vk::RayTracingShaderGroupCreateInfoKHR shaderGroup{ type };
-    shaderGroup.setGeneralShader(VK_SHADER_UNUSED_KHR);
-    shaderGroup.setClosestHitShader(VK_SHADER_UNUSED_KHR);
-    shaderGroup.setAnyHitShader(VK_SHADER_UNUSED_KHR);
-    shaderGroup.setIntersectionShader(VK_SHADER_UNUSED_KHR);
-    rtGroups.push_back(shaderGroup);
-    return rtGroups.back();
+        auto& shaderModule = addShaderModule(filepath);
+        uint32_t stageIndex = addShaderStage(vkSS::eClosestHitKHR, shaderModule);
+        auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
+        shaderGroup.generalShader = stageIndex;
+    }
+
+    void RayTracingShaderManager::addAhitShader(const std::string filepath)
+    {
+        hitCount++;
+
+        auto& shaderModule = addShaderModule(filepath);
+        uint32_t stageIndex = addShaderStage(vkSS::eAnyHitKHR, shaderModule);
+        auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
+        shaderGroup.generalShader = stageIndex;
+    }
+
+    void RayTracingShaderManager::addChitAndAhitShader(const std::string chitFilepath,
+                                                       const std::string ahitFilepath)
+    {
+        hitCount += 2;
+
+        auto& chitShaderModule = addShaderModule(chitFilepath);
+        uint32_t chitIndex = addShaderStage(vkSS::eClosestHitKHR, chitShaderModule);
+
+        auto& ahitShaderModule = addShaderModule(ahitFilepath);
+        uint32_t ahitIndex = addShaderStage(vkSS::eAnyHitKHR, ahitShaderModule);
+
+        auto& shaderGroup = addShaderGroup(vkSGT::eTrianglesHitGroup);
+        shaderGroup.closestHitShader = chitIndex;
+        shaderGroup.anyHitShader = ahitIndex;
+    }
+
+    void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
+    {
+        // Get raytracing props
+        const auto& props = context->getVkPhysicalDevice().getProperties2<
+            vk::PhysicalDeviceProperties2,
+            vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        const auto& rtProps = props.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+
+        // Calc SBT size
+        const uint32_t handleSize = rtProps.shaderGroupHandleSize;
+        const uint32_t handleSizeAligned = rtProps.shaderGroupHandleAlignment;
+        const uint32_t groupCount = static_cast<uint32_t>(rtGroups.size());
+        const uint32_t sbtSize = groupCount * handleSizeAligned;
+
+        using vkBU = vk::BufferUsageFlagBits;
+        using vkMP = vk::MemoryPropertyFlagBits;
+        const vk::BufferUsageFlags usage =
+            vkBU::eShaderBindingTableKHR | vkBU::eShaderDeviceAddress;
+        const vk::MemoryPropertyFlags memProps = vkMP::eHostVisible | vkMP::eHostCoherent;
+
+        // Get shader group handles
+        // TODO: reduce args
+        std::vector<uint8_t> shaderHandleStorage(sbtSize);
+        auto result = context->getVkDevice().getRayTracingShaderGroupHandlesKHR(
+            pipeline.get(), 0, groupCount, static_cast<size_t>(sbtSize),
+            shaderHandleStorage.data());
+        if (result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to get ray tracing shader group handles.");
+        }
+
+        // Create SBT Buffers
+        uint64_t raygenOffset = 0;
+        uint64_t missOffset = raygenCount;
+        uint64_t hitOffset = raygenCount + missCount;
+
+        raygenSBT.initialize(*context, handleSize * raygenCount, usage, memProps);
+        raygenSBT.copy(shaderHandleStorage.data() + raygenOffset * handleSizeAligned);
+
+        missSBT.initialize(*context, handleSize * missCount, usage, memProps);
+        missSBT.copy(shaderHandleStorage.data() + missOffset * handleSizeAligned);
+
+        hitSBT.initialize(*context, handleSize * hitCount, usage, memProps);
+        hitSBT.copy(shaderHandleStorage.data() + hitOffset * handleSizeAligned);
+
+        raygenRegion.setDeviceAddress(raygenSBT.getDeviceAddress());
+        raygenRegion.setStride(handleSizeAligned);
+        raygenRegion.setSize(handleSizeAligned);
+
+        missRegion.setDeviceAddress(missSBT.getDeviceAddress());
+        missRegion.setStride(handleSizeAligned);
+        missRegion.setSize(handleSizeAligned);
+
+        hitRegion.setDeviceAddress(hitSBT.getDeviceAddress());
+        hitRegion.setStride(handleSizeAligned);
+        hitRegion.setSize(handleSizeAligned);
+    }
+
+    vk::RayTracingShaderGroupCreateInfoKHR& RayTracingShaderManager::addShaderGroup(
+        vk::RayTracingShaderGroupTypeKHR type)
+    {
+        vk::RayTracingShaderGroupCreateInfoKHR shaderGroup{ type };
+        shaderGroup.setGeneralShader(VK_SHADER_UNUSED_KHR);
+        shaderGroup.setClosestHitShader(VK_SHADER_UNUSED_KHR);
+        shaderGroup.setAnyHitShader(VK_SHADER_UNUSED_KHR);
+        shaderGroup.setIntersectionShader(VK_SHADER_UNUSED_KHR);
+        rtGroups.push_back(shaderGroup);
+        return rtGroups.back();
+    }
 }

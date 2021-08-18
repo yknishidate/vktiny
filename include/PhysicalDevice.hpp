@@ -3,15 +3,18 @@
 #include <vulkan/vulkan.hpp>
 #include "Instance.hpp"
 
-class PhysicalDevice
+namespace vkt
 {
-public:
-    void initialize(const Instance& instance);
+    class PhysicalDevice
+    {
+    public:
+        void initialize(const Instance& instance);
 
-    vk::PhysicalDevice get() const { return physicalDevice; }
+        vk::PhysicalDevice get() const { return physicalDevice; }
 
-    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
-private:
-    vk::PhysicalDevice physicalDevice;
-};
+    private:
+        vk::PhysicalDevice physicalDevice;
+    };
+}

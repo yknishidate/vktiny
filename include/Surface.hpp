@@ -4,13 +4,16 @@
 #include <GLFW/glfw3.h>
 #include "Instance.hpp"
 
-class Surface
+namespace vkt
 {
-public:
-    void initialize(const Instance& instance, GLFWwindow* window);
+    class Surface
+    {
+    public:
+        void initialize(const Instance& instance, GLFWwindow* window);
 
-    vk::SurfaceKHR get() const { return surface.get(); }
+        vk::SurfaceKHR get() const { return surface.get(); }
 
-private:
-    vk::UniqueSurfaceKHR surface;
-};
+    private:
+        vk::UniqueSurfaceKHR surface;
+    };
+}

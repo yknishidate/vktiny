@@ -2,17 +2,20 @@
 #include "Buffer.hpp"
 #include <glm/glm.hpp>
 
-using Index = uint32_t;
-
-struct Vertex
+namespace vkt
 {
-    glm::vec3 pos;
-};
+    using Index = uint32_t;
 
-class Mesh
-{
-public:
+    struct Vertex
+    {
+        glm::vec3 pos;
+    };
 
-private:
+    class Mesh
+    {
+    public:
 
-};
+    private:
+
+    };
+}

@@ -3,11 +3,14 @@
 #include <vulkan/vulkan.hpp>
 #include "Instance.hpp"
 
-class DebugMessenger
+namespace vkt
 {
-public:
-    void initialize(const Instance& instance);
+    class DebugMessenger
+    {
+    public:
+        void initialize(const Instance& instance);
 
-private:
-    vk::UniqueDebugUtilsMessengerEXT messenger;
-};
+    private:
+        vk::UniqueDebugUtilsMessengerEXT messenger;
+    };
+}

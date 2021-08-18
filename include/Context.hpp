@@ -3,34 +3,37 @@
 #include "Device.hpp"
 #include "Swapchain.hpp"
 
-class Context
+namespace vkt
 {
-public:
-    ~Context();
+    class Context
+    {
+    public:
+        ~Context();
 
-    void initialize(uint32_t apiVersion,
-                    bool enableValidationLayer,
-                    int width, int height,
-                    std::vector<const char*> deviceExtensions = {},
-                    void* deviceCreatePNext = nullptr);
+        void initialize(uint32_t apiVersion,
+                        bool enableValidationLayer,
+                        int width, int height,
+                        std::vector<const char*> deviceExtensions = {},
+                        void* deviceCreatePNext = nullptr);
 
-    bool running() const;
-    void pollEvents() const;
+        bool running() const;
+        void pollEvents() const;
 
-    auto& getSwapchain() { return swapchain; }
+        auto& getSwapchain() { return swapchain; }
 
-    const auto& getDevice() const { return device; }
-    const auto& getPhysicalDevice() const { return physicalDevice; }
-    auto getVkDevice() const { return device.get(); }
-    auto getVkPhysicalDevice() const { return physicalDevice.get(); }
+        const auto& getDevice() const { return device; }
+        const auto& getPhysicalDevice() const { return physicalDevice; }
+        auto getVkDevice() const { return device.get(); }
+        auto getVkPhysicalDevice() const { return physicalDevice.get(); }
 
-private:
-    GLFWwindow* window;
+    private:
+        GLFWwindow* window;
 
-    Instance instance;
-    DebugMessenger messenger;
-    Surface surface;
-    PhysicalDevice physicalDevice;
-    Device device;
-    Swapchain swapchain;
-};
+        Instance instance;
+        DebugMessenger messenger;
+        Surface surface;
+        PhysicalDevice physicalDevice;
+        Device device;
+        Swapchain swapchain;
+    };
+}
