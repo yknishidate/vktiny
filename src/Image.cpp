@@ -47,7 +47,7 @@ namespace vkt
 
     vk::WriteDescriptorSet Image::createWrite()
     {
-        imageInfo = vk::DescriptorImageInfo{ {}, *view, imageLayout };
+        imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
 
         vk::WriteDescriptorSet imageWrite;
         imageWrite.setDescriptorCount(1);

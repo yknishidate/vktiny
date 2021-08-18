@@ -30,6 +30,8 @@ namespace vkt
         const Context* context;
         vk::UniqueImage image;
         vk::UniqueImageView view;
+        vk::UniqueSampler sampler;
+
         vk::UniqueDeviceMemory memory;
         vk::Format format;
         vk::ImageLayout imageLayout;
