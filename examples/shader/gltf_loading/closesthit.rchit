@@ -1,47 +1,57 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 // #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_buffer_reference2 : require
 
-layout(binding = 2, set = 0) uniform sampler2D textureSamplers[];
+struct Vertex
+{
+    vec3 pos;
+    vec3 normal;
+    vec2 uv;
+    vec4 color;
+    vec4 tangent;
+};
+
+struct MeshBuffers
+{
+    uint64_t vertices;
+    uint64_t indices;
+};
+
+layout(buffer_reference, scalar) buffer Vertices {Vertex v[]; };
+layout(buffer_reference, scalar) buffer Indices {uvec3 i[]; };
+layout(set = 0, binding = 2) uniform sampler2D textureSamplers[];
+layout(set = 0, binding = 3) buffer _sceneDesc { MeshBuffers i[]; } sceneDesc;
 
 layout(location = 0) rayPayloadInEXT vec3 payLoad;
 
 hitAttributeEXT vec3 attribs;
 
-// struct Vertex
-// {
-//     vec3 pos;       // 0
-//     vec3 normal;    // 3
-//     vec2 uv;        // 6
-//     vec4 color;     // 8
-//     vec4 tangent;   // 12
-// };
-
-// Vertex unpack(uint meshIndex, uint index)
-// {
-//     uint vertexSize = 14;
-//     uint offset = index * vertexSize;
-//     Vertex v;
-//     v.pos       = vec3(vertices[meshIndex].v[offset +  0], vertices[meshIndex].v[offset +  1], vertices[meshIndex].v[offset + 2]);
-//     v.normal    = vec3(vertices[meshIndex].v[offset +  3], vertices[meshIndex].v[offset +  4], vertices[meshIndex].v[offset + 5]);
-//     v.uv        = vec2(vertices[meshIndex].v[offset +  6], vertices[meshIndex].v[offset +  7]);
-//     v.tangent   = vec3(vertices[meshIndex].v[offset +  8], vertices[meshIndex].v[offset +  9], vertices[meshIndex].v[offset + 10]);
-//     v.biTangent = vec3(vertices[meshIndex].v[offset + 11], vertices[meshIndex].v[offset + 12], vertices[meshIndex].v[offset + 13]);
-//     return v;
-// }
-
 void main()
 {
-    // int meshIndex = instanceData[gl_InstanceID].meshIndex;
+    MeshBuffers meshResource = sceneDesc.i[gl_InstanceID];
+    Vertices vertices = Vertices(meshResource.vertices);
+    Indices indices = Indices(meshResource.indices);
 
-    // Vertex v0 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 0]);
-    // Vertex v1 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 1]);
-    // Vertex v2 = unpack(meshIndex, indices[meshIndex].i[3 * gl_PrimitiveID + 2]);
+    // Indices
+    uvec3 index = indices.i[gl_PrimitiveID];
 
-    const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
-    // vec3 pos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-    // vec2 uv = v0.uv * barycentricCoords.x + v1.uv * barycentricCoords.y + v2.uv * barycentricCoords.z;
-    // vec3 normal = normalize(v0.normal * barycentricCoords.x + v1.normal * barycentricCoords.y + v2.normal * barycentricCoords.z);
-    // vec3 color = vec3(1.0);
-    payLoad = texture(textureSamplers[0], uv).rgb;;
+    // Vertex
+    Vertex v0 = vertices.v[index.x];
+    Vertex v1 = vertices.v[index.y];
+    Vertex v2 = vertices.v[index.z];
+
+    // Barycentric coordinates
+    const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
+    vec3 pos = v0.pos * barycentrics.x +
+               v1.pos * barycentrics.y +
+               v2.pos * barycentrics.z;
+    vec2 uv = v0.uv * barycentrics.x +
+              v1.uv * barycentrics.y +
+              v2.uv * barycentrics.z;
+    payLoad = texture(textureSamplers[0], uv).rgb;
+    // payLoad = vec3(uv, 0.0);
+    // payLoad = pos * 0.01;
 }

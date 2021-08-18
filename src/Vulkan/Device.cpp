@@ -9,6 +9,7 @@ namespace vkt
                             const Surface& surface,
                             std::vector<const char*> layers,
                             std::vector<const char*> extensions,
+                            vk::PhysicalDeviceFeatures features,
                             void* pNext)
     {
         findQueueFamilies(physicalDevice.get(), surface.get());
@@ -21,7 +22,6 @@ namespace vkt
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        vk::PhysicalDeviceFeatures features;
         vk::DeviceCreateInfo createInfo{ {}, queueCreateInfos, layers, extensions, &features };
         createInfo.setPNext(pNext);
         device = physicalDevice.get().createDeviceUnique(createInfo);

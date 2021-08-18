@@ -12,6 +12,7 @@ namespace vkt
                              bool enableValidationLayer,
                              int width, int height,
                              std::vector<const char*> deviceExtensions,
+                             vk::PhysicalDeviceFeatures features,
                              void* deviceCreatePNext)
     {
         glfwInit();
@@ -37,7 +38,7 @@ namespace vkt
         surface.initialize(instance, window);
         physicalDevice.initialize(instance);
         device.initialize(instance, physicalDevice, surface, layers,
-                          deviceExtensions, deviceCreatePNext);
+                          deviceExtensions, features, deviceCreatePNext);
         swapchain.initialize(device, physicalDevice, surface, width, height);
     }
 

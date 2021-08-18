@@ -33,7 +33,7 @@ int main()
     // Init vulkan context
     vkt::Context context;
     context.initialize(VK_API_VERSION_1_2, true, width, height,
-                       deviceExtensions, deviceCreatePNext);
+                       deviceExtensions, {}, deviceCreatePNext);
 
     vkt::DescriptorManager descManager;
     descManager.initialize(context);

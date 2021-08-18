@@ -14,7 +14,7 @@ void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
     tinygltf::Model gltfModel;
 
     std::string err, warn;
-    bool result;
+    bool result = false;
     if (filepath.substr(filepath.find_last_of(".") + 1) == "gltf") {
         result = gltfLoader.LoadASCIIFromFile(&gltfModel, &err, &warn, filepath);
     } else if (filepath.substr(filepath.find_last_of(".") + 1) == "glb") {
@@ -62,10 +62,52 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
             pos = reinterpret_cast<const float*>(&(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             size_t verticesCount = accessor.count;
 
+            if (attributes.find("NORMAL") != attributes.end()) {
+                auto& accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
+                normal = reinterpret_cast<const float*>(
+                    &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("TEXCOORD_0") != attributes.end()) {
+                auto& accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
+                uv = reinterpret_cast<const float*>(
+                    &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+            if (attributes.find("COLOR_0") != attributes.end()) {
+                auto& accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
+                color = reinterpret_cast<const float*>(
+                    &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+
+                numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
+            }
+            if (attributes.find("TANGENT") != attributes.end()) {
+                auto& accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
+                auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
+                auto& buffer = gltfModel.buffers[bufferView.buffer];
+                tangent = reinterpret_cast<const float*>(
+                    &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
+            }
+
             // Pack data to vertex array
             for (size_t v = 0; v < verticesCount; v++) {
                 Vertex vert;
                 vert.pos = glm::make_vec3(&pos[v * 3]);
+                vert.normal = glm::normalize(glm::vec3(normal ? glm::make_vec3(&normal[v * 3]) : glm::vec3(0.0f)));
+                vert.uv = uv ? glm::make_vec2(&uv[v * 2]) : glm::vec2(0.0f);
+                if (color) {
+                    if (numColorComponents == 3)
+                        vert.color = glm::vec4(glm::make_vec3(&color[v * 3]), 1.0f);
+                    if (numColorComponents == 4)
+                        vert.color = glm::make_vec4(&color[v * 4]);
+                } else {
+                    vert.color = glm::vec4(1.0f);
+                }
+                vert.tangent = tangent ? glm::vec4(glm::make_vec4(&tangent[v * 4])) : glm::vec4(0.0f);
                 vertices.push_back(vert);
             }
 

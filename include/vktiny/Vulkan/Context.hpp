@@ -14,6 +14,7 @@ namespace vkt
                         bool enableValidationLayer,
                         int width, int height,
                         std::vector<const char*> deviceExtensions = {},
+                        vk::PhysicalDeviceFeatures features = {},
                         void* deviceCreatePNext = nullptr);
 
         bool running() const;

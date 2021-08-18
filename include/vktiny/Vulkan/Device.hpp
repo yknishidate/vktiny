@@ -14,6 +14,7 @@ namespace vkt
                         const Surface& surface,
                         std::vector<const char*> layers = {},
                         std::vector<const char*> extensions = {},
+                        vk::PhysicalDeviceFeatures features = {},
                         void* pNext = nullptr);
 
         vk::Device get() const { return *device; }

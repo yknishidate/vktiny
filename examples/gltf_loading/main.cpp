@@ -17,8 +17,6 @@ vkt::Buffer createBufferReferences(const vkt::Context& context,
                                    const std::vector<vkt::Mesh>& meshes)
 {
     std::vector<MeshBuffers> meshData;
-    uint32_t meshCount = static_cast<uint32_t>(meshes.size());
-
     for (const auto& mesh : meshes) {
         MeshBuffers data;
         data.vertices = mesh.getVertexBuffer().getDeviceAddress();
@@ -27,7 +25,7 @@ vkt::Buffer createBufferReferences(const vkt::Context& context,
     }
 
     vkt::Buffer sceneDesc;
-    sceneDesc.initialize(context, sizeof(MeshBuffers) * meshCount,
+    sceneDesc.initialize(context, sizeof(MeshBuffers) * static_cast<uint32_t>(meshes.size()),
                          vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                          vkMP::eHostVisible | vkMP::eHostCoherent,
                          meshData.data());
@@ -52,6 +50,8 @@ int main()
     deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 
     // Add physical device features
+    vk::PhysicalDeviceFeatures features;
+    features.shaderInt64 = true;
     vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeature{ true };
     vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeaturesKHR{ true };
     vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeaturesKHR{ true };
@@ -62,7 +62,7 @@ int main()
     // Init vulkan context
     vkt::Context context;
     context.initialize(VK_API_VERSION_1_2, true, width, height,
-                       deviceExtensions, deviceCreatePNext);
+                       deviceExtensions, features, deviceCreatePNext);
 
     vkt::DescriptorManager descManager;
     descManager.initialize(context);
@@ -70,7 +70,7 @@ int main()
     vkt::RayTracingPipeline rtPipeline;
     rtPipeline.initialize(context);
 
-    // Create render image
+    // Create render image(binding = 0)
     vkt::Image renderImage;
     renderImage.initialize(context,
                            context.getSwapchain().getExtent(),
@@ -86,7 +86,7 @@ int main()
     scene.setMeshProperties(vkMP::eHostVisible | vkMP::eHostCoherent);
     scene.loadFile(context, "asset/Duck/Duck.gltf");
 
-    // =======================================================================
+    // Output scene info
     for (auto&& mesh : scene.getMeshes()) {
         spdlog::info("mesh");
         spdlog::info("  vertices: {}", mesh.getVertices().size());
@@ -97,21 +97,21 @@ int main()
         spdlog::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
         spdlog::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
     }
-    // =======================================================================
 
-    // Create accel structs
+    // Create accel structs(binding = 1)
     vkt::BottomLevelAccelStruct bottomLevelAS;
     vkt::TopLevelAccelStruct topLevelAS;
     bottomLevelAS.initialize(context, scene.getMeshes().front());
     topLevelAS.initialize(context, bottomLevelAS);
 
-    // Create scene desc
+    // Create scene desc(binding = 3)
     vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
 
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);
     descManager.addTopLevelAccelStruct(topLevelAS, 1);
     descManager.addCombinedImageSamplers(scene.getTextures(), 2);
+    descManager.addStorageBuffer(sceneDesc, 3);
     descManager.prepare();
 
     // Load shaders
