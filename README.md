@@ -17,6 +17,7 @@ cmake . -Bbuild
 - [glm](https://github.com/g-truc/glm.git)
 - [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers.git)
 - [spdlog](https://github.com/gabime/spdlog.git)
+- [tinygltf](https://github.com/syoyo/tinygltf.git)
 
 ## example
 
