@@ -30,9 +30,11 @@ namespace vkt
         }
 
         const auto& getMeshes() const { return meshes; }
+        const auto& getMaterials() const { return materials; }
 
     private:
         void loadMeshes(tinygltf::Model& gltfModel);
+        void loadMaterials(tinygltf::Model& gltfModel);
 
         const Context* context;
         vk::BufferUsageFlags meshUsage;

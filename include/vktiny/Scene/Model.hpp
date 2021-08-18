@@ -12,7 +12,6 @@ namespace vkt
     class Model
     {
         int meshIndex{ -1 };
-        int materialIndex{ -1 };
 
         glm::mat4 worldMatrix{ 1.0f };
         glm::vec3 translation{ 1.0f };

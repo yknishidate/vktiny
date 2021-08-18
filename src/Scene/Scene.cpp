@@ -31,6 +31,7 @@ void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
     }
 
     loadMeshes(gltfModel);
+    loadMaterials(gltfModel);
 }
 
 void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
@@ -112,6 +113,50 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
 
             meshes.emplace_back();
             meshes.back().initialize(*context, vertices, indices, meshUsage, meshProps);
+            meshes.back().setMaterialIndex(gltfPrimitive.material);
         }
+    }
+}
+
+void vkt::Scene::loadMaterials(tinygltf::Model& gltfModel)
+{
+    for (auto& mat : gltfModel.materials) {
+        Material material;
+
+        // Base color
+        if (mat.values.find("baseColorTexture") != mat.values.end()) {
+            material.baseColorTextureIndex = mat.values["baseColorTexture"].TextureIndex();
+        }
+        if (mat.values.find("baseColorFactor") != mat.values.end()) {
+            material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+        }
+
+        // Metallic / Roughness
+        if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
+            material.metallicRoughnessTextureIndex = mat.values["metallicRoughnessTexture"].TextureIndex();
+        }
+        if (mat.values.find("roughnessFactor") != mat.values.end()) {
+            material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+        }
+        if (mat.values.find("metallicFactor") != mat.values.end()) {
+            material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+        }
+
+        // Normal
+        if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
+            material.normalTextureIndex = mat.additionalValues["normalTexture"].TextureIndex();
+        }
+
+        // Emissive
+        if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
+            material.emissiveTextureIndex = mat.additionalValues["emissiveTexture"].TextureIndex();
+        }
+
+        // Occlusion
+        if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
+            material.occlusionTextureIndex = mat.additionalValues["occlusionTexture"].TextureIndex();
+        }
+
+        materials.push_back(material);
     }
 }

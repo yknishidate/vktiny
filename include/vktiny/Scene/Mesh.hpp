@@ -30,11 +30,18 @@ namespace vkt
         const auto& getIndices() const { return indices; }
         const auto& getVertexBuffer() const { return vertexBuffer; }
         const auto& getIndexBuffer() const { return indexBuffer; }
+        const auto& getMaterialIndex() const { return materialIndex; }
+
+        void setMaterialIndex(int materialIndex)
+        {
+            this->materialIndex = materialIndex;
+        }
 
     private:
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
         Buffer vertexBuffer;
         Buffer indexBuffer;
+        int materialIndex{ -1 };
     };
 }

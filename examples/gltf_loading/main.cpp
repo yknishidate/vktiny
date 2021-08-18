@@ -1,4 +1,6 @@
 #include "vktiny/vktiny.hpp"
+#include <spdlog/spdlog.h>
+#include <glm/gtx/string_cast.hpp>
 
 using vkIL = vk::ImageLayout;
 using vkIU = vk::ImageUsageFlagBits;
@@ -60,13 +62,13 @@ int main()
     // =======================================================================
     for (auto&& mesh : scene.getMeshes()) {
         spdlog::info("mesh");
-        //for (auto&& vert : mesh.getVertices()) {
-        //    auto&& pos = vert.pos;
-        //    spdlog::info("pos: {} {} {}", pos.x, pos.y, pos.z);
-        //}
-        //for (auto&& index : mesh.getIndices()) {
-        //    spdlog::info("index: {}", index);
-        //}
+        spdlog::info("  vertices: {}", mesh.getVertices().size());
+        spdlog::info("  indices: {}", mesh.getIndices().size());
+    }
+    for (auto&& mat : scene.getMaterials()) {
+        spdlog::info("material");
+        spdlog::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
+        spdlog::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
     }
     // =======================================================================
 
