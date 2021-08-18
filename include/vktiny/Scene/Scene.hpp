@@ -31,7 +31,7 @@ namespace vkt
 
         const auto& getMeshes() const { return meshes; }
         const auto& getMaterials() const { return materials; }
-        const auto& getTextures() const { return textures; }
+        auto& getTextures() { return textures; }
 
     private:
         void loadMeshes(tinygltf::Model& gltfModel);

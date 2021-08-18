@@ -19,7 +19,7 @@ namespace vkt
 
         void copy(void* data);
 
-        vk::WriteDescriptorSet createWrite();
+        vk::WriteDescriptorSet createWrite(); // TODO: remove this
         uint64_t getDeviceAddress() const { return deviceAddress; }
 
     private:

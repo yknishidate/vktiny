@@ -42,14 +42,13 @@ namespace vkt
         void addCombinedImageSamplers(std::vector<Image>& images,
                                       uint32_t binding, uint32_t set = 0)
         {
-            // TODO: reserve info
-            std::vector<vk::DescriptorImageInfo> info;
+            imageInfos.emplace_back();
             for (auto& image : images) {
-                info.push_back(image.getDescInfo());
+                imageInfos.back().push_back(image.getDescInfo());
             }
             vk::WriteDescriptorSet write;
             write.setDescriptorCount(images.size());
-            write.setImageInfo(info);
+            write.setImageInfo(imageInfos.back());
             addDescriptors(vkDT::eCombinedImageSampler, write, binding, images.size());
         }
 
@@ -60,13 +59,18 @@ namespace vkt
         void addDescriptors(vk::DescriptorType type, vk::WriteDescriptorSet write,
                             uint32_t binding, uint32_t count);
 
-        const Device* device;
-        const PhysicalDevice* physicalDevice;
-
-        // Descriptor
         void createDescriptorPool(uint32_t maxSets);
         void createDescSetLayout();
         void updateDescSets(uint32_t descSetIndex = 0);
+
+        const Device* device;
+        const PhysicalDevice* physicalDevice;
+
+        template <class T>
+        using VectorList = std::list<std::vector<T>>;
+        VectorList<vk::DescriptorBufferInfo> bufferInfos;
+        VectorList<vk::DescriptorImageInfo> imageInfos;
+        VectorList<vk::WriteDescriptorSetAccelerationStructureKHR> accelStructInfos;
 
         vk::UniqueDescriptorPool descPool;
         std::vector<vk::UniqueDescriptorSet> descSets;

@@ -37,6 +37,7 @@ void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
 
 void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
 {
+    //TODO: reserve meshes
     for (int gltfMeshIndex = 0; gltfMeshIndex < gltfModel.meshes.size(); gltfMeshIndex++) {
         auto& gltfMesh = gltfModel.meshes[gltfMeshIndex];
         for (const auto& gltfPrimitive : gltfMesh.primitives) {
@@ -121,6 +122,7 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
 
 void vkt::Scene::loadMaterials(tinygltf::Model& gltfModel)
 {
+    materials.reserve(gltfModel.materials.size());
     for (auto& mat : gltfModel.materials) {
         Material material;
 
@@ -164,6 +166,7 @@ void vkt::Scene::loadMaterials(tinygltf::Model& gltfModel)
 
 void vkt::Scene::loadTextures(tinygltf::Model& gltfModel)
 {
+    textures.reserve(gltfModel.images.size());
     for (auto& image : gltfModel.images) {
         Image tex;
 
@@ -175,10 +178,11 @@ void vkt::Scene::loadTextures(tinygltf::Model& gltfModel)
         uint32_t size = image.image.size();
 
         // Create image
-        // TODO: image aspect
+        // TODO: set image aspect
         vk::Extent2D extent{ static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height) };
         tex.initialize(*context, extent, vk::Format::eR8G8B8A8Unorm,
                        vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+        tex.createImageView();
         tex.transitionLayout(vk::ImageLayout::eTransferDstOptimal);
 
         // Copy from staging buffer

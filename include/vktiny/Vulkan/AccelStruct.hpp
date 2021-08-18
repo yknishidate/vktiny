@@ -14,7 +14,7 @@ namespace vkt
 
         const Buffer& getBuffer() const { return buffer; }
 
-        vk::WriteDescriptorSet createWrite()
+        vk::WriteDescriptorSet createWrite() // TODO: remove this
         {
             asInfo = vk::WriteDescriptorSetAccelerationStructureKHR{ *accelStruct };
             vk::WriteDescriptorSet asWrite;

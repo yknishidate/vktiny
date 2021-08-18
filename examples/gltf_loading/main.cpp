@@ -81,6 +81,7 @@ int main()
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);
     descManager.addTopLevelAccelStruct(topLevelAS, 1);
+    descManager.addCombinedImageSamplers(scene.getTextures(), 2);
     descManager.prepare();
 
     // Load shaders
