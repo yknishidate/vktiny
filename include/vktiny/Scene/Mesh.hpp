@@ -1,6 +1,5 @@
 #pragma once
 #include "vktiny/Vulkan/Buffer.hpp"
-#include "vktiny/Scene/Material.hpp"
 #include <glm/glm.hpp>
 
 namespace vkt
@@ -25,17 +24,7 @@ namespace vkt
                         const std::vector<Vertex>& vertices,
                         const std::vector<Index>& indices,
                         vk::BufferUsageFlags usage,
-                        vk::MemoryPropertyFlags properties)
-        {
-            this->vertices = vertices;
-            this->indices = indices;
-            vertexBuffer.initialize(context,
-                                    sizeof(vkt::Vertex) * vertices.size(),
-                                    usage, properties, this->vertices.data());
-            indexBuffer.initialize(context,
-                                   sizeof(vkt::Index) * indices.size(),
-                                   usage, properties, this->indices.data());
-        }
+                        vk::MemoryPropertyFlags properties);
 
         const auto& getVertices() const { return vertices; }
         const auto& getIndices() const { return indices; }

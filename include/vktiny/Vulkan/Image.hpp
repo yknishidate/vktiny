@@ -1,5 +1,4 @@
 #pragma once
-
 #include "vktiny/Vulkan/Context.hpp"
 
 namespace vkt
