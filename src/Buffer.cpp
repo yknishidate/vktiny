@@ -3,12 +3,16 @@
 void Buffer::initialize(const Context& context,
                         vk::DeviceSize size,
                         vk::BufferUsageFlags usage,
-                        vk::MemoryPropertyFlags properties)
+                        vk::MemoryPropertyFlags properties,
+                        void* data)
 {
     this->context = &context;
     this->size = size;
     create(size, usage);
     allocate(usage, properties);
+    if (data) {
+        copy(data);
+    }
 }
 
 void Buffer::copy(void* data)

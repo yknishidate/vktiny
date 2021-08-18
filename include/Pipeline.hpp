@@ -9,7 +9,7 @@
 class Pipeline
 {
 public:
-    void initialize(const Context& context);
+    virtual void initialize(const Context& context);
 
     vk::Pipeline get() const { return pipeline.get(); }
     vk::PipelineLayout getLayout() const { return layout.get(); }
@@ -23,12 +23,41 @@ protected:
 class RayTracingPipeline : public Pipeline
 {
 public:
+    void initialize(const Context& context) override;
+
     void setMaxRecursion(uint32_t maxRecursion) { this->maxRecursion = maxRecursion; }
 
-    void prepare(const RayTracingShaderManager& shaderManager,
-                 const DescriptorManager& descriptorManager);
+    void prepare(const DescriptorManager& descriptorManager);
+
+    // shader mamager
+    void addRaygenShader(const std::string filepath)
+    {
+        rtShaderManager.addRaygenShader(filepath);
+    }
+    void addMissShader(const std::string filepath)
+    {
+        rtShaderManager.addMissShader(filepath);
+    }
+    void addChitShader(const std::string filepath)
+    {
+        rtShaderManager.addChitShader(filepath);
+    }
+    void addAhitShader(const std::string filepath)
+    {
+        rtShaderManager.addAhitShader(filepath);
+    }
+    void addChitAndAhitShader(const std::string chitFilepath, const std::string ahitFilepath)
+    {
+        rtShaderManager.addChitAndAhitShader(chitFilepath, ahitFilepath);
+    }
+
+    const auto& getRtGroups() const { return rtShaderManager.getRtGroups(); }
+    const auto& getRaygenRegion() const { return rtShaderManager.getRaygenRegion(); }
+    const auto& getMissRegion() const { return rtShaderManager.getMissRegion(); }
+    const auto& getHitRegion() const { return rtShaderManager.getHitRegion(); }
 
 private:
+    RayTracingShaderManager rtShaderManager;
     uint32_t maxRecursion = 4;
 };
 

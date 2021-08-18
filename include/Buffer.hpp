@@ -12,7 +12,8 @@ public:
 
     void initialize(const Context& context,
                     vk::DeviceSize size, vk::BufferUsageFlags usage,
-                    vk::MemoryPropertyFlags properties);
+                    vk::MemoryPropertyFlags properties,
+                    void* data = nullptr);
 
     void copy(void* data);
 
