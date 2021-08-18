@@ -20,27 +20,29 @@ namespace vkt
         // TODO: create multi sets
         void addStorageBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
-            storageBuffers.push_back(&buffer);
             addDescriptor(vkDT::eStorageBuffer, buffer.createWrite(), binding);
         }
 
         void addUniformBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
-            uniformBuffers.push_back(&buffer);
             addDescriptor(vkDT::eUniformBuffer, buffer.createWrite(), binding);
         }
 
         void addStorageImage(Image& image, uint32_t binding, uint32_t set = 0)
         {
-            storageImages.push_back(&image);
             addDescriptor(vkDT::eStorageImage, image.createWrite(), binding);
         }
 
         void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS, uint32_t binding, uint32_t set = 0)
         {
-            topLevelAccelStructs.push_back(&topLevelAS);
             addDescriptor(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding);
         }
+
+        //void addCombinedImageSamplers(std::)
+        //{
+        //    combinedImageSamplers.insert(combinedImageSamplers.end(), b.begin(), b.end());
+        //    vkDT::eCombinedImageSampler
+        //}
 
         const auto& getDescSet() const { return *descSets.front(); }
         const auto& getDescSetLayout() const { return *descSetLayout; }
@@ -50,11 +52,6 @@ namespace vkt
 
         const Device* device;
         const PhysicalDevice* physicalDevice;
-
-        std::list<Image*> storageImages;
-        std::list<Buffer*> uniformBuffers;
-        std::list<Buffer*> storageBuffers;
-        std::list<TopLevelAccelStruct*> topLevelAccelStructs;
 
         // Descriptor
         void createDescriptorPool(uint32_t maxSets);
