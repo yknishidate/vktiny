@@ -79,9 +79,9 @@ int main()
     descManager.prepare();
 
     // Load shaders
-    rtPipeline.addRaygenShader("shader/spv/raygen.rgen.spv");
-    rtPipeline.addMissShader("shader/spv/miss.rmiss.spv");
-    rtPipeline.addChitShader("shader/spv/closesthit.rchit.spv");
+    rtPipeline.addRaygenShader("shader/raytracing_triangle/spv/raygen.rgen.spv");
+    rtPipeline.addMissShader("shader/raytracing_triangle/spv/miss.rmiss.spv");
+    rtPipeline.addChitShader("shader/raytracing_triangle/spv/closesthit.rchit.spv");
     rtPipeline.prepare(descManager);
 
     // Build draw command buffers

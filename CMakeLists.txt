@@ -26,5 +26,5 @@ file(GLOB raytracing_triangle_sources examples/raytracing_triangle/*.cpp example
 add_executable(raytracing_triangle ${raytracing_triangle_sources})
 target_link_libraries(raytracing_triangle vktiny)
 
-file(COPY "${CMAKE_SOURCE_DIR}/shader" DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
 # file(COPY "${CMAKE_SOURCE_DIR}/Asset" DESTINATION ${CMAKE_BINARY_DIR})
