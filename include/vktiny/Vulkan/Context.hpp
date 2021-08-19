@@ -2,6 +2,7 @@
 #include "vktiny/Vulkan/DebugMessenger.hpp"
 #include "vktiny/Vulkan/Device.hpp"
 #include "vktiny/Vulkan/Swapchain.hpp"
+#include "vktiny/Input.hpp"
 
 namespace vkt
 {
@@ -24,7 +25,7 @@ namespace vkt
                         void* deviceCreatePNext = nullptr);
 
         bool running() const;
-        void pollEvents() const;
+        void pollEvents();
 
         auto& getSwapchain() { return swapchain; }
         auto getGLFWWindow() const { return window; }
@@ -33,9 +34,10 @@ namespace vkt
         const auto& getPhysicalDevice() const { return physicalDevice; }
         auto getVkDevice() const { return device.get(); }
         auto getVkPhysicalDevice() const { return physicalDevice.get(); }
+        auto& getInput() { return input; }
 
     private:
-        GLFWwindow* window;
+        GLFWwindow* window = nullptr;
 
         Instance instance;
         DebugMessenger messenger;
@@ -43,5 +45,6 @@ namespace vkt
         PhysicalDevice physicalDevice;
         Device device;
         Swapchain swapchain;
+        Input input;
     };
 }

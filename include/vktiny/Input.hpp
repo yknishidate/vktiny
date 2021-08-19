@@ -1,6 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include <vktiny/Vulkan/Context.hpp>
+#include <functional>
 
 namespace vkt
 {
@@ -22,16 +22,17 @@ namespace vkt
         Input& operator = (const Input&) = delete;
         Input& operator = (Input&&) = default;
 
-        void initialize(const Context& context)
-        {
-            this->window = context.getGLFWWindow();
-            setInputCallbacks();
-        }
-
         void initialize(GLFWwindow* window)
         {
             this->window = window;
             setInputCallbacks();
+        }
+
+        void reset()
+        {
+            xoffset = 0.0;
+            yoffset = 0.0;
+            scroll = 0.0;
         }
 
         // setter
@@ -59,16 +60,37 @@ namespace vkt
         }
         void _cursorPositionCallback(const double xpos, const double ypos)
         {
+            xlast = this->xpos;
+            ylast = this->ypos;
+            this->xpos = xpos;
+            this->ypos = ypos;
+            xoffset = xpos - xlast;
+            yoffset = ypos - ylast;
             if (onCursorPosition) onCursorPosition(xpos, ypos);
         }
         void _mouseButtonCallback(const int button, const int action, const int mods)
         {
+            if (action == InputState::Press) {
+                mousePressed[button] = true;
+            } else {
+                mousePressed[button] = false;
+            }
             if (onMouseButton) onMouseButton(button, action, mods);
         }
         void _scrollCallback(const double xoffset, const double yoffset)
         {
+            scroll = yoffset;
             if (onScroll) onScroll(xoffset, yoffset);
         }
+
+        double xpos = 0.0;
+        double ypos = 0.0;
+        double xlast = 0.0;
+        double ylast = 0.0;
+        double xoffset = 0.0;
+        double yoffset = 0.0;
+        double scroll = 0.0;
+        bool mousePressed[2] = { false, false };
 
     private:
         std::function<void(const int, const int, const int, const int)> onKey;
@@ -78,6 +100,6 @@ namespace vkt
 
         void setInputCallbacks();
 
-        GLFWwindow* window;
+        GLFWwindow* window = nullptr;
     };
 }

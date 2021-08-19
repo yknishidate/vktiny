@@ -142,6 +142,12 @@ int main()
 {
     initContext();
 
+    // Set input callback
+    context.getInput().setOnMouseButton(
+        [&](const int button, const int action, const int mods) {
+            vkt::log::info("{} {} {}", button, action, mods);
+        });
+
     vkt::DescriptorManager descManager;
     vkt::RayTracingPipeline rtPipeline;
     descManager.initialize(context);
@@ -171,29 +177,6 @@ int main()
     vkt::Buffer uniformBuffer;
     uniformBuffer.initialize(context, sizeof(UniformData), vkBU::eUniformBuffer,
                              vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
-
-    // Set input callbacks
-    bool mousePressed = false;
-    double xlast, ylast;
-    double xcurr, ycurr;
-
-    vkt::Input input;
-    input.initialize(context);
-    input.setOnCursorPosition(
-        [&](const double xpos, const double ypos) {
-            xcurr = xpos;
-            ycurr = ypos;
-        });
-    input.setOnMouseButton(
-        [&](const int button, const int action, const int mods) {
-            if (action == vkt::InputState::Press) {
-                vkt::log::info("pressed: {}", button);
-                mousePressed = true;
-            } else {
-                vkt::log::info("released: {}", button);
-                mousePressed = false;
-            }
-        });
 
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);
@@ -230,11 +213,11 @@ int main()
         context.pollEvents();
         draw(drawCommandBuffers);
 
-        if (mousePressed) {
-            camera.processCursorMotion(xcurr - xlast, ycurr - ylast);
+        if (context.getInput().mousePressed[0]) {
+            camera.processCursorMotion(context.getInput().xoffset, context.getInput().yoffset);
         }
-        xlast = xcurr;
-        ylast = ycurr;
+        camera.processMouseWheel(context.getInput().scroll);
+
         camera.update();
         uniformData.invView = glm::inverse(camera.view);
         uniformData.invProj = glm::inverse(camera.proj);

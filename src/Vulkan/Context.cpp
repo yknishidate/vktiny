@@ -40,6 +40,7 @@ namespace vkt
         device.initialize(instance, physicalDevice, surface, layers,
                           deviceExtensions, features, deviceCreatePNext);
         swapchain.initialize(device, physicalDevice, surface, width, height);
+        input.initialize(window);
     }
 
     bool Context::running() const
@@ -47,8 +48,9 @@ namespace vkt
         return !glfwWindowShouldClose(window);
     }
 
-    void Context::pollEvents() const
+    void Context::pollEvents()
     {
+        input.reset();
         glfwPollEvents();
     }
 }

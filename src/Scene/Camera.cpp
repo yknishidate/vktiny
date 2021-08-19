@@ -29,8 +29,9 @@ namespace vkt
 
     void OrbitalCamera::processMouseWheel(float value)
     {
+        if (value == 0) return;
         if (value < 0) {
-            distance = std::max(distance * 1.1f, 0.001f);
+            distance = distance * 1.1f;
         } else {
             distance = std::max(distance * 0.9f, 0.001f);
         }
