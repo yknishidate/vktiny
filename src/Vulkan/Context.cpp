@@ -1,4 +1,5 @@
 #include "vktiny/Vulkan/Context.hpp"
+#include "vktiny/Log.hpp"
 
 namespace vkt
 {
@@ -15,6 +16,8 @@ namespace vkt
                              vk::PhysicalDeviceFeatures features,
                              void* deviceCreatePNext)
     {
+        log::set_pattern("[%^%-5l%$] %v");
+
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
