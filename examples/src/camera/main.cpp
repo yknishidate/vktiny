@@ -99,7 +99,7 @@ vkt::Buffer createBufferReferences(const vkt::Context& context,
     }
 
     vkt::Buffer sceneDesc;
-    sceneDesc.initialize(context, sizeof(MeshBuffers) * static_cast<uint32_t>(meshes.size()),
+    sceneDesc.initialize(context, sizeof(MeshBuffers) * meshes.size(),
                          vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                          vkMP::eHostVisible | vkMP::eHostCoherent,
                          meshData.data());
@@ -136,6 +136,19 @@ void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)
                                  vkIL::eTransferSrcOptimal, vkIL::eGeneral);
     vkt::Image::transitionLayout(cmdBuf, dst,
                                  vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+}
+
+void updateUniformBuffer(vkt::Camera& camera, UniformData& uniformData, vkt::Buffer& uniformBuffer)
+{
+    if (context.getInput().mousePressed[0]) {
+        camera.processCursorMotion(context.getInput().xoffset, context.getInput().yoffset);
+    }
+    camera.processMouseWheel(context.getInput().scroll);
+
+    camera.update();
+    uniformData.invView = glm::inverse(camera.view);
+    uniformData.invProj = glm::inverse(camera.proj);
+    uniformBuffer.copy(&uniformData);
 }
 
 int main()
@@ -212,16 +225,7 @@ int main()
     while (context.running()) {
         context.pollEvents();
         draw(drawCommandBuffers);
-
-        if (context.getInput().mousePressed[0]) {
-            camera.processCursorMotion(context.getInput().xoffset, context.getInput().yoffset);
-        }
-        camera.processMouseWheel(context.getInput().scroll);
-
-        camera.update();
-        uniformData.invView = glm::inverse(camera.view);
-        uniformData.invProj = glm::inverse(camera.proj);
-        uniformBuffer.copy(&uniformData);
+        updateUniformBuffer(camera, uniformData, uniformBuffer);
         frame++;
     }
     context.getDevice().waitIdle();
