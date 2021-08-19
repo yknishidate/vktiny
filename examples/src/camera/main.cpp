@@ -174,21 +174,18 @@ int main()
 
     // Set input callbacks
     bool mousePressed = false;
-    double xmove, ymove;
+    double xlast, ylast;
+    double xcurr, ycurr;
 
     vkt::Input input;
     input.initialize(context);
     input.setOnCursorPosition(
         [&](const double xpos, const double ypos) {
-            static double x = xpos;
-            static double y = ypos;
-            xmove = xpos - x;
-            ymove = ypos - y;
-            if (mousePressed) {
-                x = xpos;
-                y = ypos;
-                vkt::log::info("cursor move: {} {}", xmove, ymove);
-            }
+            xcurr = xpos;
+            ycurr = ypos;
+            //if (mousePressed) {
+            //    vkt::log::info("cursor move: {} {}", xmove, ymove);
+            //}
         });
     input.setOnMouseButton(
         [&](const int button, const int action, const int mods) {
@@ -236,10 +233,11 @@ int main()
         context.pollEvents();
         draw(drawCommandBuffers);
 
-        //camera.phi += 1.0;
         if (mousePressed) {
-            camera.processCursorMotion(xmove, ymove);
+            camera.processCursorMotion(xcurr - xlast, ycurr - ylast);
         }
+        xlast = xcurr;
+        ylast = ycurr;
         camera.update();
         uniformData.invView = glm::inverse(vkt::flipY(camera.view));
         uniformData.invProj = glm::inverse(vkt::flipY(camera.proj));
