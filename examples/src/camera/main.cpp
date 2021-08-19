@@ -179,7 +179,6 @@ int main()
         [&](const double xpos, const double ypos) {
             vkt::log::info("cursor: {} {}", xpos, ypos);
         });
-    input.prepare();
 
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);

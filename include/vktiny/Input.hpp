@@ -16,15 +16,12 @@ namespace vkt
         void initialize(const Context& context)
         {
             this->window = context.getGLFWWindow();
+            setInputCallbacks();
         }
 
         void initialize(GLFWwindow* window)
         {
             this->window = window;
-        }
-
-        void prepare()
-        {
             setInputCallbacks();
         }
 
