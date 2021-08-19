@@ -183,9 +183,6 @@ int main()
         [&](const double xpos, const double ypos) {
             xcurr = xpos;
             ycurr = ypos;
-            //if (mousePressed) {
-            //    vkt::log::info("cursor move: {} {}", xmove, ymove);
-            //}
         });
     input.setOnMouseButton(
         [&](const int button, const int action, const int mods) {
@@ -239,8 +236,8 @@ int main()
         xlast = xcurr;
         ylast = ycurr;
         camera.update();
-        uniformData.invView = glm::inverse(vkt::flipY(camera.view));
-        uniformData.invProj = glm::inverse(vkt::flipY(camera.proj));
+        uniformData.invView = glm::inverse(camera.view);
+        uniformData.invProj = glm::inverse(camera.proj);
         uniformBuffer.copy(&uniformData);
         frame++;
     }
