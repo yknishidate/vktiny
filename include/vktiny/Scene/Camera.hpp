@@ -15,7 +15,7 @@ namespace vkt
         virtual ~Camera() = default;
 
         virtual void update() = 0;
-        virtual void processCursorMotion(glm::vec2 cursorMotion) {}
+        virtual void processCursorMotion(double xMotion, double yMotion) {}
         virtual void processMouseWheel(float value) {}
         virtual void processKeyState() {}
 
@@ -33,7 +33,7 @@ namespace vkt
         OrbitalCamera(int width, int height, float distance = 10);
 
         void update() override;
-        void processCursorMotion(glm::vec2 cursorMotion) override;
+        void processCursorMotion(double xMotion, double yMotion) override;
         void processMouseWheel(float value) override;
 
         glm::vec3 target;
@@ -49,7 +49,7 @@ namespace vkt
         FPSCamera(int width, int height);
 
         void update() override;
-        void processCursorMotion(glm::vec2 cursorMotion) override;
+        void processCursorMotion(double xMotion, double yMotion) override;
         void processMouseWheel(float value) override;
         void processKeyState() override;
 

@@ -55,19 +55,19 @@ namespace vkt
         // callback
         void _keyCallback(const int key, const int scancode, const int action, const int mods)
         {
-            onKey(key, scancode, action, mods);
+            if (onKey) onKey(key, scancode, action, mods);
         }
         void _cursorPositionCallback(const double xpos, const double ypos)
         {
-            onCursorPosition(xpos, ypos);
+            if (onCursorPosition) onCursorPosition(xpos, ypos);
         }
         void _mouseButtonCallback(const int button, const int action, const int mods)
         {
-            onMouseButton(button, action, mods);
+            if (onMouseButton) onMouseButton(button, action, mods);
         }
         void _scrollCallback(const double xoffset, const double yoffset)
         {
-            onScroll(xoffset, yoffset);
+            if (onScroll) onScroll(xoffset, yoffset);
         }
 
     private:

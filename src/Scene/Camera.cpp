@@ -21,10 +21,10 @@ namespace vkt
         proj = glm::perspective(glm::radians(fov), aspect, 0.01f, 10000.0f);
     }
 
-    void OrbitalCamera::processCursorMotion(glm::vec2 cursorMotion)
+    void OrbitalCamera::processCursorMotion(double xMotion, double yMotion)
     {
-        phi = glm::mod(phi - cursorMotion.x, 360.0f);
-        theta = std::min(std::max(theta + cursorMotion.y, -89.9f), 89.9f);
+        phi = glm::mod(phi - float(xMotion), 360.0f);
+        theta = std::min(std::max(theta + float(yMotion), -89.9f), 89.9f);
     }
 
     void OrbitalCamera::processMouseWheel(float value)
@@ -61,10 +61,10 @@ namespace vkt
         view = glm::lookAt(glm::vec3(position), glm::vec3(position) + front, up);
     }
 
-    void FPSCamera::processCursorMotion(glm::vec2 cursorMotion)
+    void FPSCamera::processCursorMotion(double xMotion, double yMotion)
     {
-        yaw = glm::mod(yaw - cursorMotion.x * rotSpeed, 360.0f);
-        pitch = std::min(std::max(pitch + cursorMotion.y * rotSpeed, -89.9f), 89.9f);
+        yaw = glm::mod(yaw - float(xMotion) * rotSpeed, 360.0f);
+        pitch = std::min(std::max(pitch + float(yMotion) * rotSpeed, -89.9f), 89.9f);
         //update();
     }
 

@@ -184,9 +184,9 @@ int main()
             static double y = ypos;
             xmove = xpos - x;
             ymove = ypos - y;
-            x = xpos;
-            y = ypos;
             if (mousePressed) {
+                x = xpos;
+                y = ypos;
                 vkt::log::info("cursor move: {} {}", xmove, ymove);
             }
         });
@@ -236,7 +236,10 @@ int main()
         context.pollEvents();
         draw(drawCommandBuffers);
 
-        camera.phi += 1.0;
+        //camera.phi += 1.0;
+        if (mousePressed) {
+            camera.processCursorMotion(xmove, ymove);
+        }
         camera.update();
         uniformData.invView = glm::inverse(vkt::flipY(camera.view));
         uniformData.invProj = glm::inverse(vkt::flipY(camera.proj));
