@@ -1,5 +1,4 @@
 #include "vktiny/vktiny.hpp"
-#include <spdlog/spdlog.h>
 #include <glm/gtx/string_cast.hpp>
 #include <utility>
 
@@ -139,14 +138,6 @@ void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)
                                  vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
 }
 
-//void onKey(const int key, const int scancode, const int action, const int mods);
-//void onCursorPosition(const double xpos, const double ypos)
-//{
-//    vkt::log::info("onCursorPosition: {} {}", xpos, ypos);
-//}
-//void onMouseButton(const int button, const int action, const int mods);
-//void onScroll(const double xoffset, const double yoffset);
-
 int main()
 {
     initContext();
@@ -180,6 +171,15 @@ int main()
     vkt::Buffer uniformBuffer;
     uniformBuffer.initialize(context, sizeof(UniformData), vkBU::eUniformBuffer,
                              vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
+
+    // Set input callbacks
+    vkt::Input input;
+    input.initialize(context);
+    input.setOnCursorPosition(
+        [&](const double xpos, const double ypos) {
+            vkt::log::info("cursor: {} {}", xpos, ypos);
+        });
+    input.prepare();
 
     // Add descriptor bindings
     descManager.addStorageImage(renderImage, 0);

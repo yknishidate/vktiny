@@ -7,3 +7,4 @@
 #include "vktiny/Scene/Scene.hpp"
 #include "vktiny/Scene/Camera.hpp"
 #include "vktiny/Log.hpp"
+#include "vktiny/Input.hpp"
