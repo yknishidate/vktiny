@@ -173,11 +173,32 @@ int main()
                              vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
 
     // Set input callbacks
+    bool mousePressed = false;
+    double xmove, ymove;
+
     vkt::Input input;
     input.initialize(context);
     input.setOnCursorPosition(
         [&](const double xpos, const double ypos) {
-            vkt::log::info("cursor: {} {}", xpos, ypos);
+            static double x = xpos;
+            static double y = ypos;
+            xmove = xpos - x;
+            ymove = ypos - y;
+            x = xpos;
+            y = ypos;
+            if (mousePressed) {
+                vkt::log::info("cursor move: {} {}", xmove, ymove);
+            }
+        });
+    input.setOnMouseButton(
+        [&](const int button, const int action, const int mods) {
+            if (action == vkt::InputState::Press) {
+                vkt::log::info("pressed: {}", button);
+                mousePressed = true;
+            } else {
+                vkt::log::info("released: {}", button);
+                mousePressed = false;
+            }
         });
 
     // Add descriptor bindings

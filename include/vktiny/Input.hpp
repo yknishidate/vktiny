@@ -4,6 +4,15 @@
 
 namespace vkt
 {
+    namespace InputState
+    {
+        enum
+        {
+            Release,
+            Press,
+        };
+    }
+
     class Input
     {
     public:
