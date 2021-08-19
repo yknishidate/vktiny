@@ -1,5 +1,5 @@
 #pragma once
-#include "vktiny/math.hpp"
+#include "vktiny/Math.hpp"
 
 namespace vkt
 {

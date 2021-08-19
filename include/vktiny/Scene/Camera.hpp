@@ -1,5 +1,5 @@
 #pragma once
-#include "vktiny/math.hpp"
+#include "vktiny/Math.hpp"
 
 namespace vkt
 {
@@ -21,7 +21,6 @@ namespace vkt
 
         glm::mat4 view;
         glm::mat4 proj;
-        glm::vec3 up;
 
         float fov = 45;
         float aspect = 1;
@@ -56,6 +55,7 @@ namespace vkt
 
         glm::vec4 position;
         glm::vec3 front;
+        glm::vec3 up;
         float rotSpeed = 0.1;
         float moveSpeed = 0.2;
         float pitch = 0;

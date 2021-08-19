@@ -139,6 +139,14 @@ void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)
                                  vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
 }
 
+//void onKey(const int key, const int scancode, const int action, const int mods);
+//void onCursorPosition(const double xpos, const double ypos)
+//{
+//    vkt::log::info("onCursorPosition: {} {}", xpos, ypos);
+//}
+//void onMouseButton(const int button, const int action, const int mods);
+//void onScroll(const double xoffset, const double yoffset);
+
 int main()
 {
     initContext();

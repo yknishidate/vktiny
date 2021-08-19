@@ -1,6 +1,6 @@
 
 #include "vktiny/Vulkan/AccelStruct.hpp"
-#include "vktiny/math.hpp"
+#include "vktiny/Math.hpp"
 
 vk::DeviceSize vkt::AccelStruct::getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo, uint32_t primitiveCount)
 {

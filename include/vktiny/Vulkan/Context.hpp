@@ -27,6 +27,7 @@ namespace vkt
         void pollEvents() const;
 
         auto& getSwapchain() { return swapchain; }
+        auto getGLFWWindow() { return window; }
 
         const auto& getDevice() const { return device; }
         const auto& getPhysicalDevice() const { return physicalDevice; }
