@@ -19,6 +19,7 @@ namespace vkt
         using vkMP = vk::MemoryPropertyFlagBits;
 
         const Buffer& getBuffer() const { return buffer; }
+        auto getDeviceAddress() const { return deviceAddress; }
 
         vk::WriteDescriptorSet createWrite() // TODO: remove this
         {
@@ -48,11 +49,19 @@ namespace vkt
         Buffer buffer;
 
         vk::WriteDescriptorSetAccelerationStructureKHR asInfo;
+        uint64_t deviceAddress;
+        vk::DeviceSize scratchSize;
     };
 
     class BottomLevelAccelStruct : public AccelStruct
     {
     public:
+        BottomLevelAccelStruct() = default;
+        BottomLevelAccelStruct(const BottomLevelAccelStruct&) = delete;
+        BottomLevelAccelStruct(BottomLevelAccelStruct&&) = default;
+        BottomLevelAccelStruct& operator = (const BottomLevelAccelStruct&) = delete;
+        BottomLevelAccelStruct& operator = (BottomLevelAccelStruct&&) = default;
+
         void initialize(const Context& context,
                         const std::vector<Vertex>& vertices, const Buffer& vertexBuffer,
                         const std::vector<Index>& indices, const Buffer& indexBuffer);
@@ -64,8 +73,26 @@ namespace vkt
     class TopLevelAccelStruct : public AccelStruct
     {
     public:
+        TopLevelAccelStruct() = default;
+        TopLevelAccelStruct(const TopLevelAccelStruct&) = delete;
+        TopLevelAccelStruct(TopLevelAccelStruct&&) = default;
+        TopLevelAccelStruct& operator = (const TopLevelAccelStruct&) = delete;
+        TopLevelAccelStruct& operator = (TopLevelAccelStruct&&) = default;
+
         void initialize(const Context& context,
                         const BottomLevelAccelStruct& bottomLevelAS,
                         const glm::mat4& transform = glm::mat4{ 1.0 });
+        void initialize(const Context& context,
+                        const std::vector<BottomLevelAccelStruct>& bottomLevelASs);
+        //void initialize(const Context& context,
+        //                const std::vector<BottomLevelAccelStruct>& bottomLevelASs,
+        //                const std::vector<glm::mat4>& transforms);
+
+    private:
+        std::vector<vk::AccelerationStructureInstanceKHR> instances;
+        Buffer instanceBuffer;
+        vk::AccelerationStructureGeometryInstancesDataKHR instancesData;
+        vk::AccelerationStructureGeometryKHR geometry;
+        vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo;
     };
 }

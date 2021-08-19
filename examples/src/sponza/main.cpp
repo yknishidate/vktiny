@@ -146,74 +146,85 @@ void updateUniformBuffer(vkt::Camera& camera, UniformData& uniformData, vkt::Buf
 
 int main()
 {
-    initContext();
+    try {
 
-    vkt::DescriptorManager descManager;
-    vkt::RayTracingPipeline rtPipeline;
-    descManager.initialize(context);
-    rtPipeline.initialize(context);
+        initContext();
 
-    // Load scene
-    vkt::Scene scene = loadScene();
+        vkt::DescriptorManager descManager;
+        vkt::RayTracingPipeline rtPipeline;
+        descManager.initialize(context);
+        rtPipeline.initialize(context);
 
-    // Create render image(binding = 0)
-    vkt::Image renderImage = createRenderImage();
+        // Load scene
+        vkt::Scene scene = loadScene();
 
-    // Create accel structs(binding = 1)
-    vkt::BottomLevelAccelStruct bottomLevelAS;
-    vkt::TopLevelAccelStruct topLevelAS;
-    bottomLevelAS.initialize(context, scene.getMeshes().front());
-    topLevelAS.initialize(context, bottomLevelAS);
+        // Create render image(binding = 0)
+        vkt::Image renderImage = createRenderImage();
 
-    // Create scene desc(binding = 3)
-    vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
+        // Create accel structs(binding = 1)
+        std::vector<vkt::BottomLevelAccelStruct> bottomLevelASs;
+        bottomLevelASs.reserve(scene.getMeshes().size());
+        for (auto& mesh : scene.getMeshes()) {
+            bottomLevelASs.push_back(vkt::BottomLevelAccelStruct{});
+            bottomLevelASs.back().initialize(context, mesh);
+        }
+        //vkt::BottomLevelAccelStruct bottomLevelAS;
+        //bottomLevelAS.initialize(context, scene.getMeshes().front());
+        vkt::TopLevelAccelStruct topLevelAS;
+        topLevelAS.initialize(context, bottomLevelASs);
 
-    // Create uniform data(binding = 4)
-    vkt::OrbitalCamera camera(width, height, 400);
-    camera.theta = -25.0;
-    UniformData uniformData;
-    uniformData.invView = glm::inverse(camera.view);
-    uniformData.invProj = glm::inverse(camera.proj);
-    vkt::Buffer uniformBuffer;
-    uniformBuffer.initialize(context, sizeof(UniformData), vkBU::eUniformBuffer,
-                             vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
+        // Create scene desc(binding = 3)
+        //vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
 
-    // Add descriptor bindings
-    descManager.addStorageImage(renderImage, 0);
-    descManager.addTopLevelAccelStruct(topLevelAS, 1);
-    descManager.addCombinedImageSamplers(scene.getTextures(), 2);
-    descManager.addStorageBuffer(sceneDesc, 3);
-    descManager.addUniformBuffer(uniformBuffer, 4);
-    descManager.prepare();
+        // Create uniform data(binding = 4)
+        vkt::OrbitalCamera camera(width, height, 400);
+        camera.theta = -25.0;
+        UniformData uniformData;
+        uniformData.invView = glm::inverse(camera.view);
+        uniformData.invProj = glm::inverse(camera.proj);
+        vkt::Buffer uniformBuffer;
+        uniformBuffer.initialize(context, sizeof(UniformData), vkBU::eUniformBuffer,
+                                 vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
 
-    // Load shaders
-    rtPipeline.addRaygenShader("shader/camera/spv/raygen.rgen.spv");
-    rtPipeline.addMissShader("shader/camera/spv/miss.rmiss.spv");
-    rtPipeline.addChitShader("shader/camera/spv/closesthit.rchit.spv");
-    rtPipeline.prepare(descManager);
+        // Add descriptor bindings
+        descManager.addStorageImage(renderImage, 0);
+        descManager.addTopLevelAccelStruct(topLevelAS, 1);
+        descManager.addCombinedImageSamplers(scene.getTextures(), 2);
+        //descManager.addStorageBuffer(sceneDesc, 3);
+        descManager.addUniformBuffer(uniformBuffer, 4);
+        descManager.prepare();
 
-    // Build draw command buffers
-    auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
-    for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
-        const auto& cmdBuf = drawCommandBuffers[i].get();
-        cmdBuf.begin(vk::CommandBufferBeginInfo{});
-        cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.get());
-        cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.getLayout(), 0,
-                                  descManager.getDescSet(), nullptr);
-        cmdBuf.traceRaysKHR(rtPipeline.getRaygenRegion(),
-                            rtPipeline.getMissRegion(),
-                            rtPipeline.getHitRegion(),
-                            {}, width, height, 1);
-        copyImage(cmdBuf, renderImage.get(), context.getSwapchain().getImages()[i]);
-        cmdBuf.end();
+        // Load shaders
+        rtPipeline.addRaygenShader("shader/sponza/spv/raygen.rgen.spv");
+        rtPipeline.addMissShader("shader/sponza/spv/miss.rmiss.spv");
+        rtPipeline.addChitShader("shader/sponza/spv/closesthit.rchit.spv");
+        rtPipeline.prepare(descManager);
+
+        // Build draw command buffers
+        auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
+        for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
+            const auto& cmdBuf = drawCommandBuffers[i].get();
+            cmdBuf.begin(vk::CommandBufferBeginInfo{});
+            cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.get());
+            cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.getLayout(), 0,
+                                      descManager.getDescSet(), nullptr);
+            cmdBuf.traceRaysKHR(rtPipeline.getRaygenRegion(),
+                                rtPipeline.getMissRegion(),
+                                rtPipeline.getHitRegion(),
+                                {}, width, height, 1);
+            copyImage(cmdBuf, renderImage.get(), context.getSwapchain().getImages()[i]);
+            cmdBuf.end();
+        }
+
+        uint64_t frame = 0;
+        while (context.running()) {
+            context.pollEvents();
+            draw(drawCommandBuffers);
+            updateUniformBuffer(camera, uniformData, uniformBuffer);
+            frame++;
+        }
+        context.getDevice().waitIdle();
+    } catch (const std::exception& e) {
+        vkt::log::error(e.what());
     }
-
-    uint64_t frame = 0;
-    while (context.running()) {
-        context.pollEvents();
-        draw(drawCommandBuffers);
-        updateUniformBuffer(camera, uniformData, uniformBuffer);
-        frame++;
-    }
-    context.getDevice().waitIdle();
 }

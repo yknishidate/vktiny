@@ -1,12 +1,14 @@
 
 #include "vktiny/Vulkan/AccelStruct.hpp"
 #include "vktiny/Math.hpp"
+#include "vktiny/Log.hpp"
 
 vk::DeviceSize vkt::AccelStruct::getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
                                          uint32_t primitiveCount)
 {
     auto buildSizes = context->getVkDevice().getAccelerationStructureBuildSizesKHR(
         vk::AccelerationStructureBuildTypeKHR::eDevice, geometryInfo, primitiveCount);
+    scratchSize = buildSizes.buildScratchSize;
     return buildSizes.accelerationStructureSize;
 }
 
@@ -28,10 +30,11 @@ void vkt::AccelStruct::createAccelStruct(vk::DeviceSize size, vk::AccelerationSt
 
 void vkt::AccelStruct::build(vk::CommandBuffer commandBuffer,
                              vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
-                             vk::DeviceSize size, uint32_t primitiveCount)
+                             vk::DeviceSize size,
+                             uint32_t primitiveCount)
 {
     Buffer scratchBuffer;
-    scratchBuffer.initialize(*context, size,
+    scratchBuffer.initialize(*context, scratchSize,
                              vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                              vkMP::eDeviceLocal);
     geometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
@@ -79,6 +82,8 @@ void vkt::BottomLevelAccelStruct::initialize(const Context& context,
     auto cmdBuf = context.getDevice().beginGraphicsCommand();
     build(*cmdBuf, geometryInfo, size, primitiveCount);
     context.getDevice().endGraphicsCommand(*cmdBuf);
+
+    deviceAddress = context.getVkDevice().getAccelerationStructureAddressKHR({ *accelStruct });
 }
 
 void vkt::BottomLevelAccelStruct::initialize(const Context& context, const Mesh& mesh)
@@ -105,8 +110,7 @@ void vkt::TopLevelAccelStruct::initialize(const Context& context,
     vk::AccelerationStructureInstanceKHR asInstance;
     asInstance.setTransform(toVkMatrix(flipY(transform)));
     asInstance.setMask(0xFF);
-    asInstance.setAccelerationStructureReference(
-        bottomLevelAS.getBuffer().getDeviceAddress());
+    asInstance.setAccelerationStructureReference(bottomLevelAS.getBuffer().getDeviceAddress()); // TODO: ?
     asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
 
     Buffer instancesBuffer;
@@ -134,6 +138,53 @@ void vkt::TopLevelAccelStruct::initialize(const Context& context,
 
     // Create buffer and accel struct
     uint32_t primitiveCount = 1;
+    vk::DeviceSize size = getSize(geometryInfo, primitiveCount);
+    createBuffer(size);
+    createAccelStruct(size, type);
+
+    // Build
+    auto cmdBuf = context.getDevice().beginGraphicsCommand();
+    build(*cmdBuf, geometryInfo, size, primitiveCount);
+    context.getDevice().endGraphicsCommand(*cmdBuf);
+}
+
+void vkt::TopLevelAccelStruct::initialize(const Context& context,
+                                          const std::vector<BottomLevelAccelStruct>& bottomLevelASs)
+{
+    this->context = &context;
+
+    uint32_t primitiveCount = bottomLevelASs.size();
+
+    for (auto& bottomLevelAS : bottomLevelASs) {
+        vk::AccelerationStructureInstanceKHR asInstance;
+        asInstance.setTransform(toVkMatrix(flipY(glm::mat4(1.0))));
+        asInstance.setMask(0xFF);
+        asInstance.setInstanceShaderBindingTableRecordOffset(0);
+        asInstance.setAccelerationStructureReference(bottomLevelAS.getBuffer().getDeviceAddress());
+        //asInstance.setAccelerationStructureReference(bottomLevelAS.getDeviceAddress());
+        asInstance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+        instances.push_back(asInstance);
+    }
+
+    instanceBuffer.initialize(context,
+                              sizeof(vk::AccelerationStructureInstanceKHR) * instances.size(),
+                              vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eShaderDeviceAddress,
+                              vkMP::eHostVisible | vkMP::eHostCoherent,
+                              instances.data());
+
+    instancesData.setArrayOfPointers(false);
+    instancesData.setData(instanceBuffer.getDeviceAddress());
+
+    geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+    geometry.setGeometry({ instancesData });
+    geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+    auto type = vk::AccelerationStructureTypeKHR::eTopLevel;
+    geometryInfo.setType(type);
+    geometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+    geometryInfo.setGeometries(geometry);
+
+    // Create buffer and accel struct
     vk::DeviceSize size = getSize(geometryInfo, primitiveCount);
     createBuffer(size);
     createAccelStruct(size, type);
