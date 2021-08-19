@@ -18,39 +18,100 @@ namespace vkt
         using vkBU = vk::BufferUsageFlagBits;
         using vkMP = vk::MemoryPropertyFlagBits;
 
-        const Buffer& getBuffer() const { return buffer; }
+        const auto& get() const { return accelStruct; }
         auto getDeviceAddress() const { return deviceAddress; }
 
-        vk::WriteDescriptorSet createWrite() // TODO: remove this
+        vk::WriteDescriptorSet createWrite()
         {
-            asInfo = vk::WriteDescriptorSetAccelerationStructureKHR{ *accelStruct };
+            asInfo = { *accelStruct };
             vk::WriteDescriptorSet asWrite;
             asWrite.setDescriptorCount(1);
             asWrite.setPNext(&asInfo);
             return asWrite;
         }
 
+        void initialize(const Context& context)
+        {
+            this->context = &context;
+        }
+
+        void build(vk::AccelerationStructureGeometryKHR& geometry,
+                   const vk::AccelerationStructureTypeKHR& type,
+                   uint32_t primitiveCount)
+        {
+            this->type = type;
+            this->primitiveCount = primitiveCount;
+
+            buildGeometryInfo.setType(type);
+            buildGeometryInfo.setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+            buildGeometryInfo.setGeometries(geometry);
+
+            getSizes();
+            createBuffer();
+            createAccelStruct();
+            createScratchBuffer();
+
+            buildGeometryInfo.setDstAccelerationStructure(*accelStruct);
+            buildGeometryInfo.setScratchData(scratchBuffer.getDeviceAddress());
+
+            vk::AccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
+            buildRangeInfo
+                .setPrimitiveCount(primitiveCount)
+                .setPrimitiveOffset(0)
+                .setFirstVertex(0)
+                .setTransformOffset(0);
+
+            auto cmdBuf = context->getDevice().beginGraphicsCommand();
+            cmdBuf->buildAccelerationStructuresKHR(buildGeometryInfo, &buildRangeInfo);
+            context->getDevice().endGraphicsCommand(*cmdBuf);
+
+            deviceAddress = context->getVkDevice().getAccelerationStructureAddressKHR({ *accelStruct });
+        }
+
     protected:
-        vk::DeviceSize getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
-                               uint32_t primitiveCount);
-
-        void createBuffer(vk::DeviceSize size);
-
-        void createAccelStruct(vk::DeviceSize size, vk::AccelerationStructureTypeKHR type);
-
-        void build(vk::CommandBuffer commandBuffer,
-                   vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
-                   vk::DeviceSize size,
-                   uint32_t primitiveCount);
+        void createBuffer()
+        {
+            buffer.initialize(*context, size,
+                              vkBU::eAccelerationStructureStorageKHR | vkBU::eShaderDeviceAddress,
+                              vkMP::eDeviceLocal);
+        }
+        void createAccelStruct()
+        {
+            vk::AccelerationStructureCreateInfoKHR createInfo;
+            createInfo.setBuffer(buffer.get());
+            createInfo.setSize(size);
+            createInfo.setType(type);
+            accelStruct = context->getVkDevice().createAccelerationStructureKHRUnique(createInfo);
+        }
+        void createScratchBuffer()
+        {
+            scratchBuffer.initialize(*context,
+                                     scratchSize,
+                                     vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
+                                     vkMP::eDeviceLocal);
+        }
+        void getSizes()
+        {
+            auto buildSizesInfo = context->getVkDevice().getAccelerationStructureBuildSizesKHR(
+                vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, primitiveCount);
+            size = buildSizesInfo.accelerationStructureSize;
+            scratchSize = buildSizesInfo.buildScratchSize;
+        }
 
         const Context* context;
 
         vk::UniqueAccelerationStructureKHR accelStruct;
         Buffer buffer;
+        Buffer scratchBuffer;
+
+        vk::AccelerationStructureBuildGeometryInfoKHR buildGeometryInfo;
+        vk::AccelerationStructureTypeKHR type;
+        vk::DeviceSize size;
+        vk::DeviceSize scratchSize;
+        uint64_t deviceAddress;
+        uint32_t primitiveCount;
 
         vk::WriteDescriptorSetAccelerationStructureKHR asInfo;
-        uint64_t deviceAddress;
-        vk::DeviceSize scratchSize;
     };
 
     class BottomLevelAccelStruct : public AccelStruct
@@ -81,18 +142,17 @@ namespace vkt
 
         void initialize(const Context& context,
                         const BottomLevelAccelStruct& bottomLevelAS,
-                        const glm::mat4& transform = glm::mat4{ 1.0 });
+                        const glm::mat4& transform = glm::mat4{ 1.0 })
+        {
+        }
         void initialize(const Context& context,
                         const std::vector<BottomLevelAccelStruct>& bottomLevelASs);
-        //void initialize(const Context& context,
-        //                const std::vector<BottomLevelAccelStruct>& bottomLevelASs,
-        //                const std::vector<glm::mat4>& transforms);
 
     private:
         std::vector<vk::AccelerationStructureInstanceKHR> instances;
-        Buffer instanceBuffer;
+        Buffer instancesBuffer;
+        vk::DeviceSize instancesSize;
         vk::AccelerationStructureGeometryInstancesDataKHR instancesData;
         vk::AccelerationStructureGeometryKHR geometry;
-        vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo;
     };
 }
