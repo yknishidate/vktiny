@@ -32,6 +32,11 @@ file(GLOB gltf_loading_sources examples/src/gltf_loading/*.cpp)
 add_executable(gltf_loading ${gltf_loading_sources})
 target_link_libraries(gltf_loading vktiny)
 
+## camera
+file(GLOB camera_sources examples/src/camera/*.cpp)
+add_executable(camera ${camera_sources})
+target_link_libraries(camera vktiny)
+
 # copy files
 file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})

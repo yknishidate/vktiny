@@ -2,9 +2,9 @@
 
 namespace vkt
 {
-    OrbitalCamera::OrbitalCamera(int width, int height)
+    OrbitalCamera::OrbitalCamera(int width, int height, float distance)
     {
-        position = glm::vec4(0, 0, 10, 1);
+        this->distance = distance;
         target = glm::vec3(0);
         up = glm::vec3(0, 1, 0);
         aspect = float(width) / height;
@@ -21,7 +21,7 @@ namespace vkt
         glm::mat4 rotX = glm::rotate(glm::radians(theta), glm::vec3(1, 0, 0));
         glm::mat4 rotY = glm::rotate(glm::radians(phi), glm::vec3(0, 1, 0));
 
-        view = glm::lookAt(glm::vec3(rotY * rotX * position), target, glm::vec3(0, 1, 0));
+        view = glm::lookAt(glm::vec3(rotY * rotX * glm::vec4(0, 0, distance, 1)), target, glm::vec3(0, 1, 0));
         proj = glm::perspective(glm::radians(fov), aspect, 0.01f, 10000.0f);
     }
 
@@ -33,11 +33,10 @@ namespace vkt
 
     void OrbitalCamera::processMouseWheel(float value)
     {
-        //position.z = std::max(position.z - value, 0.001f);
         if (value < 0) {
-            position.z = std::max(position.z * 1.1f, 0.001f);
+            distance = std::max(distance * 1.1f, 0.001f);
         } else {
-            position.z = std::max(position.z * 0.9f, 0.001f);
+            distance = std::max(distance * 0.9f, 0.001f);
         }
     }
 

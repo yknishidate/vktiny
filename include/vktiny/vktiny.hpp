@@ -6,6 +6,7 @@
 #include "vktiny/Vulkan/Context.hpp"
 #include "vktiny/Vulkan/Pipeline.hpp"
 #include "vktiny/Scene/Scene.hpp"
+#include "vktiny/Scene/Camera.hpp"
 
 namespace vkt
 {

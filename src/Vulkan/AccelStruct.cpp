@@ -1,5 +1,6 @@
 
 #include "vktiny/Vulkan/AccelStruct.hpp"
+#include "vktiny/math.hpp"
 
 vk::DeviceSize vkt::AccelStruct::getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo, uint32_t primitiveCount)
 {
@@ -78,13 +79,6 @@ void vkt::BottomLevelAccelStruct::initialize(const Context& context, const Mesh&
     initialize(context,
                mesh.getVertices(), mesh.getVertexBuffer(),
                mesh.getIndices(), mesh.getIndexBuffer());
-}
-
-glm::mat4 flipY(const glm::mat4& transformMatrix)
-{
-    glm::mat4 flipped = transformMatrix;
-    flipped[1][1] *= -1.0;
-    return flipped;
 }
 
 vk::TransformMatrixKHR toVkMatrix(const glm::mat4& transformMatrix)

@@ -8,3 +8,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+namespace vkt
+{
+    glm::mat4 flipY(const glm::mat4& transformMatrix);
+}

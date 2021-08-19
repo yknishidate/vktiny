@@ -25,20 +25,20 @@ Resource adding
 
 ```cpp
 // Create vertices
-std::vector<Vertex> vertices{
+std::vector<vkt::Vertex> vertices{
     { { 0.0, -0.3, 0.0} },
     { { 0.3,  0.3, 0.0} },
     { {-0.3,  0.3, 0.0} } };
 
 // Create vertex buffer
-Buffer vertexBuffer;
+vkt::Buffer vertexBuffer;
 vertexBuffer.initialize(context, sizeof(Vertex) * vertices.size(),
                         vkBU::eStorageBuffer | vkBU::eShaderDeviceAddress,
                         vkMP::eHostVisible | vkMP::eHostCoherent,
                         vertices.data());
 
 // Add vertex buffer descriptor
-DescriptorManager descManager;
+vkt::DescriptorManager descManager;
 descManager.initialize(context);
 descManager.addStorageBuffer(vertexBuffer, /*binding = */0);
 ```
@@ -46,7 +46,7 @@ descManager.addStorageBuffer(vertexBuffer, /*binding = */0);
 Pipeline creation
 
 ```cpp
-RayTracingPipeline rtPipeline;
+vkt::RayTracingPipeline rtPipeline;
 rtPipeline.initialize(context);
 rtPipeline.addRaygenShader("shader/spv/raygen.rgen.spv");
 rtPipeline.addMissShader("shader/spv/miss.rmiss.spv");
@@ -64,14 +64,15 @@ scene.setMeshProperties(vkMP::eHostVisible | vkMP::eHostCoherent);
 scene.loadFile(context, "asset/Duck/Duck.gltf");
 
 // Output scene info
-for (auto&& mesh : scene.getMeshes()) {
-    spdlog::info("mesh");
-    spdlog::info("  vertices: {}", mesh.getVertices().size());
-    spdlog::info("  indices: {}", mesh.getIndices().size());
+using vkt::log;
+for (const auto& mesh : scene.getMeshes()) {
+    log::info("mesh");
+    log::info("  vertices: {}", mesh.getVertices().size());
+    log::info("  indices: {}", mesh.getIndices().size());
 }
-for (auto&& mat : scene.getMaterials()) {
-    spdlog::info("material");
-    spdlog::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
-    spdlog::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
+for (const auto& mat : scene.getMaterials()) {
+    log::info("material");
+    log::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
+    log::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
 }
 ```

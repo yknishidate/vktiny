@@ -19,7 +19,6 @@ namespace vkt
         virtual void processMouseWheel(float value) {}
         virtual void processKeyState() {}
 
-        glm::vec4 position;
         glm::mat4 view;
         glm::mat4 proj;
         glm::vec3 up;
@@ -31,13 +30,15 @@ namespace vkt
     class OrbitalCamera : public Camera
     {
     public:
-        OrbitalCamera(int width, int height);
+        OrbitalCamera() = default;
+        OrbitalCamera(int width, int height, float distance = 10);
 
         void update() override;
         void processCursorMotion(glm::vec2 cursorMotion) override;
         void processMouseWheel(float value) override;
 
         glm::vec3 target;
+        float distance = 10;
         float phi = 0;
         float theta = 0;
     };
@@ -45,6 +46,7 @@ namespace vkt
     class FPSCamera : public Camera
     {
     public:
+        FPSCamera() = default;
         FPSCamera(int width, int height);
 
         void update() override;
@@ -52,6 +54,7 @@ namespace vkt
         void processMouseWheel(float value) override;
         void processKeyState() override;
 
+        glm::vec4 position;
         glm::vec3 front;
         float rotSpeed = 0.1;
         float moveSpeed = 0.2;
