@@ -37,6 +37,11 @@ file(GLOB camera_sources examples/src/camera/*.cpp)
 add_executable(camera ${camera_sources})
 target_link_libraries(camera vktiny)
 
+## sponza
+file(GLOB sponza_sources examples/src/sponza/*.cpp examples/src/sponza/*.hpp)
+add_executable(sponza ${sponza_sources})
+target_link_libraries(sponza vktiny)
+
 # copy files
 file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})

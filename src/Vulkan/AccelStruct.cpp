@@ -2,7 +2,8 @@
 #include "vktiny/Vulkan/AccelStruct.hpp"
 #include "vktiny/Math.hpp"
 
-vk::DeviceSize vkt::AccelStruct::getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo, uint32_t primitiveCount)
+vk::DeviceSize vkt::AccelStruct::getSize(vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
+                                         uint32_t primitiveCount)
 {
     auto buildSizes = context->getVkDevice().getAccelerationStructureBuildSizesKHR(
         vk::AccelerationStructureBuildTypeKHR::eDevice, geometryInfo, primitiveCount);
@@ -25,7 +26,9 @@ void vkt::AccelStruct::createAccelStruct(vk::DeviceSize size, vk::AccelerationSt
     accelStruct = context->getVkDevice().createAccelerationStructureKHRUnique(createInfo);
 }
 
-void vkt::AccelStruct::build(vk::CommandBuffer commandBuffer, vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo, vk::DeviceSize size, uint32_t primitiveCount)
+void vkt::AccelStruct::build(vk::CommandBuffer commandBuffer,
+                             vk::AccelerationStructureBuildGeometryInfoKHR geometryInfo,
+                             vk::DeviceSize size, uint32_t primitiveCount)
 {
     Buffer scratchBuffer;
     scratchBuffer.initialize(*context, size,
@@ -39,7 +42,11 @@ void vkt::AccelStruct::build(vk::CommandBuffer commandBuffer, vk::AccelerationSt
     commandBuffer.buildAccelerationStructuresKHR(geometryInfo, &rangeInfo);
 }
 
-void vkt::BottomLevelAccelStruct::initialize(const Context& context, const std::vector<Vertex>& vertices, const Buffer& vertexBuffer, const std::vector<Index>& indices, const Buffer& indexBuffer)
+void vkt::BottomLevelAccelStruct::initialize(const Context& context,
+                                             const std::vector<Vertex>& vertices,
+                                             const Buffer& vertexBuffer,
+                                             const std::vector<Index>& indices,
+                                             const Buffer& indexBuffer)
 {
     this->context = &context;
 
