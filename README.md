@@ -76,3 +76,12 @@ for (const auto& mat : scene.getMaterials()) {
     log::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
 }
 ```
+
+Input callback setting
+
+```cpp
+context.getInput().setOnMouseButton(
+    [&](const int button, const int action, const int mods) {
+        vkt::log::info("{} {} {}", button, action, mods);
+    });
+```
