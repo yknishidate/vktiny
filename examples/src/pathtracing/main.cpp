@@ -206,9 +206,9 @@ int main()
         descManager.prepare();
 
         // Load shaders
-        rtPipeline.addRaygenShader("shader/pathtracing/spv/raygen.rgen.spv");
-        rtPipeline.addMissShader("shader/pathtracing/spv/miss.rmiss.spv");
-        rtPipeline.addChitShader("shader/pathtracing/spv/closesthit.rchit.spv");
+        rtPipeline.addRaygenShader("shader/sponza/spv/raygen.rgen.spv");
+        rtPipeline.addMissShader("shader/sponza/spv/miss.rmiss.spv");
+        rtPipeline.addChitShader("shader/sponza/spv/closesthit.rchit.spv");
         rtPipeline.prepare(descManager);
 
         // Build draw command buffers

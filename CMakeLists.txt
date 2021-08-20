@@ -47,6 +47,11 @@ file(GLOB hello_compute_sources examples/src/hello_compute/*.cpp)
 add_executable(hello_compute ${hello_compute_sources})
 target_link_libraries(hello_compute vktiny)
 
+## hello_compute
+file(GLOB pathtracing_sources examples/src/pathtracing/*.cpp)
+add_executable(pathtracing ${hello_compute_sources})
+target_link_libraries(pathtracing vktiny)
+
 # copy files
 file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})
