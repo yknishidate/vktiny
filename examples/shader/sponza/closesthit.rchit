@@ -36,6 +36,14 @@ layout(location = 0) rayPayloadInEXT vec3 payLoad;
 
 hitAttributeEXT vec3 attribs;
 
+vec3 calcNormal(vec3 pos0, vec3 pos1, vec3 pos2)
+{
+    vec3 e0 = pos1 - pos0;
+    vec3 e1 = pos2 - pos0;
+    vec3 normal = cross(e0, e1);
+    return normalize(normal);
+}
+
 void main()
 {
     MeshBuffers meshResource = sceneDesc.i[gl_InstanceID];
@@ -59,12 +67,10 @@ void main()
     vec2 uv = v0.uv * barycentrics.x +
               v1.uv * barycentrics.y +
               v2.uv * barycentrics.z;
-    vec3 normal = v0.normal * barycentrics.x +
-                  v1.normal * barycentrics.y +
-                  v2.normal * barycentrics.z;
+    vec3 normal = calcNormal(v0.pos, v1.pos, v2.pos);
 
     vec3 baseColor = texture(textureSamplers[baseColorTexture], uv).rgb;
 
-    payLoad = vec3(normal.x, 1, 1);
+    payLoad = normal;
     // payLoad = pos;
 }
