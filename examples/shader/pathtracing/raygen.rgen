@@ -1,5 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
+#include "globals.glsl"
+#include "random.glsl"
 
 layout(set = 0, binding = 0, rgba8) uniform image2D image;
 layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;
@@ -10,19 +12,10 @@ layout(set = 0, binding = 4) uniform UniformBuffer
     vec3 lightDirection;
 } uniformBuffer;
 
-layout(location = 0) rayPayloadEXT vec3 payLoad;
+layout(location = 0) rayPayloadEXT HitPayload payLoad;
 
-void main()
+void traceRay(vec4 origin, vec4 direction)
 {
-    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-    const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeEXT.xy);
-    vec2 d = inUV * 2.0 - 1.0;
-
-    vec4 origin    = uniformBuffer.invView * vec4(0, 0, 0, 1);
-    vec4 target    = uniformBuffer.invProj * vec4(d.x, d.y, 0, 1) ;
-    vec4 direction = uniformBuffer.invView * vec4(normalize(target.xyz), 0) ;
-
-    payLoad = vec3(1.0, 0.0, 1.0);
     traceRayEXT(
         topLevelAS,
         gl_RayFlagsOpaqueEXT,
@@ -36,6 +29,45 @@ void main()
         10000.0,
         0     // payloadLocation
     );
+}
 
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(payLoad, 0.0));
+void main()
+{
+    uint maxDepth = 8;
+    uint maxSamples = 2;
+
+    vec3 color = vec3(0.0);
+    for(uint sampleCount = 0; sampleCount < maxSamples; sampleCount++){
+        // Calc seed
+        uvec2 s = pcg2d(ivec2(gl_LaunchIDEXT.xy) + sampleCount);
+        uint seed = s.x + s.y;
+
+        // Calc ray
+        const vec2 screenPos = vec2(gl_LaunchIDEXT.xy) + vec2(rand(seed), rand(seed));
+        const vec2 inUV = screenPos / vec2(gl_LaunchSizeEXT.xy);
+        vec2 d = inUV * 2.0 - 1.0;
+
+        vec4 origin    = uniformBuffer.invView * vec4(0, 0, 0, 1);
+        vec4 target    = uniformBuffer.invProj * vec4(d.x, d.y, 0, 1) ;
+        vec4 direction = uniformBuffer.invView * vec4(normalize(target.xyz), 0) ;
+
+        payLoad.hit = false;
+        payLoad.color = vec3(1.0);
+        bool hitLight = false;
+        for(int depth = 0; depth < maxDepth; depth++){
+            traceRay(origin, direction);
+            if(!payLoad.hit){
+                hitLight = true;
+                break;
+            }
+
+            vec2 randVal = vec2(rand(seed), rand(seed));
+            origin.xyz = payLoad.pos;
+            direction.xyz = sampleDirection(randVal, payLoad.normal);
+        }
+        if(hitLight) color += payLoad.color;
+    }
+
+    color /= float(maxSamples);
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(color, 1.0));
 }

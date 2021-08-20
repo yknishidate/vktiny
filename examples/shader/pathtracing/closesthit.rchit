@@ -4,6 +4,7 @@
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_buffer_reference2 : require
+#include "globals.glsl"
 
 struct Vertex
 {
@@ -32,7 +33,7 @@ layout(set = 0, binding = 4) uniform UniformBuffer
     vec3 lightDirection;
 } uniformBuffer;
 
-layout(location = 0) rayPayloadInEXT vec3 payLoad;
+layout(location = 0) rayPayloadInEXT HitPayload payLoad;
 
 hitAttributeEXT vec3 attribs;
 
@@ -68,8 +69,13 @@ void main()
               v1.uv * barycentrics.y +
               v2.uv * barycentrics.z;
     vec3 normal = calcNormal(v0.pos, v1.pos, v2.pos);
+    pos.y *= -1;
+    normal.y *= -1;
 
     vec3 baseColor = texture(textureSamplers[baseColorTexture], uv).rgb;
-    vec3 diffuseColor = baseColor * max(0.2, dot(normal, uniformBuffer.lightDirection));
-    payLoad = diffuseColor * 1.2;
+
+    payLoad.hit = true;
+    payLoad.pos = pos;
+    payLoad.normal = normal;
+    payLoad.color *= baseColor;
 }
