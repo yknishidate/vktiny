@@ -22,6 +22,13 @@ namespace vkt
         this->context = &context;
     }
 
+    void ShaderManager::addShader(const std::string filepath,
+                                  vk::ShaderStageFlagBits shaderStage)
+    {
+        auto& shaderModule = addShaderModule(filepath);
+        uint32_t stageIndex = addShaderStage(shaderStage, shaderModule);
+    }
+
     vk::ShaderModule& ShaderManager::addShaderModule(const std::string& filepath)
     {
         const std::vector<char> code = readFile(filepath);

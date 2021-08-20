@@ -11,6 +11,9 @@ namespace vkt
     class ShaderManager
     {
     public:
+        using vkSS = vk::ShaderStageFlagBits;
+        using vkSGT = vk::RayTracingShaderGroupTypeKHR;
+
         ShaderManager() = default;
         ShaderManager(const ShaderManager&) = delete;
         ShaderManager(ShaderManager&&) = default;
@@ -20,6 +23,9 @@ namespace vkt
         void initialize(const Context& context);
 
         const auto& getStages() const { return stages; }
+
+        void addShader(const std::string filepath,
+                       vk::ShaderStageFlagBits shaderStage);
 
     protected:
         vk::ShaderModule& addShaderModule(const std::string& filepath);
@@ -36,8 +42,6 @@ namespace vkt
     class RayTracingShaderManager : public ShaderManager
     {
     public:
-        using vkSS = vk::ShaderStageFlagBits;
-        using vkSGT = vk::RayTracingShaderGroupTypeKHR;
         void addRaygenShader(const std::string filepath);
         void addMissShader(const std::string filepath);
         void addChitShader(const std::string filepath);

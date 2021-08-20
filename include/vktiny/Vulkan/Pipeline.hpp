@@ -76,4 +76,38 @@ namespace vkt
 
         }
     };
+
+
+    class ComputePipeline : public Pipeline
+    {
+    public:
+        void initialize(const Context& context) override
+        {
+            Pipeline::initialize(context);
+            shaderManager.initialize(context);
+        }
+
+        void addComputeShader(const std::string filepath)
+        {
+            shaderManager.addShader(filepath, vk::ShaderStageFlagBits::eCompute);
+        }
+
+        void prepare(const DescriptorManager& descriptorManager)
+        {
+            layout = device.createPipelineLayoutUnique({ {}, descriptorManager.getDescSetLayout() });
+
+            vk::ComputePipelineCreateInfo createInfo;
+            createInfo.setStage(shaderManager.getStages().front());
+            createInfo.setLayout(*layout);
+            auto res = device.createComputePipelineUnique(nullptr, createInfo);
+            if (res.result == vk::Result::eSuccess) {
+                pipeline = std::move(res.value);
+            } else {
+                throw std::runtime_error("failed to create compute pipeline.");
+            }
+        }
+
+    private:
+        ShaderManager shaderManager;
+    };
 }

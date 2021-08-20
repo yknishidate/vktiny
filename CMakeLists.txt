@@ -42,6 +42,11 @@ file(GLOB sponza_sources examples/src/sponza/*.cpp examples/src/sponza/*.hpp)
 add_executable(sponza ${sponza_sources})
 target_link_libraries(sponza vktiny)
 
+## hello_compute
+file(GLOB hello_compute_sources examples/src/hello_compute/*.cpp)
+add_executable(hello_compute ${hello_compute_sources})
+target_link_libraries(hello_compute vktiny)
+
 # copy files
 file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})
