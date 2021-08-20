@@ -81,7 +81,8 @@ namespace vkt
                         const BottomLevelAccelStruct& bottomLevelAS,
                         const glm::mat4& transform = glm::mat4{ 1.0 });
         void initialize(const Context& context,
-                        const std::vector<BottomLevelAccelStruct>& bottomLevelASs);
+                        const std::vector<BottomLevelAccelStruct>& bottomLevelASs,
+                        const glm::mat4& transform = glm::mat4{ 1.0 });
 
     private:
         std::vector<vk::AccelerationStructureInstanceKHR> instances;

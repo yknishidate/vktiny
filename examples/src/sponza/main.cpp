@@ -133,7 +133,7 @@ void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)
                                  vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
 }
 
-void updateUniformBuffer(vkt::Camera& camera, UniformData& uniformData, vkt::Buffer& uniformBuffer)
+void updateUniformBuffer(vkt::OrbitalCamera& camera, UniformData& uniformData, vkt::Buffer& uniformBuffer)
 {
     if (context.getInput().mousePressed[0]) {
         camera.processCursorMotion(context.getInput().xoffset, context.getInput().yoffset);
@@ -169,17 +169,17 @@ int main()
             bottomLevelASs.push_back(vkt::BottomLevelAccelStruct{});
             bottomLevelASs.back().initialize(context, mesh);
         }
-        //vkt::BottomLevelAccelStruct bottomLevelAS;
-        //bottomLevelAS.initialize(context, scene.getMeshes().front());
+        glm::mat4 transform = vkt::flipY(glm::translate(glm::mat4(1.0), { 0, -2, 0 }));
         vkt::TopLevelAccelStruct topLevelAS;
-        topLevelAS.initialize(context, bottomLevelASs);
+        topLevelAS.initialize(context, bottomLevelASs, transform);
 
         // Create scene desc(binding = 3)
         //vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
 
         // Create uniform data(binding = 4)
-        vkt::OrbitalCamera camera(width, height, 400);
-        camera.theta = -25.0;
+        vkt::OrbitalCamera camera(width, height, 8);
+        camera.theta = 9.0;
+        camera.phi = 100.0;
         UniformData uniformData;
         uniformData.invView = glm::inverse(camera.view);
         uniformData.invProj = glm::inverse(camera.proj);
