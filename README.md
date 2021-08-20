@@ -5,9 +5,7 @@ tiny vulkan wrapper
 ## features
 
 - Full C++ API
-- Pipeline
-  - Vulkan Ray Tracing Pipeline
-  - Compute Pipeline
+- Support Vulkan Ray Tracing Pipeline
 - glTF loader
 
 ## usage
