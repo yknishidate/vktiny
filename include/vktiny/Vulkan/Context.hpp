@@ -36,6 +36,8 @@ namespace vkt
         auto getVkPhysicalDevice() const { return physicalDevice.get(); }
         auto& getInput() { return input; }
 
+        void setWindowIcon(const std::string& filepath);
+
     private:
         GLFWwindow* window = nullptr;
 

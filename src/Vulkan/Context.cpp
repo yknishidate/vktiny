@@ -1,5 +1,6 @@
 #include "vktiny/Vulkan/Context.hpp"
 #include "vktiny/Log.hpp"
+#include "stb_image.h"
 
 namespace vkt
 {
@@ -55,5 +56,15 @@ namespace vkt
     {
         input.reset();
         glfwPollEvents();
+    }
+
+    void Context::setWindowIcon(const std::string& filepath)
+    {
+        GLFWimage icon;
+        icon.pixels = stbi_load(filepath.c_str(), &icon.width, &icon.height, nullptr, 4);
+        if (icon.pixels != nullptr) {
+            glfwSetWindowIcon(window, 1, &icon);
+        }
+        stbi_image_free(icon.pixels);
     }
 }

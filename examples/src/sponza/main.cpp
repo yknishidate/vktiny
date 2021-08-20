@@ -50,6 +50,8 @@ void initContext()
     // Init vulkan context
     context.initialize(VK_API_VERSION_1_2, true, width, height,
                        deviceExtensions, features, deviceCreatePNext);
+
+    context.setWindowIcon("asset/vulkan.png");
 }
 
 vkt::Scene loadScene()
@@ -147,7 +149,6 @@ void updateUniformBuffer(vkt::Camera& camera, UniformData& uniformData, vkt::Buf
 int main()
 {
     try {
-
         initContext();
 
         vkt::DescriptorManager descManager;
