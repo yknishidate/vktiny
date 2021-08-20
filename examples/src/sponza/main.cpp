@@ -149,7 +149,6 @@ void updateUniformBuffer(vkt::OrbitalCamera& camera, UniformData& uniformData, v
         camera.processCursorMotion(context.getInput().xoffset, context.getInput().yoffset);
     }
     camera.processMouseWheel(context.getInput().scroll);
-
     camera.update();
     uniformData.invView = glm::inverse(camera.view);
     uniformData.invProj = glm::inverse(camera.proj);

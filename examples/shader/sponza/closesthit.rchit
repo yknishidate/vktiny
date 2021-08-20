@@ -70,7 +70,6 @@ void main()
     vec3 normal = calcNormal(v0.pos, v1.pos, v2.pos);
 
     vec3 baseColor = texture(textureSamplers[baseColorTexture], uv).rgb;
-    vec3 diffuseColor = baseColor * max(0, dot(normal, uniformBuffer.lightDirection));
-    payLoad = diffuseColor;
-    // payLoad = pos;
+    vec3 diffuseColor = baseColor * max(0.2, dot(normal, uniformBuffer.lightDirection));
+    payLoad = diffuseColor * 1.2;
 }
