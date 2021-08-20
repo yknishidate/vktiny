@@ -173,10 +173,11 @@ int main()
     vkt::Image renderImage = createRenderImage();
 
     // Create accel structs(binding = 1)
+    glm::mat4 transform = vkt::flipY(glm::translate(glm::mat4(1.0), { 0, -100, 0 }));
     vkt::BottomLevelAccelStruct bottomLevelAS;
     vkt::TopLevelAccelStruct topLevelAS;
     bottomLevelAS.initialize(context, scene.getMeshes().front());
-    topLevelAS.initialize(context, bottomLevelAS);
+    topLevelAS.initialize(context, bottomLevelAS, transform);
 
     // Create scene desc(binding = 3)
     vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
