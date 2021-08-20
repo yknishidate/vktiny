@@ -153,7 +153,7 @@ void updateUniformBuffer(vkt::OrbitalCamera& camera, UniformData& uniformData, v
     camera.update();
     uniformData.invView = glm::inverse(camera.view);
     uniformData.invProj = glm::inverse(camera.proj);
-    uniformData.lightDirection = glm::normalize(glm::vec3(0, 1, 0.5));
+    uniformData.lightDirection = glm::normalize(glm::vec3(0.5, 1, -0.5));
     uniformBuffer.copy(&uniformData);
 }
 
