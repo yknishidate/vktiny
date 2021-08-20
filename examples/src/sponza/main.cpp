@@ -15,6 +15,7 @@ struct MeshBuffers
 {
     vk::DeviceAddress vertices;
     vk::DeviceAddress indices;
+    int baseColorTexture;
 };
 
 struct UniformData
@@ -40,11 +41,16 @@ void initContext()
     // Add physical device features
     vk::PhysicalDeviceFeatures features;
     features.shaderInt64 = true;
+
     vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeature{ true };
     vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeaturesKHR{ true };
     vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeaturesKHR{ true };
+    vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
+    descriptorIndexingFeatures.runtimeDescriptorArray = true;
+
     bufferDeviceAddressFeature.setPNext(&rayTracingPipelineFeaturesKHR);
     rayTracingPipelineFeaturesKHR.setPNext(&accelerationStructureFeaturesKHR);
+    accelerationStructureFeaturesKHR.setPNext(&descriptorIndexingFeatures);
     void* deviceCreatePNext = &bufferDeviceAddressFeature;
 
     // Init vulkan context
@@ -83,13 +89,16 @@ vkt::Image createRenderImage()
 }
 
 vkt::Buffer createBufferReferences(const vkt::Context& context,
-                                   const std::vector<vkt::Mesh>& meshes)
+                                   const vkt::Scene& scene)
 {
+    auto&& meshes = scene.getMeshes();
     std::vector<MeshBuffers> meshData;
     for (const auto& mesh : meshes) {
         MeshBuffers data;
         data.vertices = mesh.getVertexBuffer().getDeviceAddress();
         data.indices = mesh.getIndexBuffer().getDeviceAddress();
+        auto&& mat = scene.getMaterials()[mesh.getMaterialIndex()];
+        data.baseColorTexture = mat.baseColorTextureIndex;
         meshData.emplace_back(data);
     }
 
@@ -174,7 +183,7 @@ int main()
         topLevelAS.initialize(context, bottomLevelASs, transform);
 
         // Create scene desc(binding = 3)
-        //vkt::Buffer sceneDesc = createBufferReferences(context, scene.getMeshes());
+        vkt::Buffer sceneDesc = createBufferReferences(context, scene);
 
         // Create uniform data(binding = 4)
         vkt::OrbitalCamera camera(width, height, 8);
@@ -191,7 +200,7 @@ int main()
         descManager.addStorageImage(renderImage, 0);
         descManager.addTopLevelAccelStruct(topLevelAS, 1);
         descManager.addCombinedImageSamplers(scene.getTextures(), 2);
-        //descManager.addStorageBuffer(sceneDesc, 3);
+        descManager.addStorageBuffer(sceneDesc, 3);
         descManager.addUniformBuffer(uniformBuffer, 4);
         descManager.prepare();
 
