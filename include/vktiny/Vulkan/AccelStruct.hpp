@@ -142,9 +142,7 @@ namespace vkt
 
         void initialize(const Context& context,
                         const BottomLevelAccelStruct& bottomLevelAS,
-                        const glm::mat4& transform = glm::mat4{ 1.0 })
-        {
-        }
+                        const glm::mat4& transform = glm::mat4{ 1.0 });
         void initialize(const Context& context,
                         const std::vector<BottomLevelAccelStruct>& bottomLevelASs);
 

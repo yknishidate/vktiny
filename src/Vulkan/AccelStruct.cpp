@@ -43,6 +43,36 @@ void vkt::BottomLevelAccelStruct::initialize(const Context& context, const Mesh&
                mesh.getIndices(), mesh.getIndexBuffer());
 }
 
+void vkt::TopLevelAccelStruct::initialize(const Context& context, const BottomLevelAccelStruct& bottomLevelAS, const glm::mat4& transform)
+{
+    AccelStruct::initialize(context);
+
+    vk::AccelerationStructureInstanceKHR instance{};
+    instance.setTransform(toVkMatrix(transform));
+    instance.setMask(0xFF);
+    instance.setInstanceShaderBindingTableRecordOffset(0);
+    instance.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+    instance.setAccelerationStructureReference(bottomLevelAS.getDeviceAddress());
+    instances.push_back(instance);
+
+    instancesSize = sizeof(vk::AccelerationStructureInstanceKHR) * instances.size();
+    instancesBuffer.initialize(context,
+                               instancesSize,
+                               vkBU::eAccelerationStructureBuildInputReadOnlyKHR |
+                               vkBU::eShaderDeviceAddress,
+                               vkMP::eHostVisible | vkMP::eHostCoherent,
+                               instances.data());
+
+    instancesData.setArrayOfPointers(false);
+    instancesData.setData(instancesBuffer.getDeviceAddress());
+
+    geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+    geometry.setGeometry({ instancesData });
+    geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+    AccelStruct::build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instances.size());
+}
+
 void vkt::TopLevelAccelStruct::initialize(const Context& context,
                                           const std::vector<BottomLevelAccelStruct>& bottomLevelASs)
 {
