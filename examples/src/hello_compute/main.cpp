@@ -17,12 +17,6 @@ int main()
     context.initialize(VK_API_VERSION_1_2, true, width, height, deviceExtensions);
     context.setWindowIcon("asset/vulkan.png");
 
-    vkt::DescriptorManager descManager;
-    descManager.initialize(context);
-
-    vkt::ComputePipeline pipeline;
-    pipeline.initialize(context);
-
     // Create render image
     vkt::Image renderImage;
     renderImage.initialize(context,
@@ -33,10 +27,14 @@ int main()
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
     // Add descriptor bindings
+    vkt::DescriptorManager descManager;
+    descManager.initialize(context);
     descManager.addStorageImage(renderImage, 0);
     descManager.prepare();
 
     // Load shaders
+    vkt::ComputePipeline pipeline;
+    pipeline.initialize(context);
     pipeline.addComputeShader("shader/hello_compute/spv/compute.comp.spv");
     pipeline.prepare(descManager);
 
