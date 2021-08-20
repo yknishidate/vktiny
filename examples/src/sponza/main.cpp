@@ -22,6 +22,7 @@ struct UniformData
 {
     glm::mat4 invView;
     glm::mat4 invProj;
+    glm::vec3 lightDirection;
 };
 
 void initContext()
@@ -152,6 +153,7 @@ void updateUniformBuffer(vkt::OrbitalCamera& camera, UniformData& uniformData, v
     camera.update();
     uniformData.invView = glm::inverse(camera.view);
     uniformData.invProj = glm::inverse(camera.proj);
+    uniformData.lightDirection = glm::normalize(glm::vec3(0, 1, 0.5));
     uniformBuffer.copy(&uniformData);
 }
 

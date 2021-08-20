@@ -25,6 +25,12 @@ layout(buffer_reference, scalar) buffer Vertices {Vertex v[]; };
 layout(buffer_reference, scalar) buffer Indices {uvec3 i[]; };
 layout(set = 0, binding = 2) uniform sampler2D textureSamplers[];
 layout(set = 0, binding = 3) buffer _sceneDesc { MeshBuffers i[]; } sceneDesc;
+layout(set = 0, binding = 4) uniform UniformBuffer
+{
+    mat4 invView;
+    mat4 invProj;
+    vec3 lightDirection;
+} uniformBuffer;
 
 layout(location = 0) rayPayloadInEXT vec3 payLoad;
 
@@ -53,6 +59,12 @@ void main()
     vec2 uv = v0.uv * barycentrics.x +
               v1.uv * barycentrics.y +
               v2.uv * barycentrics.z;
-    payLoad = texture(textureSamplers[baseColorTexture], uv).rgb;
-    // payLoad = barycentrics;
+    vec3 normal = v0.normal * barycentrics.x +
+                  v1.normal * barycentrics.y +
+                  v2.normal * barycentrics.z;
+
+    vec3 baseColor = texture(textureSamplers[baseColorTexture], uv).rgb;
+
+    payLoad = vec3(normal.x, 1, 1);
+    // payLoad = pos;
 }

@@ -7,6 +7,7 @@ layout(set = 0, binding = 4) uniform UniformBuffer
 {
     mat4 invView;
     mat4 invProj;
+    vec3 lightDirection;
 } uniformBuffer;
 
 layout(location = 0) rayPayloadEXT vec3 payLoad;

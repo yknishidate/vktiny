@@ -1,4 +1,5 @@
 #include "vktiny/Scene/Scene.hpp"
+#include "vktiny/Log.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -41,6 +42,10 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
     for (int gltfMeshIndex = 0; gltfMeshIndex < gltfModel.meshes.size(); gltfMeshIndex++) {
         auto& gltfMesh = gltfModel.meshes[gltfMeshIndex];
         for (const auto& gltfPrimitive : gltfMesh.primitives) {
+            static int meshCount = 0;
+            log::info("Mesh {}", meshCount);
+            meshCount++;
+
             std::vector<Vertex> vertices;
             std::vector<Index> indices;
 
@@ -63,6 +68,7 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
             size_t verticesCount = accessor.count;
 
             if (attributes.find("NORMAL") != attributes.end()) {
+                log::info("    has NORMAL");
                 auto& accessor = gltfModel.accessors[attributes.find("NORMAL")->second];
                 auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                 auto& buffer = gltfModel.buffers[bufferView.buffer];
@@ -70,6 +76,7 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
                     &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("TEXCOORD_0") != attributes.end()) {
+                log::info("    has TEXCOORD_0");
                 auto& accessor = gltfModel.accessors[attributes.find("TEXCOORD_0")->second];
                 auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                 auto& buffer = gltfModel.buffers[bufferView.buffer];
@@ -77,6 +84,7 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
                     &(buffer.data[accessor.byteOffset + bufferView.byteOffset]));
             }
             if (attributes.find("COLOR_0") != attributes.end()) {
+                log::info("    has COLOR_0");
                 auto& accessor = gltfModel.accessors[attributes.find("COLOR_0")->second];
                 auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                 auto& buffer = gltfModel.buffers[bufferView.buffer];
@@ -86,6 +94,7 @@ void vkt::Scene::loadMeshes(tinygltf::Model& gltfModel)
                 numColorComponents = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
             }
             if (attributes.find("TANGENT") != attributes.end()) {
+                log::info("    has TANGENT");
                 auto& accessor = gltfModel.accessors[attributes.find("TANGENT")->second];
                 auto& bufferView = gltfModel.bufferViews[accessor.bufferView];
                 auto& buffer = gltfModel.buffers[bufferView.buffer];
