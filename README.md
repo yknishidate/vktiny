@@ -8,7 +8,7 @@ tiny vulkan wrapper
 - Vulkan Ray Tracing Pipeline
 - glTF loader
 
-## usage
+## build
 
 ```
 git clone --recursive https://github.com/nishidate-yuki/vktiny.git
@@ -25,9 +25,14 @@ cmake . -Bbuild
 - [spdlog](https://github.com/gabime/spdlog.git)
 - [tinygltf](https://github.com/syoyo/tinygltf.git)
 
-## example
+## examples
 
-Resource adding
+![vktiny](https://user-images.githubusercontent.com/30839669/130312274-08636bb7-e392-4954-aea1-9042d292457b.png)
+
+
+## usage
+
+Adding Resources
 
 ```cpp
 // Create vertices
@@ -60,7 +65,7 @@ rtPipeline.addChitShader("shader/spv/closesthit.rchit.spv");
 rtPipeline.prepare(descManager);
 ```
 
-gltf loading
+Loading gltf
 
 ```cpp
 // Load scene
@@ -68,26 +73,14 @@ vkt::Scene scene;
 scene.setMeshUsage(vkBU::eAccelerationStructureBuildInputReadOnlyKHR);
 scene.setMeshProperties(vkMP::eHostVisible | vkMP::eHostCoherent);
 scene.loadFile(context, "asset/Duck/Duck.gltf");
-
-// Output scene info
-using vkt::log;
-for (const auto& mesh : scene.getMeshes()) {
-    log::info("mesh");
-    log::info("  vertices: {}", mesh.getVertices().size());
-    log::info("  indices: {}", mesh.getIndices().size());
-}
-for (const auto& mat : scene.getMaterials()) {
-    log::info("material");
-    log::info("  baseColorFactor: {}", glm::to_string(mat.baseColorFactor));
-    log::info("  baseColorTextureIndex: {}", mat.baseColorTextureIndex);
-}
 ```
 
-Input callback setting
+Setting up input callbacks
 
 ```cpp
 context.getInput().setOnMouseButton(
     [&](const int button, const int action, const int mods) {
         vkt::log::info("{} {} {}", button, action, mods);
-    });
+    }
+);
 ```
