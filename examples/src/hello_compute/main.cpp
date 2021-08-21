@@ -1,6 +1,4 @@
 #include "vktiny/vktiny.hpp"
-#include <glm/gtx/string_cast.hpp>
-#include <utility>
 
 using vkIL = vk::ImageLayout;
 using vkIU = vk::ImageUsageFlagBits;
@@ -8,6 +6,7 @@ using vkBU = vk::BufferUsageFlagBits;
 using vkMP = vk::MemoryPropertyFlagBits;
 
 vkt::Context context;
+uint64_t frame = 0;
 const int width = 1280;
 const int height = 720;
 
@@ -22,6 +21,7 @@ struct UniformData
 {
     glm::mat4 invView;
     glm::mat4 invProj;
+    glm::mat4 transform;
     glm::vec3 lightDirection;
 };
 
@@ -152,7 +152,11 @@ void updateUniformBuffer(vkt::OrbitalCamera& camera, UniformData& uniformData, v
     camera.update();
     uniformData.invView = glm::inverse(camera.view);
     uniformData.invProj = glm::inverse(camera.proj);
-    uniformData.lightDirection = glm::normalize(glm::vec3(0.5, 1, -0.5));
+
+    //float theta = frame / 100.0;
+    float theta = 0.3;
+    float rad = 50.0;
+    uniformData.lightDirection = glm::normalize(glm::vec3(rad * glm::cos(theta), -100, rad * -glm::sin(theta)));
     uniformBuffer.copy(&uniformData);
 }
 
@@ -161,18 +165,10 @@ int main()
     try {
         initContext();
 
-        vkt::DescriptorManager descManager;
-        vkt::RayTracingPipeline rtPipeline;
-        descManager.initialize(context);
-        rtPipeline.initialize(context);
-
-        // Load scene
         vkt::Scene scene = loadScene();
 
-        // Create render image(binding = 0)
         vkt::Image renderImage = createRenderImage();
 
-        // Create accel structs(binding = 1)
         std::vector<vkt::BottomLevelAccelStruct> bottomLevelASs;
         bottomLevelASs.reserve(scene.getMeshes().size());
         for (auto& mesh : scene.getMeshes()) {
@@ -183,21 +179,21 @@ int main()
         vkt::TopLevelAccelStruct topLevelAS;
         topLevelAS.initialize(context, bottomLevelASs, transform);
 
-        // Create scene desc(binding = 3)
         vkt::Buffer sceneDesc = createBufferReferences(context, scene);
 
-        // Create uniform data(binding = 4)
         vkt::OrbitalCamera camera(width, height, 8);
         camera.theta = 9.0;
         camera.phi = 100.0;
         UniformData uniformData;
         uniformData.invView = glm::inverse(camera.view);
         uniformData.invProj = glm::inverse(camera.proj);
+        uniformData.transform = transform;
         vkt::Buffer uniformBuffer;
         uniformBuffer.initialize(context, sizeof(UniformData), vkBU::eUniformBuffer,
                                  vkMP::eHostVisible | vkMP::eHostCoherent, &uniformData);
 
-        // Add descriptor bindings
+        vkt::DescriptorManager descManager;
+        descManager.initialize(context);
         descManager.addStorageImage(renderImage, 0);
         descManager.addTopLevelAccelStruct(topLevelAS, 1);
         descManager.addCombinedImageSamplers(scene.getTextures(), 2);
@@ -205,20 +201,21 @@ int main()
         descManager.addUniformBuffer(uniformBuffer, 4);
         descManager.prepare();
 
-        // Load shaders
+        vkt::RayTracingPipeline rtPipeline;
+        rtPipeline.initialize(context);
         rtPipeline.addRaygenShader("shader/pathtracing/spv/raygen.rgen.spv");
         rtPipeline.addMissShader("shader/pathtracing/spv/miss.rmiss.spv");
+        rtPipeline.addMissShader("shader/pathtracing/spv/shadow.rmiss.spv");
         rtPipeline.addChitShader("shader/pathtracing/spv/closesthit.rchit.spv");
         rtPipeline.prepare(descManager);
 
-        // Build draw command buffers
         auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
         for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
             const auto& cmdBuf = drawCommandBuffers[i].get();
             cmdBuf.begin(vk::CommandBufferBeginInfo{});
             cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.get());
-            cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.getLayout(), 0,
-                                      descManager.getDescSet(), nullptr);
+            cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, rtPipeline.getLayout(),
+                                      0, descManager.getDescSet(), nullptr);
             cmdBuf.traceRaysKHR(rtPipeline.getRaygenRegion(),
                                 rtPipeline.getMissRegion(),
                                 rtPipeline.getHitRegion(),
@@ -227,7 +224,6 @@ int main()
             cmdBuf.end();
         }
 
-        uint64_t frame = 0;
         while (context.running()) {
             context.pollEvents();
             draw(drawCommandBuffers);

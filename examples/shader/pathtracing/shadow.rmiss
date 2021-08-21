@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_tracing : enable
 #include "globals.glsl"
 
-layout(location = 0) rayPayloadInEXT HitPayload payLoad;
+layout(location = 1) rayPayloadInEXT ShadowPayload payLoad;
 
 void main()
 {
