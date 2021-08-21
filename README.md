@@ -27,8 +27,7 @@ cmake . -Bbuild
 
 ## examples
 
-![vktiny](https://user-images.githubusercontent.com/30839669/130312274-08636bb7-e392-4954-aea1-9042d292457b.png)
-
+![vktiny](https://user-images.githubusercontent.com/30839669/130312423-1ed40a68-d7ad-4512-bf08-63be05bb3444.png)
 
 ## usage
 
