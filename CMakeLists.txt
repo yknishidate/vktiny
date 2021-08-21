@@ -47,9 +47,9 @@ file(GLOB hello_compute_sources examples/src/hello_compute/*.cpp)
 add_executable(hello_compute ${hello_compute_sources})
 target_link_libraries(hello_compute vktiny)
 
-## hello_compute
+## pathtracing
 file(GLOB pathtracing_sources examples/src/pathtracing/*.cpp)
-add_executable(pathtracing ${hello_compute_sources})
+add_executable(pathtracing ${pathtracing_sources})
 target_link_libraries(pathtracing vktiny)
 
 # copy files

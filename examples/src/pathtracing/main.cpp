@@ -203,10 +203,10 @@ int main()
 
         vkt::RayTracingPipeline rtPipeline;
         rtPipeline.initialize(context);
-        rtPipeline.addRaygenShader("shader/nee/spv/raygen.rgen.spv");
-        rtPipeline.addMissShader("shader/nee/spv/miss.rmiss.spv");
-        rtPipeline.addMissShader("shader/nee/spv/shadow.rmiss.spv");
-        rtPipeline.addChitShader("shader/nee/spv/closesthit.rchit.spv");
+        rtPipeline.addRaygenShader("shader/pathtracing/spv/raygen.rgen.spv");
+        rtPipeline.addMissShader("shader/pathtracing/spv/miss.rmiss.spv");
+        rtPipeline.addMissShader("shader/pathtracing/spv/shadow.rmiss.spv");
+        rtPipeline.addChitShader("shader/pathtracing/spv/closesthit.rchit.spv");
         rtPipeline.prepare(descManager);
 
         auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
