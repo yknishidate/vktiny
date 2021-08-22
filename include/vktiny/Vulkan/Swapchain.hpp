@@ -81,7 +81,7 @@ namespace vkt
             return frameInfo;
         }
 
-        void endFrame(uint32_t imageIndex, vk::CommandBuffer cmdBuf)
+        void endFrame(uint32_t imageIndex)
         {
             device->getPresentQueue().presentKHR(
                 vk::PresentInfoKHR{}

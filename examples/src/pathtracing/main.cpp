@@ -127,7 +127,7 @@ void draw(std::vector<vk::UniqueCommandBuffer>& drawCommandBuffers)
     context.getDevice().getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
 
     // End
-    context.getSwapchain().endFrame(frameInfo.imageIndex, cmdBuf);
+    context.getSwapchain().endFrame(frameInfo.imageIndex);
 }
 
 void copyImage(vk::CommandBuffer cmdBuf, vk::Image src, vk::Image dst)

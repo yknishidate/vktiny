@@ -132,7 +132,7 @@ int main()
         context.getDevice().getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
 
         // End
-        context.getSwapchain().endFrame(frameInfo.imageIndex, cmdBuf);
+        context.getSwapchain().endFrame(frameInfo.imageIndex);
     }
     context.getDevice().waitIdle();
 }
