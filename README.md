@@ -13,7 +13,7 @@ tiny vulkan wrapper
 ```
 git clone --recursive https://github.com/nishidate-yuki/vktiny.git
 cd vktiny
-cmake -DVKTINY_EXAMPLES=OFF . -Bbuild
+cmake -DVKTINY_EXAMPLES=ON . -Bbuild
 .\build\vktiny.sln
 ```
 
