@@ -36,6 +36,8 @@ namespace vkt
         vk::Queue getPresentQueue() const { return presentQueue; }
         vk::Queue getComputeQueue() const { return computeQueue; }
 
+        vk::UniqueCommandBuffer createGraphicsCommand() const;
+        vk::UniqueCommandBuffer createComputeCommand() const;
         vk::UniqueCommandBuffer beginGraphicsCommand() const;
         vk::UniqueCommandBuffer beginComputeCommand() const;
         void endGraphicsCommand(vk::CommandBuffer commandBuffer) const;

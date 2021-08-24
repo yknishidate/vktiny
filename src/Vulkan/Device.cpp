@@ -71,29 +71,37 @@ namespace vkt
         computeCommandPool = device->createCommandPoolUnique(createInfo);
     }
 
-    vk::UniqueCommandBuffer Device::beginGraphicsCommand() const
+    vk::UniqueCommandBuffer Device::createGraphicsCommand() const
     {
         vk::CommandBufferAllocateInfo allocInfo;
         allocInfo.setCommandPool(*graphicsCommandPool);
         allocInfo.setCommandBufferCount(1);
         auto commandBuffers = device->allocateCommandBuffersUnique(allocInfo);
-
         vk::UniqueCommandBuffer commandBuffer = std::move(commandBuffers.front());
-        commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
-
         return commandBuffer;
     }
 
-    vk::UniqueCommandBuffer Device::beginComputeCommand() const
+    vk::UniqueCommandBuffer Device::createComputeCommand() const
     {
         vk::CommandBufferAllocateInfo allocInfo;
         allocInfo.setCommandPool(*computeCommandPool);
         allocInfo.setCommandBufferCount(1);
         auto commandBuffers = device->allocateCommandBuffersUnique(allocInfo);
-
         vk::UniqueCommandBuffer commandBuffer = std::move(commandBuffers.front());
-        commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+        return commandBuffer;
+    }
 
+    vk::UniqueCommandBuffer Device::beginGraphicsCommand() const
+    {
+        vk::UniqueCommandBuffer commandBuffer = createGraphicsCommand();
+        commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+        return commandBuffer;
+    }
+
+    vk::UniqueCommandBuffer Device::beginComputeCommand() const
+    {
+        vk::UniqueCommandBuffer commandBuffer = createComputeCommand();
+        commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
         return commandBuffer;
     }
 

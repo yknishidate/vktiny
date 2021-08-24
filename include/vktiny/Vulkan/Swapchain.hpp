@@ -10,6 +10,7 @@ namespace vkt
     struct FrameInfo
     {
         uint32_t imageIndex;
+        uint32_t currentFrame;
         vk::Semaphore imageAvailableSemaphore;
         vk::Semaphore renderFinishedSemaphore;
         vk::Fence inFlightFence;
@@ -75,6 +76,7 @@ namespace vkt
 
             FrameInfo frameInfo;
             frameInfo.imageIndex = imageIndex;
+            frameInfo.currentFrame = currentFrame;
             frameInfo.imageAvailableSemaphore = *imageAvailableSemaphores[currentFrame];
             frameInfo.renderFinishedSemaphore = *renderFinishedSemaphores[currentFrame];
             frameInfo.inFlightFence = inFlightFences[currentFrame];
