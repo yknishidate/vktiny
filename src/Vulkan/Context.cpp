@@ -37,7 +37,7 @@ namespace vkt
             instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-        instance.initialize(VK_API_VERSION_1_2, layers, instanceExtensions);
+        instance.initialize(apiVersion, layers, instanceExtensions);
         messenger.initialize(instance);
         surface.initialize(instance, window);
         physicalDevice.initialize(instance);
