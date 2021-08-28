@@ -23,6 +23,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
 
     // Validation Error...
     std::string str = pCallbackData->pMessage;
+    //ss << str;
     std::size_t next = str.find("Object ");
     ss << str.substr(0, next) << std::endl;
     str = str.substr(next);
@@ -35,8 +36,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
 
     // Message
     next = str.find("The Vulkan spec");
-    ss << str.substr(0, next) << std::endl;
-    str = str.substr(next);
+    if (next != std::string::npos) {
+        ss << str.substr(0, next) << std::endl;
+        str = str.substr(next);
+    }
+    ss << str << std::endl;
 
     if ((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)) {
         vkt::log::error(ss.str());
