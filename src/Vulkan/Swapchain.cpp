@@ -65,6 +65,13 @@ namespace vkt
         return details;
     }
 
+    Swapchain::~Swapchain()
+    {
+        for (size_t i = 0; i < maxFramesInFlight; i++) {
+            device->get().destroyFence(inFlightFences[i]);
+        }
+    }
+
     void Swapchain::initialize(const Device& device,
                                const PhysicalDevice& physicalDevice,
                                const Surface& surface,
@@ -111,6 +118,57 @@ namespace vkt
         imageExtent = extent;
         createViews();
         createSyncObjects();
+    }
+
+    std::vector<vk::UniqueCommandBuffer> Swapchain::allocateDrawComamndBuffers() const
+    {
+        vk::CommandBufferAllocateInfo allocInfo;
+        allocInfo.setCommandPool(device->getGraphicsCommandPool());
+        allocInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+        allocInfo.setCommandBufferCount(images.size());
+        return device->get().allocateCommandBuffersUnique(allocInfo);
+    }
+
+    uint32_t Swapchain::acquireNextImageIndex() const
+    {
+        auto res = device->get().acquireNextImageKHR(*swapchain, UINT64_MAX,
+                                                     *imageAvailableSemaphores[currentFrame]);
+        if (res.result == vk::Result::eSuccess) {
+            return res.value;
+        }
+        throw std::runtime_error("failed to acquire next image!");
+    }
+
+    FrameInfo Swapchain::beginFrame()
+    {
+        device->get().waitForFences(inFlightFences[currentFrame], true, UINT64_MAX);
+
+        uint32_t imageIndex = acquireNextImageIndex();
+
+        if (imagesInFlight[imageIndex]) {
+            device->get().waitForFences(imagesInFlight[imageIndex], true, UINT64_MAX);
+        }
+        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+        device->get().resetFences(inFlightFences[currentFrame]);
+
+        FrameInfo frameInfo;
+        frameInfo.imageIndex = imageIndex;
+        frameInfo.currentFrame = currentFrame;
+        frameInfo.imageAvailableSemaphore = *imageAvailableSemaphores[currentFrame];
+        frameInfo.renderFinishedSemaphore = *renderFinishedSemaphores[currentFrame];
+        frameInfo.inFlightFence = inFlightFences[currentFrame];
+        return frameInfo;
+    }
+
+    void Swapchain::endFrame(uint32_t imageIndex)
+    {
+        device->getPresentQueue().presentKHR(
+            vk::PresentInfoKHR{}
+            .setWaitSemaphores(*renderFinishedSemaphores[currentFrame])
+            .setSwapchains(*swapchain)
+            .setImageIndices(imageIndex));
+
+        currentFrame = (currentFrame + 1) % maxFramesInFlight;
     }
 
     void Swapchain::createViews()

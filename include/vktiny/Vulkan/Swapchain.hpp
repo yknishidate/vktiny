@@ -25,12 +25,7 @@ namespace vkt
         Swapchain& operator = (const Swapchain&) = delete;
         Swapchain& operator = (Swapchain&&) = default;
 
-        ~Swapchain()
-        {
-            for (size_t i = 0; i < maxFramesInFlight; i++) {
-                device->get().destroyFence(inFlightFences[i]);
-            }
-        }
+        ~Swapchain();
         void initialize(const Device& device,
                         const PhysicalDevice& physicalDevice,
                         const Surface& surface,
@@ -43,56 +38,13 @@ namespace vkt
         auto getChainSize() const { return images.size(); }
         const auto& getImages() const { return images; }
 
-        auto allocateDrawComamndBuffers() const
-        {
-            vk::CommandBufferAllocateInfo allocInfo;
-            allocInfo.setCommandPool(device->getGraphicsCommandPool());
-            allocInfo.setLevel(vk::CommandBufferLevel::ePrimary);
-            allocInfo.setCommandBufferCount(images.size());
-            return device->get().allocateCommandBuffersUnique(allocInfo);
-        }
+        std::vector<vk::UniqueCommandBuffer> allocateDrawComamndBuffers() const;
 
-        uint32_t acquireNextImageIndex() const
-        {
-            auto res = device->get().acquireNextImageKHR(*swapchain, UINT64_MAX,
-                                                         *imageAvailableSemaphores[currentFrame]);
-            if (res.result == vk::Result::eSuccess) {
-                return res.value;
-            }
-            throw std::runtime_error("failed to acquire next image!");
-        }
+        uint32_t acquireNextImageIndex() const;
 
-        FrameInfo beginFrame()
-        {
-            device->get().waitForFences(inFlightFences[currentFrame], true, UINT64_MAX);
+        FrameInfo beginFrame();
 
-            uint32_t imageIndex = acquireNextImageIndex();
-
-            if (imagesInFlight[imageIndex]) {
-                device->get().waitForFences(imagesInFlight[imageIndex], true, UINT64_MAX);
-            }
-            imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-            device->get().resetFences(inFlightFences[currentFrame]);
-
-            FrameInfo frameInfo;
-            frameInfo.imageIndex = imageIndex;
-            frameInfo.currentFrame = currentFrame;
-            frameInfo.imageAvailableSemaphore = *imageAvailableSemaphores[currentFrame];
-            frameInfo.renderFinishedSemaphore = *renderFinishedSemaphores[currentFrame];
-            frameInfo.inFlightFence = inFlightFences[currentFrame];
-            return frameInfo;
-        }
-
-        void endFrame(uint32_t imageIndex)
-        {
-            device->getPresentQueue().presentKHR(
-                vk::PresentInfoKHR{}
-                .setWaitSemaphores(*renderFinishedSemaphores[currentFrame])
-                .setSwapchains(*swapchain)
-                .setImageIndices(imageIndex));
-
-            currentFrame = (currentFrame + 1) % maxFramesInFlight;
-        }
+        void endFrame(uint32_t imageIndex);
 
     private:
         void createViews();
