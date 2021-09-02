@@ -20,6 +20,7 @@ namespace vkt
 
         const auto& get() const { return accelStruct; }
         auto getDeviceAddress() const { return deviceAddress; }
+        auto getAccelStructInfo() const { return asInfo; }
 
         vk::WriteDescriptorSet createWrite();
 
@@ -83,6 +84,8 @@ namespace vkt
         void initialize(const Context& context,
                         const std::vector<BottomLevelAccelStruct>& bottomLevelASs,
                         const glm::mat4& transform = glm::mat4{ 1.0 });
+        void initialize(const Context& context,
+                        const std::vector<vk::AccelerationStructureInstanceKHR>& instances);
 
     private:
         std::vector<vk::AccelerationStructureInstanceKHR> instances;

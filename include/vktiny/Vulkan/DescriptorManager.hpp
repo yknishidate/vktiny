@@ -45,6 +45,20 @@ namespace vkt
             addDescriptors(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding, 1);
         }
 
+        void addTopLevelAccelStructs(std::vector<TopLevelAccelStruct>& topLevelASs,
+                                     uint32_t binding, uint32_t set = 0)
+        {
+            accelStructInfos.emplace_back();
+            for (auto& topLevelAS : topLevelASs) {
+                accelStructInfos.back().push_back(topLevelAS.getAccelStructInfo());
+            }
+
+            vk::WriteDescriptorSet write;
+            write.setDescriptorCount(topLevelASs.size());
+            write.setPNext(accelStructInfos.back().data());
+            addDescriptors(vkDT::eAccelerationStructureKHR, write, binding, topLevelASs.size());
+        }
+
         void addCombinedImageSamplers(std::vector<Image>& images,
                                       uint32_t binding, uint32_t set = 0)
         {

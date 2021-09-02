@@ -29,12 +29,13 @@ namespace vkt
     vk::PresentModeKHR chooseSwapPresentMode(
         const std::vector<vk::PresentModeKHR>& availablePresentModes)
     {
-        for (const auto& availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == vk::PresentModeKHR::eFifoRelaxed) {
-                return availablePresentMode;
-            }
-        }
-        return vk::PresentModeKHR::eFifo;
+        return vk::PresentModeKHR::eMailbox;
+        //for (const auto& availablePresentMode : availablePresentModes) {
+        //    if (availablePresentMode == vk::PresentModeKHR::eFifoRelaxed) {
+        //        return availablePresentMode;
+        //    }
+        //}
+        //return vk::PresentModeKHR::eFifo;
     }
 
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities,

@@ -3,15 +3,6 @@
 #include "vktiny/Math.hpp"
 #include "vktiny/Log.hpp"
 
-vk::TransformMatrixKHR toVkMatrix(const glm::mat4& transformMatrix)
-{
-    const glm::mat4 transposedMatrix = glm::transpose(transformMatrix);
-    std::array<std::array<float, 4>, 3> data;
-    std::memcpy(&data, &transposedMatrix, sizeof(vk::TransformMatrixKHR));
-    return vk::TransformMatrixKHR(data);
-}
-
-
 vk::WriteDescriptorSet vkt::AccelStruct::createWrite()
 {
     asInfo = { *accelStruct };
@@ -177,6 +168,30 @@ void vkt::TopLevelAccelStruct::initialize(const Context& context,
                                vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eShaderDeviceAddress,
                                vkMP::eHostVisible | vkMP::eHostCoherent,
                                instances.data());
+
+    instancesData.setArrayOfPointers(false);
+    instancesData.setData(instancesBuffer.getDeviceAddress());
+
+    geometry.setGeometryType(vk::GeometryTypeKHR::eInstances);
+    geometry.setGeometry({ instancesData });
+    geometry.setFlags(vk::GeometryFlagBitsKHR::eOpaque);
+
+    AccelStruct::build(geometry, vk::AccelerationStructureTypeKHR::eTopLevel, instances.size());
+}
+
+void vkt::TopLevelAccelStruct::initialize(const Context& context,
+                                          const std::vector<vk::AccelerationStructureInstanceKHR>& instances)
+{
+    AccelStruct::initialize(context);
+
+    this->instances = instances;
+
+    instancesSize = vk::DeviceSize{ sizeof(vk::AccelerationStructureInstanceKHR) * instances.size() };
+    instancesBuffer.initialize(context,
+                               instancesSize,
+                               vkBU::eAccelerationStructureBuildInputReadOnlyKHR | vkBU::eShaderDeviceAddress,
+                               vkMP::eHostVisible | vkMP::eHostCoherent,
+                               this->instances.data());
 
     instancesData.setArrayOfPointers(false);
     instancesData.setData(instancesBuffer.getDeviceAddress());
