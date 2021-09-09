@@ -22,13 +22,7 @@ void vkt::Scene::loadFile(const Context& context, const std::string& filepath)
         result = gltfLoader.LoadBinaryFromFile(&gltfModel, &err, &warn, filepath);
     }
     if (!result) {
-        throw std::runtime_error("failed to load gltf file.");
-    }
-    if (!err.empty()) {
-        throw std::runtime_error("gltf error:" + err);
-    }
-    if (!warn.empty()) {
-        throw std::runtime_error("gltf warning:" + warn);
+        throw std::runtime_error(err);
     }
 
     loadMeshes(gltfModel);
