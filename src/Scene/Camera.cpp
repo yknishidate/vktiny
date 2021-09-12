@@ -2,16 +2,22 @@
 
 namespace vkt
 {
-    OrbitalCamera::OrbitalCamera(int width, int height, float distance)
+    OrbitalCamera::OrbitalCamera(int width, int height, float distance,
+                                 glm::vec3 target)
     {
         this->distance = distance;
-        target = glm::vec3(0);
+        target = target;
         aspect = float(width) / height;
         update();
     }
 
     void OrbitalCamera::update()
     {
+        if (distance < 0.01) {
+            view = glm::lookAt(glm::vec3(0.0), target, glm::vec3(0, 1, 0));
+            proj = glm::perspective(glm::radians(fov), aspect, 0.01f, 10000.0f);
+            return;
+        }
         // Update
         glm::mat4 rotX = glm::rotate(glm::radians(theta), glm::vec3(1, 0, 0));
         glm::mat4 rotY = glm::rotate(glm::radians(phi), glm::vec3(0, 1, 0));

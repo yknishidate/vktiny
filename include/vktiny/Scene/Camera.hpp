@@ -30,7 +30,7 @@ namespace vkt
     {
     public:
         OrbitalCamera() = default;
-        OrbitalCamera(int width, int height, float distance = 10);
+        OrbitalCamera(int width, int height, float distance = 10, glm::vec3 target = glm::vec3(0.0));
 
         void update() override;
         void processCursorMotion(double xMotion, double yMotion) override;
