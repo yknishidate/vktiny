@@ -1,6 +1,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <set>
 
 namespace vkt
 {
@@ -115,6 +116,8 @@ namespace vkt
             initSurface();
 
             findQueueFamilies();
+
+            initDevice(info.deviceExtensions, info.features, info.featuresPNext);
         }
 
         bool shouldTerminate()
@@ -197,6 +200,26 @@ namespace vkt
                     presentFamily = i;
                 }
             }
+        }
+
+        void initDevice(const std::vector<const char*>& extensions,
+                        vk::PhysicalDeviceFeatures features,
+                        void* pNext)
+        {
+            std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+            std::set<uint32_t> uniqueQueueFamilies = { graphicsFamily, computeFamily, presentFamily };
+            float queuePriority = 1.0f;
+            for (uint32_t queueFamily : uniqueQueueFamilies) {
+                vk::DeviceQueueCreateInfo queueCreateInfo{ {}, queueFamily, 1, &queuePriority };
+                queueCreateInfos.push_back(queueCreateInfo);
+            }
+
+            vk::DeviceCreateInfo deviceInfo;
+            deviceInfo.setQueueCreateInfos(queueCreateInfos);
+            deviceInfo.setPEnabledExtensionNames(extensions);
+            deviceInfo.setPEnabledFeatures(&features);
+            deviceInfo.setPNext(pNext);
+            device = vk::raii::Device(physicalDevice, deviceInfo);
         }
 
         GLFWwindow* window;
