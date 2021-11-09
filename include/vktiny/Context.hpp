@@ -22,6 +22,7 @@ namespace vkt
         void setDebug(bool enable = true)
         {
             enableDebug = enable;
+            instanceLayers.push_back("VK_LAYER_KHRONOS_validation");
             instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
@@ -96,16 +97,11 @@ namespace vkt
         {
             initWindow(info.windowWidth, info.windowHeight, info.appName);
 
-            auto layer = info.instanceLayers;
             auto extensions = info.instanceExtensions;
             auto glfwExtensions = getGLFWExtension();
             extensions.insert(extensions.begin(), glfwExtensions.begin(), glfwExtensions.end());
-            if (info.enableDebug) {
-                layer.push_back("VK_LAYER_KHRONOS_validation");
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            }
             initInstance(info.apiMajorVersion, info.apiMinorVersion, info.appName,
-                         layer, extensions);
+                         info.instanceLayers, extensions);
 
             if (info.enableDebug) {
                 initMessenger();
