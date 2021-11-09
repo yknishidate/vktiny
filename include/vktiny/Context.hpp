@@ -16,6 +16,8 @@ namespace vkt
 
     struct ContextCreateInfo
     {
+        friend class Context;
+
         void setDebug(bool enable = true)
         {
             enableDebug = enable;
@@ -59,6 +61,7 @@ namespace vkt
             featuresPNext = pNext;
         }
 
+    private:
         // Debug
         bool enableDebug = false;
 
@@ -92,11 +95,16 @@ namespace vkt
         {
             initWindow(info.windowWidth, info.windowHeight, info.appName);
 
-            auto glfwExtensions = getGLFWExtension();
+            auto layer = info.instanceLayers;
             auto extensions = info.instanceExtensions;
+            auto glfwExtensions = getGLFWExtension();
             extensions.insert(extensions.begin(), glfwExtensions.begin(), glfwExtensions.end());
+            if (info.enableDebug) {
+                layer.push_back("VK_LAYER_KHRONOS_validation");
+                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            }
             initInstance(info.apiMajorVersion, info.apiMinorVersion, info.appName,
-                         info.instanceLayers, extensions);
+                         layer, extensions);
 
             if (info.enableDebug) {
                 initMessenger();
@@ -106,23 +114,7 @@ namespace vkt
 
             initSurface();
 
-            //int i = 0;
-            //for (const auto& queueFamily : physicalDevice.getQueueFamilyProperties()) {
-            //    if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-            //        graphicsFamily = i;
-            //    }
-            //    if (queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
-            //        computeFamily = i;
-            //    }
-            //    vk::Bool32 presentSupport = physicalDevice.getSurfaceSupportKHR(i, surface);
-            //    if (presentSupport) {
-            //        presentFamily = i;
-            //    }
-            //    if (graphicsFamily != -1 && presentFamily != -1 && computeFamily != -1) {
-            //        break;
-            //    }
-            //    i++;
-            //}
+            findQueueFamilies();
         }
 
         bool shouldTerminate()
@@ -187,6 +179,24 @@ namespace vkt
                 throw std::runtime_error("failed to create window surface...");
             }
             surface = vk::raii::SurfaceKHR(instance, _surface);
+        }
+
+        void findQueueFamilies()
+        {
+            auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+            for (int i = 0; i < queueFamilies.size(); i++) {
+                const auto& queueFamily = queueFamilies[i];
+                if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+                    graphicsFamily = i;
+                }
+                if (queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+                    computeFamily = i;
+                }
+                vk::Bool32 presentSupport = physicalDevice.getSurfaceSupportKHR(i, *surface);
+                if (presentSupport) {
+                    presentFamily = i;
+                }
+            }
         }
 
         GLFWwindow* window;
