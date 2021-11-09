@@ -6,9 +6,6 @@ class App
 public:
     App()
     {
-        //vkt::ContextCreateInfo contextInfo;
-        //contextInfo.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
         context.initialize();
     }
 

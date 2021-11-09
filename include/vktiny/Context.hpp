@@ -81,7 +81,7 @@ namespace vkt
         std::vector<const char*> instanceExtensions = {};
 
         // Device
-        std::vector<const char*> deviceExtensions = {};
+        std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
         vk::PhysicalDeviceFeatures features;
         void* featuresPNext = nullptr; // TODO: managing this
     };
@@ -115,6 +115,8 @@ namespace vkt
             initDevice(info.deviceExtensions, info.features, info.featuresPNext);
             getQueues();
             createCommandPools();
+
+            initSwapchain(info.windowWidth, info.windowHeight);
         }
 
         bool shouldTerminate()
@@ -162,11 +164,11 @@ namespace vkt
 
         void initMessenger()
         {
-            using MS = vk::DebugUtilsMessageSeverityFlagBitsEXT;
-            using MT = vk::DebugUtilsMessageTypeFlagBitsEXT;
+            using vkMS = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+            using vkMT = vk::DebugUtilsMessageTypeFlagBitsEXT;
             vk::DebugUtilsMessengerCreateInfoEXT messengerInfo;
-            messengerInfo.setMessageSeverity(MS::eWarning | MS::eError);
-            messengerInfo.setMessageType(MT::eGeneral | MT::ePerformance | MT::eValidation);
+            messengerInfo.setMessageSeverity(vkMS::eWarning | vkMS::eError);
+            messengerInfo.setMessageType(vkMT::eGeneral | vkMT::ePerformance | vkMT::eValidation);
             messengerInfo.setPfnUserCallback(&debugUtilsMessengerCallback);
             messenger = vk::raii::DebugUtilsMessengerEXT(instance, messengerInfo);
         }
@@ -233,6 +235,20 @@ namespace vkt
             computeCommandPool = vk::raii::CommandPool(device, { flag, computeFamily });
         }
 
+        void initSwapchain(int width, int height)
+        {
+            using vkIU = vk::ImageUsageFlagBits;
+            vk::SwapchainCreateInfoKHR swapchainInfo;
+            swapchainInfo.setSurface(*surface);
+            swapchainInfo.setImageFormat(vk::Format::eB8G8R8A8Unorm);
+            swapchainInfo.setMinImageCount(3);
+            swapchainInfo.setImageExtent({ uint32_t(width), uint32_t(height) });
+            swapchainInfo.setImageArrayLayers(1);
+            swapchainInfo.setImageUsage(vkIU::eColorAttachment | vkIU::eTransferDst);
+            swapchainInfo.setClipped(VK_TRUE);
+            swapchain = vk::raii::SwapchainKHR(device, swapchainInfo);
+        }
+
         GLFWwindow* window;
 
         vk::raii::Context context;
@@ -241,6 +257,7 @@ namespace vkt
         vk::raii::PhysicalDevice physicalDevice = nullptr;
         vk::raii::SurfaceKHR surface = nullptr;
         vk::raii::Device device = nullptr;
+        vk::raii::SwapchainKHR swapchain = nullptr;
 
         uint32_t graphicsFamily = {};
         uint32_t presentFamily = {};
