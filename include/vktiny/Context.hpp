@@ -237,6 +237,8 @@ namespace vkt
 
         void initSwapchain(int width, int height)
         {
+            auto capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+
             using vkIU = vk::ImageUsageFlagBits;
             vk::SwapchainCreateInfoKHR swapchainInfo;
             swapchainInfo.setSurface(*surface);
@@ -245,6 +247,7 @@ namespace vkt
             swapchainInfo.setImageExtent({ uint32_t(width), uint32_t(height) });
             swapchainInfo.setImageArrayLayers(1);
             swapchainInfo.setImageUsage(vkIU::eColorAttachment | vkIU::eTransferDst);
+            swapchainInfo.setPreTransform(capabilities.currentTransform);
             swapchainInfo.setClipped(VK_TRUE);
             swapchain = vk::raii::SwapchainKHR(device, swapchainInfo);
         }

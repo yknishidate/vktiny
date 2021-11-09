@@ -6,7 +6,9 @@ class App
 public:
     App()
     {
-        context.initialize();
+        vkt::ContextCreateInfo contextInfo;
+        contextInfo.setDebug(true);
+        context.initialize(contextInfo);
     }
 
     void run()
