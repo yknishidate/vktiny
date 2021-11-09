@@ -90,51 +90,21 @@ namespace vkt
 
         void initialize(const ContextCreateInfo& info = {})
         {
-            glfwInit();
-            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            initWindow(info.windowWidth, info.windowHeight, info.appName);
 
-            const int width = info.windowWidth;
-            const int height = info.windowHeight;
-            window = glfwCreateWindow(width, height, info.appName.c_str(), nullptr, nullptr);
-
-            uint32_t glfwExtensionCount = 0;
-            const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            std::vector<const char*> instanceExtensions(glfwExtensions,
-                                                        glfwExtensions + glfwExtensionCount);
-            instanceExtensions.insert(instanceExtensions.begin(),
-                                      info.instanceExtensions.begin(),
-                                      info.instanceExtensions.end());
-
-            uint32_t version = VK_MAKE_API_VERSION(0, info.apiMajorVersion, info.apiMinorVersion, 0);
-
-            vk::ApplicationInfo appInfo;
-            appInfo.setApiVersion(version);
-
-            vk::InstanceCreateInfo instInfo;
-            instInfo.setPApplicationInfo(&appInfo);
-            instInfo.setPEnabledLayerNames(info.instanceLayers);
-            instInfo.setPEnabledExtensionNames(instanceExtensions);
-            instance = vk::raii::Instance(context, instInfo);
+            auto glfwExtensions = getGLFWExtension();
+            auto extensions = info.instanceExtensions;
+            extensions.insert(extensions.begin(), glfwExtensions.begin(), glfwExtensions.end());
+            initInstance(info.apiMajorVersion, info.apiMinorVersion, info.appName,
+                         info.instanceLayers, extensions);
 
             if (info.enableDebug) {
-                using MS = vk::DebugUtilsMessageSeverityFlagBitsEXT;
-                using MT = vk::DebugUtilsMessageTypeFlagBitsEXT;
-                vk::DebugUtilsMessengerCreateInfoEXT messengerInfo;
-                messengerInfo.setMessageSeverity(MS::eWarning | MS::eError);
-                messengerInfo.setMessageType(MT::eGeneral | MT::ePerformance | MT::eValidation);
-                messengerInfo.setPfnUserCallback(&debugUtilsMessengerCallback);
-                messenger = vk::raii::DebugUtilsMessengerEXT(instance, messengerInfo);
+                initMessenger();
             }
 
             physicalDevice = std::move(vk::raii::PhysicalDevices(instance).front());
 
-            VkSurfaceKHR _surface;
-            auto res = glfwCreateWindowSurface(VkInstance(*instance), window, nullptr, &_surface);
-            if (res != VK_SUCCESS) {
-                throw std::runtime_error("failed to create window surface...");
-            }
-            surface = vk::raii::SurfaceKHR(instance, _surface);
+            initSurface();
 
             //int i = 0;
             //for (const auto& queueFamily : physicalDevice.getQueueFamilyProperties()) {
@@ -166,6 +136,59 @@ namespace vkt
         }
 
     private:
+        void initWindow(int width, int height, const std::string& title)
+        {
+            glfwInit();
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+        }
+
+        std::vector<const char*> getGLFWExtension()
+        {
+            uint32_t count = 0;
+            const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+            return std::vector<const char*>(extensions, extensions + count);
+        }
+
+        void initInstance(uint32_t majorVersion,
+                          uint32_t minorVersion,
+                          const std::string& appName,
+                          const std::vector<const char*>& layers,
+                          const std::vector<const char*>& extensions)
+        {
+            vk::ApplicationInfo appInfo;
+            appInfo.setApiVersion(VK_MAKE_API_VERSION(0, majorVersion, minorVersion, 0));
+            appInfo.setPApplicationName(appName.c_str());
+
+            vk::InstanceCreateInfo instInfo;
+            instInfo.setPApplicationInfo(&appInfo);
+            instInfo.setPEnabledLayerNames(layers);
+            instInfo.setPEnabledExtensionNames(extensions);
+            instance = vk::raii::Instance(context, instInfo);
+        }
+
+        void initMessenger()
+        {
+            using MS = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+            using MT = vk::DebugUtilsMessageTypeFlagBitsEXT;
+            vk::DebugUtilsMessengerCreateInfoEXT messengerInfo;
+            messengerInfo.setMessageSeverity(MS::eWarning | MS::eError);
+            messengerInfo.setMessageType(MT::eGeneral | MT::ePerformance | MT::eValidation);
+            messengerInfo.setPfnUserCallback(&debugUtilsMessengerCallback);
+            messenger = vk::raii::DebugUtilsMessengerEXT(instance, messengerInfo);
+        }
+
+        void initSurface()
+        {
+            VkSurfaceKHR _surface;
+            auto res = glfwCreateWindowSurface(VkInstance(*instance), window, nullptr, &_surface);
+            if (res != VK_SUCCESS) {
+                throw std::runtime_error("failed to create window surface...");
+            }
+            surface = vk::raii::SurfaceKHR(instance, _surface);
+        }
+
         GLFWwindow* window;
 
         vk::raii::Context context;
