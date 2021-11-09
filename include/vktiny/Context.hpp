@@ -63,6 +63,11 @@ namespace vkt
             featuresPNext = pNext;
         }
 
+        void setPresentMode(vk::PresentModeKHR mode)
+        {
+            presentMode = mode;
+        }
+
     private:
         // Debug
         bool enableDebug = false;
@@ -84,6 +89,9 @@ namespace vkt
         std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
         vk::PhysicalDeviceFeatures features;
         void* featuresPNext = nullptr; // TODO: managing this
+
+        // Swapchain
+        vk::PresentModeKHR presentMode = vk::PresentModeKHR::eImmediate;
     };
 
     class Context
@@ -116,7 +124,7 @@ namespace vkt
             getQueues();
             createCommandPools();
 
-            initSwapchain(info.windowWidth, info.windowHeight);
+            initSwapchain(info.windowWidth, info.windowHeight, info.presentMode);
         }
 
         bool shouldTerminate()
@@ -235,7 +243,7 @@ namespace vkt
             computeCommandPool = vk::raii::CommandPool(device, { flag, computeFamily });
         }
 
-        void initSwapchain(int width, int height)
+        void initSwapchain(int width, int height, vk::PresentModeKHR presentMode)
         {
             auto capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
@@ -243,12 +251,13 @@ namespace vkt
             vk::SwapchainCreateInfoKHR swapchainInfo;
             swapchainInfo.setSurface(*surface);
             swapchainInfo.setImageFormat(vk::Format::eB8G8R8A8Unorm);
-            swapchainInfo.setMinImageCount(3);
+            swapchainInfo.setMinImageCount(capabilities.minImageCount + 1);
             swapchainInfo.setImageExtent({ uint32_t(width), uint32_t(height) });
             swapchainInfo.setImageArrayLayers(1);
             swapchainInfo.setImageUsage(vkIU::eColorAttachment | vkIU::eTransferDst);
             swapchainInfo.setPreTransform(capabilities.currentTransform);
             swapchainInfo.setClipped(VK_TRUE);
+            swapchainInfo.setPresentMode(presentMode);
             swapchain = vk::raii::SwapchainKHR(device, swapchainInfo);
         }
 
