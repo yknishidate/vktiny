@@ -116,8 +116,9 @@ namespace vkt
             initSurface();
 
             findQueueFamilies();
-
             initDevice(info.deviceExtensions, info.features, info.featuresPNext);
+            getQueues();
+            createCommandPools();
         }
 
         bool shouldTerminate()
@@ -222,6 +223,20 @@ namespace vkt
             device = vk::raii::Device(physicalDevice, deviceInfo);
         }
 
+        void getQueues()
+        {
+            graphicsQueue = vk::raii::Queue(device, graphicsFamily, 0);
+            computeQueue = vk::raii::Queue(device, computeFamily, 0);
+            presentQueue = vk::raii::Queue(device, presentFamily, 0);
+        }
+
+        void createCommandPools()
+        {
+            auto flag = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+            graphicsCommandPool = vk::raii::CommandPool(device, { flag, graphicsFamily });
+            computeCommandPool = vk::raii::CommandPool(device, { flag, computeFamily });
+        }
+
         GLFWwindow* window;
 
         vk::raii::Context context;
@@ -235,8 +250,11 @@ namespace vkt
         uint32_t presentFamily = {};
         uint32_t computeFamily = {};
 
-        vk::Queue graphicsQueue;
-        vk::Queue presentQueue;
-        vk::Queue computeQueue;
+        vk::raii::Queue graphicsQueue = nullptr;
+        vk::raii::Queue presentQueue = nullptr;
+        vk::raii::Queue computeQueue = nullptr;
+
+        vk::raii::CommandPool graphicsCommandPool = nullptr;
+        vk::raii::CommandPool computeCommandPool = nullptr;
     };
 }
