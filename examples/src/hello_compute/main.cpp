@@ -5,12 +5,12 @@
 const std::string computeShaderText = R"(
 #version 460
 layout(local_size_x = 1, local_size_y = 1) in;
-layout(binding = 0, rgba8) uniform image2D renderImage;
+//layout(binding = 0, rgba8) uniform image2D renderImage;
 
 void main()
 {
-    vec3 color = vec3(gl_GlobalInvocationID.xyz) / gl_NumWorkGroups.xyz;
-	imageStore(renderImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
+    //vec3 color = vec3(gl_GlobalInvocationID.xyz) / gl_NumWorkGroups.xyz;
+	//imageStore(renderImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }
 )";
 
