@@ -137,6 +137,22 @@ namespace vkt
             glfwPollEvents();
         }
 
+        uint32_t findMemoryType(vk::MemoryRequirements requirements,
+                                vk::MemoryPropertyFlags propertyFlags) const
+        {
+            vk::PhysicalDeviceMemoryProperties properties = physicalDevice.getMemoryProperties();
+            for (uint32_t i = 0; i != properties.memoryTypeCount; ++i) {
+                if ((requirements.memoryTypeBits & (1 << i)) &&
+                    (properties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags) {
+                    return i;
+                }
+            }
+            throw std::runtime_error("failed to find suitable memory type");
+        }
+
+        const vk::raii::Device& getDevice() const { return device; }
+        const vk::raii::PhysicalDevice& getPhysicalDevice() const { return physicalDevice; }
+
     private:
         void initWindow(int width, int height, const std::string& title)
         {
