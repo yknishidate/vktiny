@@ -24,8 +24,6 @@ namespace vkt
         const vk::raii::DescriptorPool& get() const { return descPool; }
 
     protected:
-        vk::raii::DescriptorPool descPool;
-        std::vector<vk::raii::DescriptorSet> descSets;
+        vk::raii::DescriptorPool descPool = nullptr;
     };
-
 }

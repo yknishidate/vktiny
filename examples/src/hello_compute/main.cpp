@@ -32,7 +32,8 @@ public:
 
         descSetLayout.initialize(context, { binding });
         pipeline.initialize(context, descSetLayout, computeShaderText);
-
+        descPool.initialize(context, 1, { {vk::DescriptorType::eStorageImage, 10} });
+        descSet.initialize(context, descPool, descSetLayout);
     }
 
     void run()
@@ -47,6 +48,8 @@ private:
     vkt::Image storageImage;
     vkt::DescriptorSetLayout descSetLayout;
     vkt::ComputePipeline pipeline;
+    vkt::DescriptorPool descPool;
+    vkt::DescriptorSet descSet;
 };
 
 int main()
