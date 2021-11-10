@@ -14,11 +14,14 @@ namespace vkt
                         uint32_t maxSets,
                         const std::vector<vk::DescriptorPoolSize>& poolSizes)
         {
-            descPool = vk::raii::DescriptorPool(context.getDevice(), { {}, maxSets, poolSizes });
-
-            //vk::DescriptorSetAllocateInfo{}
-            //descSets = context.getDevice().allocateDescriptorSets({*descPool, *descSetLayout});
+            vk::DescriptorPoolCreateInfo poolInfo;
+            poolInfo.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
+            poolInfo.setMaxSets(maxSets);
+            poolInfo.setPoolSizes(poolSizes);
+            descPool = vk::raii::DescriptorPool(context.getDevice(), poolInfo);
         }
+
+        const vk::raii::DescriptorPool& get() const { return descPool; }
 
     protected:
         vk::raii::DescriptorPool descPool;
