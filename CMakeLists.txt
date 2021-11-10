@@ -20,6 +20,7 @@ target_link_libraries(vktiny PUBLIC vulkan)
 target_link_libraries(vktiny PUBLIC glfw)
 target_link_libraries(vktiny PUBLIC spdlog)
 target_link_libraries(vktiny PUBLIC tinygltf)
+target_link_libraries(vktiny PUBLIC glslang)
 
 # examples
 option(VKTINY_EXAMPLES "" OFF)

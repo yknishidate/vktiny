@@ -32,23 +32,6 @@ namespace vkt
     {
     public:
         void initialize(const Context& context,
-                        vk::raii::DescriptorSetLayout descSetLayout,
-                        vk::raii::ShaderModule shaderModule)
-        {
-            layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout });
-
-            vk::PipelineShaderStageCreateInfo stageInfo;
-            stageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
-            stageInfo.setModule(*shaderModule);
-            stageInfo.setPName("main");
-
-            vk::ComputePipelineCreateInfo createInfo;
-            createInfo.setStage(stageInfo);
-            createInfo.setLayout(*layout);
-            pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, createInfo);
-        }
-
-        void initialize(const Context& context,
                         const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
                         vk::raii::ShaderModule shaderModule)
         {
