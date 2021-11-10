@@ -1,6 +1,5 @@
 #include "vktiny/vktiny.hpp"
 #include <iostream>
-#include <SPIRV/GlslangToSpv.h>
 
 const std::string computeShaderText = R"(
 #version 460
@@ -21,12 +20,19 @@ public:
     {
         vkt::ContextCreateInfo contextInfo;
         contextInfo.setDebug(true);
+        contextInfo.setWindowSize(1280, 720);
         context.initialize(contextInfo);
+        storageImage.initialize(context, { 1280, 720 }, vk::ImageUsageFlagBits::eStorage);
 
-        glslang::InitializeProcess();
+        vk::DescriptorSetLayoutBinding binding;
+        binding.setBinding(0);
+        binding.setDescriptorType(vk::DescriptorType::eStorageImage);
+        binding.setDescriptorCount(1);
+        binding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+        pipeline.initialize(context, { binding }, computeShaderText);
+
         //vk::raii::ShaderModule vertexShaderModule =
             //vk::raii::su::makeShaderModule(device, vk::ShaderStageFlagBits::eVertex, vertexShaderText_PC_C);
-        glslang::FinalizeProcess();
     }
 
     void run()
@@ -38,6 +44,8 @@ public:
 
 private:
     vkt::Context context;
+    vkt::Image storageImage;
+    vkt::ComputePipeline pipeline;
 };
 
 int main()

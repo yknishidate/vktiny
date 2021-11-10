@@ -15,16 +15,17 @@ file(GLOB_RECURSE headers include/vktiny/*.hpp)
 add_library(vktiny STATIC ${sources} ${headers})
 target_include_directories(vktiny PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(vktiny PUBLIC glm)
-target_link_libraries(vktiny PUBLIC vulkan)
-target_link_libraries(vktiny PUBLIC glfw)
-target_link_libraries(vktiny PUBLIC spdlog)
-target_link_libraries(vktiny PUBLIC tinygltf)
-target_link_libraries(vktiny PUBLIC glslang)
+target_link_libraries(vktiny PUBLIC
+    glm
+    vulkan
+    glfw
+    tinygltf)
 
 # examples
 option(VKTINY_EXAMPLES "" OFF)
 if(VKTINY_EXAMPLES)
+    add_subdirectory(external/glslang)
+
     # ## raytracing_triangle
     # file(GLOB raytracing_triangle_sources examples/src/raytracing_triangle/*.cpp examples/raytracing_triangle/*.hpp)
     # add_executable(raytracing_triangle ${raytracing_triangle_sources})

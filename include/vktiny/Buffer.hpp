@@ -1,3 +1,4 @@
+#pragma once
 #include "Context.hpp"
 
 namespace vkt

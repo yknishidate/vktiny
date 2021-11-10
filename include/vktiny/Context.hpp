@@ -1,3 +1,4 @@
+#pragma once
 #include <vulkan/vulkan_raii.hpp>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -9,11 +10,7 @@ namespace vkt
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageTypes,
         VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData,
-        void* /*pUserData*/)
-    {
-        std::cerr << pCallbackData->pMessage << "\n";
-        return VK_FALSE;
-    }
+        void* /*pUserData*/);
 
     struct ContextCreateInfo
     {
