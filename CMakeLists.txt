@@ -13,20 +13,6 @@ add_subdirectory(glfw)
 add_subdirectory(vulkan)
 add_subdirectory(glslang)
 
-if (NOT TARGET glslang-default-resource-limits)
-    add_library(glslang-default-resource-limits
-                glslang/StandAlone/ResourceLimits.cpp)
-
-    set_property(TARGET glslang-default-resource-limits PROPERTY FOLDER "ThirdParty")
-
-    target_include_directories(glslang-default-resource-limits
-                                PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glslang/StandAlone)
-endif()
-
-# (glslang-default-resource-limits)
-# add_library(glslang-default-resource-limits glslang/StandAlone/ResourceLimits.cpp)
-# target_include_directories(glslang-default-resource-limits PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glslang/StandAlone)
-
 # main
 file(GLOB_RECURSE sources src/*.cpp)
 file(GLOB_RECURSE headers include/vktiny/*.hpp)
