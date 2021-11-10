@@ -28,6 +28,12 @@ namespace vkt
             buffer.bindMemory(*deviceMemory, 0);
         }
 
+        vk::DeviceAddress getDeviceAddress()
+        {
+            vk::BufferDeviceAddressInfoKHR addressInfo{ *buffer };
+            return buffer.getDevice().getBufferAddress(&addressInfo);
+        }
+
     protected:
         vk::raii::Buffer buffer = nullptr;
         vk::raii::DeviceMemory deviceMemory = nullptr;
