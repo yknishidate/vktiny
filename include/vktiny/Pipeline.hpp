@@ -48,17 +48,17 @@ namespace vkt
             layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout });
 
             auto shaderSPV = GLSLtoSPV(vk::ShaderStageFlagBits::eCompute, shaderText);
-            //computeShaderModule = vk::raii::ShaderModule(context.getDevice(), { {}, shaderSPV });
+            computeShaderModule = vk::raii::ShaderModule(context.getDevice(), { {}, shaderSPV });
 
-            //vk::PipelineShaderStageCreateInfo stageInfo;
-            //stageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
-            //stageInfo.setModule(*computeShaderModule);
-            //stageInfo.setPName("main");
+            vk::PipelineShaderStageCreateInfo stageInfo;
+            stageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
+            stageInfo.setModule(*computeShaderModule);
+            stageInfo.setPName("main");
 
-            //vk::ComputePipelineCreateInfo pipelineInfo;
-            //pipelineInfo.setStage(stageInfo);
-            //pipelineInfo.setLayout(*layout);
-            //pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, pipelineInfo);
+            vk::ComputePipelineCreateInfo pipelineInfo;
+            pipelineInfo.setStage(stageInfo);
+            pipelineInfo.setLayout(*layout);
+            pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, pipelineInfo);
         }
 
         //void initialize(const Context& context,
