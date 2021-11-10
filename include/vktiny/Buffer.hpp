@@ -15,6 +15,7 @@ namespace vkt
                         vk::BufferUsageFlags usage,
                         vk::MemoryPropertyFlags propertyFlags)
         {
+            this->size = size;
             buffer = vk::raii::Buffer(context.getDevice(), { {}, size, usage });
 
             vk::MemoryRequirements requirements = buffer.getMemoryRequirements();
@@ -35,9 +36,13 @@ namespace vkt
             return buffer.getDevice().getBufferAddress(&addressInfo);
         }
 
+        const vk::raii::Buffer& get() const { return buffer; }
+        vk::DeviceSize getSize() const { return size; }
+
     protected:
         vk::raii::Buffer buffer = nullptr;
         vk::raii::DeviceMemory deviceMemory = nullptr;
+        vk::DeviceSize size;
     };
 
     class HostBuffer : public Buffer

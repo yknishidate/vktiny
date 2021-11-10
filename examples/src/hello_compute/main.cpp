@@ -34,6 +34,7 @@ public:
         pipeline.initialize(context, descSetLayout, computeShaderText);
         descPool.initialize(context, 1, { {vk::DescriptorType::eStorageImage, 10} });
         descSet.initialize(context, descPool, descSetLayout);
+        // update?
     }
 
     void run()
