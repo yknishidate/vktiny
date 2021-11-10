@@ -4,7 +4,6 @@
 
 namespace vkt
 {
-
     std::vector<char> readFile(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -40,7 +39,7 @@ namespace vkt
         }
     }
 
-    std::vector<unsigned int> ComputePipeline::GLSLtoSPV(vk::ShaderStageFlagBits shaderType, const std::string& glslShader)
+    std::vector<unsigned int> compileToSPV(vk::ShaderStageFlagBits shaderType, const std::string& glslShader)
     {
         glslang::InitializeProcess();
         EShLanguage stage = translateShaderStage(shaderType);

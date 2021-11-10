@@ -29,10 +29,10 @@ public:
         binding.setDescriptorType(vk::DescriptorType::eStorageImage);
         binding.setDescriptorCount(1);
         binding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-        pipeline.initialize(context, { binding }, computeShaderText);
 
-        //vk::raii::ShaderModule vertexShaderModule =
-            //vk::raii::su::makeShaderModule(device, vk::ShaderStageFlagBits::eVertex, vertexShaderText_PC_C);
+        descSetLayout.initialize(context, { binding });
+        pipeline.initialize(context, descSetLayout, computeShaderText);
+
     }
 
     void run()
@@ -45,6 +45,7 @@ public:
 private:
     vkt::Context context;
     vkt::Image storageImage;
+    vkt::DescriptorSetLayout descSetLayout;
     vkt::ComputePipeline pipeline;
 };
 

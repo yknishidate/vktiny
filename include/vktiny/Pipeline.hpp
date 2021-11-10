@@ -1,9 +1,13 @@
 #pragma once
-#include "Context.hpp"
 #include <fstream>
+#include "Context.hpp"
+#include "DescriptorSetLayout.hpp"
 
 namespace vkt
 {
+    std::vector<char> readFile(const std::string& filename);
+    std::vector<unsigned int> compileToSPV(vk::ShaderStageFlagBits shaderType,
+                                           const std::string& glslShader);
 
     class Pipeline
     {
@@ -22,32 +26,13 @@ namespace vkt
     public:
         ComputePipeline() = default;
 
-        //void initialize(const Context& context,
-        //                const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
-        //                vk::raii::ShaderModule shaderModule)
-        //{
-        //    vk::raii::DescriptorSetLayout descSetLayout(context.getDevice(), { {}, bindings });
-        //    layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout });
-
-        //    vk::PipelineShaderStageCreateInfo stageInfo;
-        //    stageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
-        //    stageInfo.setModule(*shaderModule);
-        //    stageInfo.setPName("main");
-
-        //    vk::ComputePipelineCreateInfo pipelineInfo;
-        //    pipelineInfo.setStage(stageInfo);
-        //    pipelineInfo.setLayout(*layout);
-        //    pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, pipelineInfo);
-        //}
-
         void initialize(const Context& context,
-                        const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
+                        const DescriptorSetLayout& descSetLayout,
                         const std::string& shaderText)
         {
-            vk::raii::DescriptorSetLayout descSetLayout(context.getDevice(), { {}, bindings });
-            layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout });
+            layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout.get() });
 
-            auto shaderSPV = GLSLtoSPV(vk::ShaderStageFlagBits::eCompute, shaderText);
+            auto shaderSPV = compileToSPV(vk::ShaderStageFlagBits::eCompute, shaderText);
             computeShaderModule = vk::raii::ShaderModule(context.getDevice(), { {}, shaderSPV });
 
             vk::PipelineShaderStageCreateInfo stageInfo;
@@ -60,27 +45,6 @@ namespace vkt
             pipelineInfo.setLayout(*layout);
             pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, pipelineInfo);
         }
-
-        //void initialize(const Context& context,
-        //                const std::vector<vk::DescriptorSetLayoutBinding>& bindings,
-        //                vk::raii::ShaderModule shaderModule)
-        //{
-        //    vk::raii::DescriptorSetLayout descSetLayout(context.getDevice(), { {}, bindings });
-        //    layout = vk::raii::PipelineLayout(context.getDevice(), { {}, *descSetLayout });
-
-        //    vk::PipelineShaderStageCreateInfo stageInfo;
-        //    stageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
-        //    stageInfo.setModule(*shaderModule);
-        //    stageInfo.setPName("main");
-
-        //    vk::ComputePipelineCreateInfo pipelineInfo;
-        //    pipelineInfo.setStage(stageInfo);
-        //    pipelineInfo.setLayout(*layout);
-        //    pipeline = vk::raii::Pipeline(context.getDevice(), nullptr, pipelineInfo);
-        //}
-
-        std::vector<unsigned int> GLSLtoSPV(vk::ShaderStageFlagBits shaderType,
-                                            const std::string& glslShader);
 
     private:
         vk::raii::ShaderModule computeShaderModule = nullptr;
