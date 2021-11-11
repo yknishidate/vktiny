@@ -15,7 +15,6 @@ int main()
     // Init vulkan context
     vkt::Context context;
     context.initialize(VK_API_VERSION_1_2, true, width, height, deviceExtensions);
-    context.setWindowIcon("asset/vulkan.png");
 
     // Create render image
     vkt::Image renderImage;
