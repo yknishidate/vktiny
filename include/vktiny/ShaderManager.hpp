@@ -14,25 +14,28 @@ namespace vkt
         using vkSGT = vk::RayTracingShaderGroupTypeKHR;
 
         ShaderManager() = default;
-        ShaderManager(const ShaderManager &) = delete;
-        ShaderManager(ShaderManager &&) = default;
-        ShaderManager &operator=(const ShaderManager &) = delete;
-        ShaderManager &operator=(ShaderManager &&) = default;
+        ShaderManager(const ShaderManager&) = delete;
+        ShaderManager(ShaderManager&&) = default;
+        ShaderManager& operator=(const ShaderManager&) = delete;
+        ShaderManager& operator=(ShaderManager&&) = default;
 
-        void initialize(const Context &context);
+        void initialize(const Context& context);
 
-        const auto &getStages() const { return stages; }
+        const auto& getStages() const { return stages; }
 
         void addShader(const std::string filepath,
                        vk::ShaderStageFlagBits shaderStage);
 
+        void addShaderFromText(const std::string& shaderText,
+                               vk::ShaderStageFlagBits shaderStage);
+
     protected:
-        vk::ShaderModule &addShaderModule(const std::string &filepath);
+        vk::ShaderModule& addShaderModule(const std::string& filepath);
 
         uint32_t addShaderStage(vk::ShaderStageFlagBits shaderStageFlag,
-                                const vk::ShaderModule &shaderModule);
+                                const vk::ShaderModule& shaderModule);
 
-        const Context *context;
+        const Context* context;
 
         std::vector<vk::UniqueShaderModule> modules;
         std::vector<vk::PipelineShaderStageCreateInfo> stages;
@@ -47,15 +50,15 @@ namespace vkt
         void addAhitShader(const std::string filepath);
         void addChitAndAhitShader(const std::string chitFilepath, const std::string ahitFilepath);
 
-        void initShaderBindingTable(const Pipeline &pipeline);
+        void initShaderBindingTable(const Pipeline& pipeline);
 
-        const auto &getRtGroups() const { return rtGroups; }
-        const auto &getRaygenRegion() const { return raygenRegion; }
-        const auto &getMissRegion() const { return missRegion; }
-        const auto &getHitRegion() const { return hitRegion; }
+        const auto& getRtGroups() const { return rtGroups; }
+        const auto& getRaygenRegion() const { return raygenRegion; }
+        const auto& getMissRegion() const { return missRegion; }
+        const auto& getHitRegion() const { return hitRegion; }
 
     private:
-        vk::RayTracingShaderGroupCreateInfoKHR &addShaderGroup(
+        vk::RayTracingShaderGroupCreateInfoKHR& addShaderGroup(
             vk::RayTracingShaderGroupTypeKHR type);
 
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> rtGroups;
@@ -79,7 +82,7 @@ namespace vkt
         using vkSS = vk::ShaderStageFlagBits;
         void addComputeShader(const std::string filepath)
         {
-            auto &shaderModule = addShaderModule(filepath);
+            auto& shaderModule = addShaderModule(filepath);
             uint32_t stageIndex = addShaderStage(vkSS::eCompute, shaderModule);
         }
     };
