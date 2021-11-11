@@ -18,11 +18,13 @@ class App
 public:
     App()
     {
+        const uint32_t width = 1280;
+        const uint32_t height = 720;
         vkt::ContextCreateInfo contextInfo;
         contextInfo.setDebug(true);
-        contextInfo.setWindowSize(1280, 720);
+        contextInfo.setWindowSize(width, height);
         context.initialize(contextInfo);
-        storageImage.initialize(context, { 1280, 720 }, vk::ImageUsageFlagBits::eStorage);
+        storageImage.initialize(context, { width, height }, vk::ImageUsageFlagBits::eStorage);
         storageImage.transitionLayout(vk::ImageLayout::eGeneral);
 
         vk::DescriptorSetLayoutBinding binding;
@@ -37,7 +39,6 @@ public:
         descSet.initialize(context, descPool, descSetLayout);
         // update?
 
-        //drawCmdBufs = context.allocateComputeCommandBuffers(3);
     }
 
     void run()

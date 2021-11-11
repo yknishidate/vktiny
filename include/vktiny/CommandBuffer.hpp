@@ -12,16 +12,16 @@ namespace vkt
 
         void initialize(const Context& context)
         {
-            //vk::CommandBufferAllocateInfo allocInfo;
-            //allocInfo.setCommandPool(*context.getGraphicsCommandPool());
-            //allocInfo.setCommandBufferCount(1);
-            //auto commandBuffers = vk::raii::CommandBuffers(context.getDevice(), allocInfo);
-            //commandBuffer = std::move(commandBuffers.front());
+            vk::CommandBufferAllocateInfo allocInfo;
+            allocInfo.setCommandPool(*context.getGraphicsCommandPool());
+            allocInfo.setCommandBufferCount(1);
+            auto commandBuffers = vk::raii::CommandBuffers(context.getDevice(), allocInfo);
+            commandBuffer = std::move(commandBuffers.front());
         }
 
         void begin()
         {
-            //commandBuffer.begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+            commandBuffer.begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
         }
 
         const vk::raii::CommandBuffer& get() const { return commandBuffer; }
