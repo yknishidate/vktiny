@@ -5,56 +5,43 @@ project(vktiny LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 # set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
-# external
-add_subdirectory(external)
+# subdirectory
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(glfw)
+add_subdirectory(vulkan)
+add_subdirectory(glslang)
 
-# core lib
+# main
 file(GLOB_RECURSE sources src/*.cpp)
 file(GLOB_RECURSE headers include/vktiny/*.hpp)
-
 add_library(vktiny STATIC ${sources} ${headers})
-target_include_directories(vktiny PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(vktiny PUBLIC glm)
-target_link_libraries(vktiny PUBLIC vulkan)
-target_link_libraries(vktiny PUBLIC glfw)
-target_link_libraries(vktiny PUBLIC spdlog)
-target_link_libraries(vktiny PUBLIC tinygltf)
+# link
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
+target_link_libraries(${PROJECT_NAME} PUBLIC glslang)
+target_link_libraries(${PROJECT_NAME} PUBLIC SPIRV)
+target_link_libraries(${PROJECT_NAME} PUBLIC glslang-default-resource-limits)
+
+# include
+target_include_directories(${PROJECT_NAME} PUBLIC
+                          "${PROJECT_SOURCE_DIR}/include"
+                          "${PROJECT_SOURCE_DIR}/vulkan/include"
+                          "${PROJECT_SOURCE_DIR}/glfw/include"
+                          "${PROJECT_SOURCE_DIR}/glslang"
+                          )
 
 # examples
 option(VKTINY_EXAMPLES "" OFF)
 if(VKTINY_EXAMPLES)
-    ## raytracing_triangle
-    file(GLOB raytracing_triangle_sources examples/src/raytracing_triangle/*.cpp examples/raytracing_triangle/*.hpp)
-    add_executable(raytracing_triangle ${raytracing_triangle_sources})
-    target_link_libraries(raytracing_triangle vktiny)
-
-    ## gltf_laoding
-    file(GLOB gltf_loading_sources examples/src/gltf_loading/*.cpp)
-    add_executable(gltf_loading ${gltf_loading_sources})
-    target_link_libraries(gltf_loading vktiny)
-
-    ## camera
-    file(GLOB camera_sources examples/src/camera/*.cpp)
-    add_executable(camera ${camera_sources})
-    target_link_libraries(camera vktiny)
-
-    ## sponza
-    file(GLOB sponza_sources examples/src/sponza/*.cpp examples/src/sponza/*.hpp)
-    add_executable(sponza ${sponza_sources})
-    target_link_libraries(sponza vktiny)
-
-    ## hello_compute
     file(GLOB hello_compute_sources examples/src/hello_compute/*.cpp)
     add_executable(hello_compute ${hello_compute_sources})
     target_link_libraries(hello_compute vktiny)
-
-    ## pathtracing
-    file(GLOB pathtracing_sources examples/src/pathtracing/*.cpp)
-    add_executable(pathtracing ${pathtracing_sources})
-    target_link_libraries(pathtracing vktiny)
+    target_include_directories(hello_compute PUBLIC "${CMAKE_SOURCE_DIR}/include")
 
     # copy files
     file(COPY "${CMAKE_SOURCE_DIR}/examples/shader" DESTINATION ${CMAKE_BINARY_DIR})
     file(COPY "${CMAKE_SOURCE_DIR}/examples/asset" DESTINATION ${CMAKE_BINARY_DIR})
 endif()
+
