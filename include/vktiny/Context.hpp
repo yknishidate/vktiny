@@ -124,15 +124,61 @@ namespace vkt
             initSwapchain(info.windowWidth, info.windowHeight, info.presentMode);
         }
 
-        bool shouldTerminate()
+        bool shouldTerminate() const
         {
             return glfwWindowShouldClose(window);
         }
 
-        void pollEvents()
+        void pollEvents() const
         {
             glfwPollEvents();
         }
+
+        template <typename Func>
+        void OneTimeSubmitGraphics(const Func& func) const
+        {
+            vk::CommandBufferAllocateInfo allocInfo;
+            allocInfo.setCommandPool(*graphicsCommandPool);
+            allocInfo.setCommandBufferCount(1);
+            auto commandBuffer = std::move(vk::raii::CommandBuffers{ device, allocInfo }.front());
+            commandBuffer.begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+            func(commandBuffer);
+            commandBuffer.end();
+            vk::SubmitInfo submitInfo(nullptr, nullptr, *commandBuffer);
+            graphicsQueue.submit(submitInfo, nullptr);
+            graphicsQueue.waitIdle();
+        }
+
+        template <typename Func>
+        void OneTimeSubmitCompute(const Func& func) const
+        {
+            vk::CommandBufferAllocateInfo allocInfo;
+            allocInfo.setCommandPool(*computeCommandPool);
+            allocInfo.setCommandBufferCount(1);
+            auto commandBuffer = std::move(vk::raii::CommandBuffers{ device, allocInfo }.front());
+            commandBuffer.begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+            func(commandBuffer);
+            commandBuffer.end();
+            vk::SubmitInfo submitInfo(nullptr, nullptr, *commandBuffer);
+            computeQueue.submit(submitInfo, nullptr);
+            computeQueue.waitIdle();
+        }
+
+        //vk::raii::CommandBuffers allocateGraphicsCommandBuffers(uint32_t count = 1)
+        //{
+        //    vk::CommandBufferAllocateInfo allocInfo;
+        //    allocInfo.setCommandPool(*graphicsCommandPool);
+        //    allocInfo.setCommandBufferCount(count);
+        //    return vk::raii::CommandBuffers(device, allocInfo);
+        //}
+
+        //vk::raii::CommandBuffers allocateComputeCommandBuffers(uint32_t count = 1)
+        //{
+        //    vk::CommandBufferAllocateInfo allocInfo;
+        //    allocInfo.setCommandPool(*computeCommandPool);
+        //    allocInfo.setCommandBufferCount(count);
+        //    return vk::raii::CommandBuffers(device, allocInfo);
+        //}
 
         uint32_t findMemoryType(vk::MemoryRequirements requirements,
                                 vk::MemoryPropertyFlags propertyFlags) const
@@ -149,6 +195,8 @@ namespace vkt
 
         const vk::raii::Device& getDevice() const { return device; }
         const vk::raii::PhysicalDevice& getPhysicalDevice() const { return physicalDevice; }
+        const vk::raii::CommandPool& getGraphicsCommandPool() const { return graphicsCommandPool; }
+        const vk::raii::CommandPool& getComputeCommandPool() const { return computeCommandPool; }
 
     private:
         void initWindow(int width, int height, const std::string& title)

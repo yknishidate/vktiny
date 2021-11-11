@@ -35,6 +35,8 @@ public:
         descPool.initialize(context, 1, { {vk::DescriptorType::eStorageImage, 10} });
         descSet.initialize(context, descPool, descSetLayout);
         // update?
+
+        //drawCmdBufs = context.allocateComputeCommandBuffers(3);
     }
 
     void run()
@@ -51,6 +53,7 @@ private:
     vkt::ComputePipeline pipeline;
     vkt::DescriptorPool descPool;
     vkt::DescriptorSet descSet;
+    //vk::raii::CommandBuffers drawCmdBufs;
 };
 
 int main()
