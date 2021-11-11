@@ -23,6 +23,7 @@ public:
         contextInfo.setWindowSize(1280, 720);
         context.initialize(contextInfo);
         storageImage.initialize(context, { 1280, 720 }, vk::ImageUsageFlagBits::eStorage);
+        storageImage.transitionLayout(vk::ImageLayout::eGeneral);
 
         vk::DescriptorSetLayoutBinding binding;
         binding.setBinding(0);
