@@ -75,7 +75,7 @@ namespace vkt
         {
             CommandBuffer commandBuffer(*device, *graphicsCommandPool, graphicsQueue);
             commandBuffer.begin();
-            func(commandBuffer.get());
+            func(commandBuffer);
             commandBuffer.end();
             commandBuffer.submit();
         }
@@ -85,7 +85,7 @@ namespace vkt
         {
             CommandBuffer commandBuffer(*device, *computeCommandPool, computeQueue);
             commandBuffer.begin();
-            func(commandBuffer.get());
+            func(commandBuffer);
             commandBuffer.end();
             commandBuffer.submit();
         }

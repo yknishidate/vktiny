@@ -27,11 +27,13 @@ int main()
 
     vkt::Swapchain swapchain{ context, width, height };
 
+    // Create resources
     vkt::Image renderImage{ context, swapchain.getExtent(), swapchain.getFormat(),
                            vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst };
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
+    // Create descriptors
     vkt::DescriptorPool descPool{ context, 1, { {vk::DescriptorType::eStorageImage, 10} } };
 
     vk::DescriptorSetLayoutBinding imageBinding;
@@ -40,12 +42,13 @@ int main()
     imageBinding.setDescriptorType(vk::DescriptorType::eStorageImage);
     imageBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
-    vkt::DescriptorSetLayout descSetLayout(context, { imageBinding });
-    vkt::DescriptorSet descSet(context, descPool, descSetLayout);
+    vkt::DescriptorSetLayout descSetLayout{ context, { imageBinding } };
+    vkt::DescriptorSet descSet{ context, descPool, descSetLayout };
     descSet.update(renderImage, imageBinding);
 
-    vkt::ShaderModule shaderModule(context, shader, vk::ShaderStageFlagBits::eCompute);
-    vkt::ComputePipeline pipeline(context, descSetLayout, shaderModule);
+    // Create pipeline
+    vkt::ShaderModule shaderModule{ context, shader, vk::ShaderStageFlagBits::eCompute };
+    vkt::ComputePipeline pipeline{ context, descSetLayout, shaderModule };
 
     size_t bufferCount = swapchain.getImagesSize();
     auto drawCommandBuffers = context.allocateGraphicsCommandBuffers(bufferCount);
@@ -59,15 +62,12 @@ int main()
         cmdBuf.bindDescriptorSets(descSet, pipeline);
         cmdBuf.dispatch(width, height, 1);
 
-        vkt::Image::transitionLayout(cmdBuf.get(), renderImage.get(),
-                                     vkIL::eUndefined, vkIL::eTransferSrcOptimal);
-        vkt::Image::transitionLayout(cmdBuf.get(), swapchainImage,
-                                     vkIL::eUndefined, vkIL::eTransferDstOptimal);
-        vkt::Image::copyImage(cmdBuf.get(), renderImage.get(), swapchainImage, extent);
-        vkt::Image::transitionLayout(cmdBuf.get(), renderImage.get(),
-                                     vkIL::eTransferSrcOptimal, vkIL::eGeneral);
-        vkt::Image::transitionLayout(cmdBuf.get(), swapchainImage,
-                                     vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+        cmdBuf.transitionImageLayout(renderImage.get(), vkIL::eUndefined, vkIL::eTransferSrcOptimal);
+        cmdBuf.transitionImageLayout(swapchainImage, vkIL::eUndefined, vkIL::eTransferDstOptimal);
+        cmdBuf.copyImage(renderImage.get(), swapchainImage, extent);
+        cmdBuf.transitionImageLayout(renderImage.get(), vkIL::eTransferSrcOptimal, vkIL::eGeneral);
+        cmdBuf.transitionImageLayout(swapchainImage, vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
+
         cmdBuf.end();
     }
 

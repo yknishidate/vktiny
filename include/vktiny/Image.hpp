@@ -20,20 +20,7 @@ namespace vkt
         void createImageView();
         void createSampler();
 
-        vk::DescriptorImageInfo getDescInfo();
-        vk::WriteDescriptorSet createWrite(); // TODO: remove this
-
-        static void copyImage(vk::CommandBuffer cmdBuf,
-                              vk::Image srcImage,
-                              vk::Image dstImage,
-                              vk::Extent2D extent);
-
-        void copyBuffer(const Buffer& buffer);
-
-        static void transitionLayout(vk::CommandBuffer cmdBuf,
-                                     vk::Image image,
-                                     vk::ImageLayout oldLayout,
-                                     vk::ImageLayout newLayout);
+        //void copyBuffer(const Buffer& buffer);
 
         void transitionLayout(vk::ImageLayout newLayout);
 
