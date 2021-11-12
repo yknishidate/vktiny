@@ -8,16 +8,14 @@ namespace vkt
     class Image
     {
     public:
-        Image() = default;
+        Image(const Context& context,
+              vk::Extent2D extent,
+              vk::Format format,
+              vk::ImageUsageFlags usage);
         Image(const Image&) = delete;
         Image(Image&&) = default;
         Image& operator=(const Image&) = delete;
         Image& operator=(Image&&) = default;
-
-        void initialize(const Context& context,
-                        vk::Extent2D extent,
-                        vk::Format format,
-                        vk::ImageUsageFlags usage);
 
         void createImageView();
         void createSampler();

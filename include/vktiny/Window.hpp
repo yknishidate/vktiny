@@ -9,19 +9,18 @@ namespace vkt
     class Window
     {
     public:
-        Window() = default;
-        Window(const Window&) = delete;
-        Window(Window&&) = default;
-        Window& operator=(const Window&) = delete;
-        Window& operator=(Window&&) = default;
-
-        void initialize(int width, int height, const std::string& title = {})
+        Window(int width, int height, const std::string& title = {})
         {
             glfwInit();
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
             window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
         }
+
+        Window(const Window&) = delete;
+        Window(Window&&) = default;
+        Window& operator=(const Window&) = delete;
+        Window& operator=(Window&&) = default;
 
         vk::UniqueSurfaceKHR createSurface(vk::Instance instance) const
         {

@@ -68,10 +68,9 @@ namespace vkt
         }
     }
 
-    void Swapchain::initialize(const Context& context, int width, int height)
+    Swapchain::Swapchain(const Context& context, int width, int height)
+        : context(&context)
     {
-        this->context = &context;
-
         vk::Device device = context.getDevice();
         vk::PhysicalDevice physicalDevice = context.getPhysicalDevice();
         vk::SurfaceKHR surface = context.getSurface();

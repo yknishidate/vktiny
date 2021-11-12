@@ -10,21 +10,20 @@ namespace vkt
     class ShaderModule
     {
     public:
-        ShaderModule() = default;
+        ShaderModule(const Context& context,
+                     const std::string& shaderText,
+                     vk::ShaderStageFlagBits shaderStage)
+            : shaderStage(shaderStage)
+        {
+            std::vector<unsigned int> shaderSPV = compileToSPV(shaderStage, shaderText);
+            vk::ShaderModuleCreateInfo createInfo{ {}, shaderSPV };
+            shaderModule = context.getDevice().createShaderModuleUnique(createInfo);
+        }
+
         ShaderModule(const ShaderModule&) = delete;
         ShaderModule(ShaderModule&&) = default;
         ShaderModule& operator=(const ShaderModule&) = delete;
         ShaderModule& operator=(ShaderModule&&) = default;
-
-        void initialize(const Context& context,
-                        const std::string& shaderText,
-                        vk::ShaderStageFlagBits stage)
-        {
-            shaderStage = stage;
-            std::vector<unsigned int> shaderSPV = compileToSPV(stage, shaderText);
-            vk::ShaderModuleCreateInfo createInfo{ {}, shaderSPV };
-            shaderModule = context.getDevice().createShaderModuleUnique(createInfo);
-        }
 
         vk::PipelineShaderStageCreateInfo getStageInfo() const
         {

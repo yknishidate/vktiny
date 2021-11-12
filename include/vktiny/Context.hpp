@@ -16,11 +16,11 @@ namespace vkt
     struct ContextCreateInfo
     {
         uint32_t apiMajorVersion = 1;
-        uint32_t apiMinorVersion = 1;
+        uint32_t apiMinorVersion = 0;
         std::string appName = "";
 
         bool enableValidationLayer = false;
-        std::vector<const char*> deviceExtensions = {};
+        std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
         vk::PhysicalDeviceFeatures features = {};
         void* deviceCreatePNext = nullptr; // TODO: managing this
     };
@@ -28,13 +28,7 @@ namespace vkt
     class Context
     {
     public:
-        Context() = default;
-        Context(const Context&) = delete;
-        Context(Context&&) = default;
-        Context& operator=(const Context&) = delete;
-        Context& operator=(Context&&) = default;
-
-        void initialize(const ContextCreateInfo& info, const Window& window)
+        Context(const ContextCreateInfo& info, const Window& window)
         {
             std::vector<const char*> layers = {};
             std::vector<const char*> instanceExtensions = window.getInstanceExtensions();
@@ -55,6 +49,11 @@ namespace vkt
             getQueues();
             createCommandPools();
         }
+
+        Context(const Context&) = delete;
+        Context(Context&&) = default;
+        Context& operator=(const Context&) = delete;
+        Context& operator=(Context&&) = default;
 
         vk::UniqueCommandBuffer allocateGraphicsCommandBuffer() const
         {

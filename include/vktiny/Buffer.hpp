@@ -6,16 +6,14 @@ namespace vkt
     class Buffer
     {
     public:
-        Buffer() = default;
+        Buffer(const Context& context,
+               vk::DeviceSize size, vk::BufferUsageFlags usage,
+               vk::MemoryPropertyFlags properties,
+               void* data = nullptr);
         Buffer(const Buffer&) = delete;
         Buffer(Buffer&&) = default;
         Buffer& operator=(const Buffer&) = delete;
         Buffer& operator=(Buffer&&) = default;
-
-        void initialize(const Context& context,
-                        vk::DeviceSize size, vk::BufferUsageFlags usage,
-                        vk::MemoryPropertyFlags properties,
-                        void* data = nullptr);
 
         void copy(void* data);
 

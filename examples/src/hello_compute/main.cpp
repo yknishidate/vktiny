@@ -21,32 +21,23 @@ int main()
     int height = 720;
 
     // Init window
-    vkt::Window window;
-    window.initialize(width, height, "Window");
+    vkt::Window window{ width, height, "Window" };
 
     // Init vulkan context
-    vkt::ContextCreateInfo contextInfo;
-    contextInfo.apiMinorVersion = 2;
-    contextInfo.enableValidationLayer = true;
-    contextInfo.deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
-    vkt::Context context;
-    context.initialize(contextInfo, window);
+    vkt::ContextCreateInfo contextInfo{ .enableValidationLayer = true };
+    vkt::Context context{ contextInfo, window };
 
     // Init swapchain
-    vkt::Swapchain swapchain;
-    swapchain.initialize(context, width, height);
+    vkt::Swapchain swapchain{ context, width, height };
 
     // Create render image
-    vkt::Image renderImage;
-    renderImage.initialize(context, swapchain.getExtent(), swapchain.getFormat(),
-                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
+    vkt::Image renderImage{ context, swapchain.getExtent(), swapchain.getFormat(),
+                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst };
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
     // Create desc set
-    vkt::DescriptorPool descPool;
-    descPool.initialize(context, 1, { {vk::DescriptorType::eStorageImage, 10} });
+    vkt::DescriptorPool descPool{ context, 1, { {vk::DescriptorType::eStorageImage, 10} } };
 
     vk::DescriptorSetLayoutBinding imageBinding;
     imageBinding.setBinding(0);
@@ -59,12 +50,10 @@ int main()
     descSet.update(renderImage, imageBinding);
 
     // Load shaders
-    vkt::ShaderModule shaderModule;
-    shaderModule.initialize(context, shader, vk::ShaderStageFlagBits::eCompute);
+    vkt::ShaderModule shaderModule{ context, shader, vk::ShaderStageFlagBits::eCompute };
 
     // Create pipeline
-    vkt::ComputePipeline pipeline;
-    pipeline.initialize(context, *descSetLayout, shaderModule);
+    vkt::ComputePipeline pipeline{ context, *descSetLayout, shaderModule };
 
     // Build draw command buffers
     auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();

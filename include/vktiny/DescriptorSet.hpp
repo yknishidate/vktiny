@@ -1,7 +1,6 @@
 #pragma once
 #include "vktiny/Buffer.hpp"
 #include "vktiny/Image.hpp"
-#include "vktiny/AccelStruct.hpp"
 #include "vktiny/Context.hpp"
 #include "vktiny/Pipeline.hpp"
 #include <unordered_map>
@@ -29,7 +28,6 @@ namespace vkt
 
         void update(const Buffer& buffer, vk::DescriptorSetLayoutBinding binding)
         {
-            // TODO: reserve buffer info?
             vk::DescriptorBufferInfo bufferInfo(buffer.get(), 0, buffer.getSize());
             vk::WriteDescriptorSet writeDescSet;
             writeDescSet.setDstSet(*descSet);
@@ -42,7 +40,6 @@ namespace vkt
 
         void update(const Image& image, vk::DescriptorSetLayoutBinding binding)
         {
-            // TODO: reserve image info?
             vk::DescriptorImageInfo imageInfo({}, image.getView(), image.getLayout());
             vk::WriteDescriptorSet writeDescSet;
             writeDescSet.setDstSet(*descSet);

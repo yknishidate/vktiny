@@ -2,14 +2,14 @@
 
 namespace vkt
 {
-    void Buffer::initialize(const Context& context,
-                            vk::DeviceSize size,
-                            vk::BufferUsageFlags usage,
-                            vk::MemoryPropertyFlags properties,
-                            void* data)
+    Buffer::Buffer(const Context& context,
+                   vk::DeviceSize size,
+                   vk::BufferUsageFlags usage,
+                   vk::MemoryPropertyFlags properties,
+                   void* data)
+        : context(&context)
+        , size(size)
     {
-        this->context = &context;
-        this->size = size;
         create(size, usage);
         allocate(usage, properties);
         if (data) {

@@ -33,7 +33,7 @@ namespace vkt
     class ComputePipeline : public Pipeline
     {
     public:
-        void initialize(const Context& context,
+        ComputePipeline(const Context& context,
                         vk::DescriptorSetLayout descSetLayout,
                         const ShaderModule& shaderModule)
         {

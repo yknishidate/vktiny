@@ -19,14 +19,14 @@ namespace vkt
     class Swapchain
     {
     public:
-        Swapchain() = default;
+        Swapchain(const Context& context, int width, int height);
+
         Swapchain(const Swapchain&) = delete;
         Swapchain(Swapchain&&) = default;
         Swapchain& operator=(const Swapchain&) = delete;
         Swapchain& operator=(Swapchain&&) = default;
 
         ~Swapchain();
-        void initialize(const Context& context, int width, int height);
 
         vk::SwapchainKHR get() const { return swapchain.get(); }
 

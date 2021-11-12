@@ -3,13 +3,13 @@
 
 namespace vkt
 {
-    void Image::initialize(const Context& context,
-                           vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
+    Image::Image(const Context& context,
+                 vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
+        : context(&context)
+        , extent(extent)
+        , format(format)
+        , imageLayout(vk::ImageLayout::eUndefined)
     {
-        this->context = &context;
-        this->extent = extent;
-        this->format = format;
-        this->imageLayout = vk::ImageLayout::eUndefined;
         create(usage);
         allocate();
     }
