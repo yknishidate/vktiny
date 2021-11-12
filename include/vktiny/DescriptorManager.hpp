@@ -11,46 +11,45 @@ namespace vkt
     {
     public:
         DescriptorManager() = default;
-        DescriptorManager(const DescriptorManager &) = delete;
-        DescriptorManager(DescriptorManager &&) = default;
-        DescriptorManager &operator=(const DescriptorManager &) = delete;
-        DescriptorManager &operator=(DescriptorManager &&) = default;
+        DescriptorManager(const DescriptorManager&) = delete;
+        DescriptorManager(DescriptorManager&&) = default;
+        DescriptorManager& operator=(const DescriptorManager&) = delete;
+        DescriptorManager& operator=(DescriptorManager&&) = default;
 
         using vkDT = vk::DescriptorType;
         using vkSS = vk::ShaderStageFlagBits;
 
-        void initialize(const Context &context);
+        void initialize(const Context& context);
 
         void prepare(uint32_t maxSets = 1);
 
         // TODO: create multi sets
-        void addStorageBuffer(Buffer &buffer, uint32_t binding, uint32_t set = 0)
+        void addStorageBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
             addDescriptors(vkDT::eStorageBuffer, buffer.createWrite(), binding, 1);
         }
 
-        void addUniformBuffer(Buffer &buffer, uint32_t binding, uint32_t set = 0)
+        void addUniformBuffer(Buffer& buffer, uint32_t binding, uint32_t set = 0)
         {
             addDescriptors(vkDT::eUniformBuffer, buffer.createWrite(), binding, 1);
         }
 
-        void addStorageImage(Image &image, uint32_t binding, uint32_t set = 0)
+        void addStorageImage(Image& image, uint32_t binding, uint32_t set = 0)
         {
             addDescriptors(vkDT::eStorageImage, image.createWrite(), binding, 1);
         }
 
-        void addTopLevelAccelStruct(TopLevelAccelStruct &topLevelAS,
+        void addTopLevelAccelStruct(TopLevelAccelStruct& topLevelAS,
                                     uint32_t binding, uint32_t set = 0)
         {
             addDescriptors(vkDT::eAccelerationStructureKHR, topLevelAS.createWrite(), binding, 1);
         }
 
-        void addTopLevelAccelStructs(std::vector<TopLevelAccelStruct> &topLevelASs,
+        void addTopLevelAccelStructs(std::vector<TopLevelAccelStruct>& topLevelASs,
                                      uint32_t binding, uint32_t set = 0)
         {
             accelStructInfos.emplace_back();
-            for (auto &topLevelAS : topLevelASs)
-            {
+            for (auto& topLevelAS : topLevelASs) {
                 accelStructInfos.back().push_back(topLevelAS.getAccelStructInfo());
             }
 
@@ -60,12 +59,11 @@ namespace vkt
             addDescriptors(vkDT::eAccelerationStructureKHR, write, binding, topLevelASs.size());
         }
 
-        void addCombinedImageSamplers(std::vector<Image> &images,
+        void addCombinedImageSamplers(std::vector<Image>& images,
                                       uint32_t binding, uint32_t set = 0)
         {
             imageInfos.emplace_back();
-            for (auto &image : images)
-            {
+            for (auto& image : images) {
                 imageInfos.back().push_back(image.getDescInfo());
             }
             vk::WriteDescriptorSet write;
@@ -74,8 +72,8 @@ namespace vkt
             addDescriptors(vkDT::eCombinedImageSampler, write, binding, images.size());
         }
 
-        const auto &getDescSet() const { return *descSets.front(); }
-        const auto &getDescSetLayout() const { return *descSetLayout; }
+        const auto& getDescSet() const { return *descSets.front(); }
+        const auto& getDescSetLayout() const { return *descSetLayout; }
 
     private:
         void addDescriptors(vk::DescriptorType type, vk::WriteDescriptorSet write,
@@ -85,8 +83,7 @@ namespace vkt
         void createDescSetLayout();
         void updateDescSets(uint32_t descSetIndex = 0);
 
-        const Device *device;
-        const PhysicalDevice *physicalDevice;
+        const Context* context;
 
         template <class T>
         using VectorList = std::list<std::vector<T>>;

@@ -2,20 +2,20 @@
 
 namespace vkt
 {
-    void Pipeline::initialize(const Context &context)
+    void Pipeline::initialize(const Context& context)
     {
-        this->device = context.getVkDevice();
+        this->device = context.getDevice();
     }
 
-    void RayTracingPipeline::initialize(const Context &context)
+    void RayTracingPipeline::initialize(const Context& context)
     {
         Pipeline::initialize(context);
         rtShaderManager.initialize(context);
     }
 
-    void RayTracingPipeline::prepare(const DescriptorManager &descriptorManager)
+    void RayTracingPipeline::prepare(const DescriptorManager& descriptorManager)
     {
-        layout = device.createPipelineLayoutUnique({{}, descriptorManager.getDescSetLayout()});
+        layout = device.createPipelineLayoutUnique({ {}, descriptorManager.getDescSetLayout() });
 
         vk::RayTracingPipelineCreateInfoKHR createInfo;
         createInfo.setStages(rtShaderManager.getStages());
@@ -23,8 +23,7 @@ namespace vkt
         createInfo.setMaxPipelineRayRecursionDepth(maxRecursion);
         createInfo.setLayout(*layout);
         auto res = device.createRayTracingPipelineKHRUnique(nullptr, nullptr, createInfo);
-        if (res.result != vk::Result::eSuccess)
-        {
+        if (res.result != vk::Result::eSuccess) {
             throw std::runtime_error("failed to create ray tracing pipeline.");
         }
         pipeline = std::move(res.value);

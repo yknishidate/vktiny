@@ -96,7 +96,7 @@ namespace vkt
         std::vector<unsigned int> shaderSPV = compileToSPV(shaderStage, shaderText);
 
         vk::ShaderModuleCreateInfo createInfo{ {}, shaderSPV };
-        modules.push_back(context->getVkDevice().createShaderModuleUnique(createInfo));
+        modules.push_back(context->getDevice().createShaderModuleUnique(createInfo));
         uint32_t stageIndex = addShaderStage(shaderStage, *modules.back());
     }
 
@@ -106,7 +106,7 @@ namespace vkt
         vk::ShaderModuleCreateInfo createInfo;
         createInfo.setCodeSize(code.size());
         createInfo.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
-        modules.push_back(context->getVkDevice().createShaderModuleUnique(createInfo));
+        modules.push_back(context->getDevice().createShaderModuleUnique(createInfo));
         return *modules.back();
     }
 
@@ -176,7 +176,7 @@ namespace vkt
     void RayTracingShaderManager::initShaderBindingTable(const Pipeline& pipeline)
     {
         // Get raytracing props
-        const auto& props = context->getVkPhysicalDevice().getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+        const auto& props = context->getPhysicalDevice().getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
         const auto& rtProps = props.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
 
         // Calc SBT size
@@ -194,7 +194,7 @@ namespace vkt
         // Get shader group handles
         // TODO: reduce args
         std::vector<uint8_t> shaderHandleStorage(sbtSize);
-        auto result = context->getVkDevice().getRayTracingShaderGroupHandlesKHR(
+        auto result = context->getDevice().getRayTracingShaderGroupHandlesKHR(
             pipeline.get(), 0, groupCount, static_cast<size_t>(sbtSize),
             shaderHandleStorage.data());
         if (result != vk::Result::eSuccess) {

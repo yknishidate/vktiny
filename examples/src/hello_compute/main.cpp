@@ -20,19 +20,26 @@ int main()
     int width = 1280;
     int height = 720;
 
-    // Add device extensions
-    std::vector<const char*> deviceExtensions;
-    deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    // Init window
+    vkt::Window window;
+    window.initialize(width, height, "Window");
 
     // Init vulkan context
+    vkt::ContextCreateInfo contextInfo;
+    contextInfo.apiMinorVersion = 2;
+    contextInfo.enableValidationLayer = true;
+    contextInfo.deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
     vkt::Context context;
-    context.initialize(VK_API_VERSION_1_2, true, width, height, deviceExtensions);
+    context.initialize(contextInfo, window);
+
+    // Init swapchain
+    vkt::Swapchain swapchain;
+    swapchain.initialize(context, width, height);
 
     // Create render image
     vkt::Image renderImage;
-    renderImage.initialize(context,
-                           context.getSwapchain().getExtent(),
-                           context.getSwapchain().getFormat(),
+    renderImage.initialize(context, swapchain.getExtent(), swapchain.getFormat(),
                            vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst);
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
@@ -50,11 +57,11 @@ int main()
     pipeline.prepare(descManager);
 
     // Build draw command buffers
-    auto drawCommandBuffers = context.getSwapchain().allocateDrawComamndBuffers();
+    auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();
     for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
         const auto& cmdBuf = drawCommandBuffers[i].get();
-        const auto& swapchainImage = context.getSwapchain().getImages()[i];
-        const auto& extent = context.getSwapchain().getExtent();
+        const auto& swapchainImage = swapchain.getImages()[i];
+        const auto& extent = swapchain.getExtent();
 
         cmdBuf.begin(vk::CommandBufferBeginInfo{});
 
@@ -77,11 +84,11 @@ int main()
         cmdBuf.end();
     }
 
-    while (context.running()) {
-        context.pollEvents();
+    while (!window.shouldClose()) {
+        window.pollEvents();
 
         // Begin
-        vkt::FrameInfo frameInfo = context.getSwapchain().beginFrame();
+        vkt::FrameInfo frameInfo = swapchain.beginFrame();
         const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
 
         // Render
@@ -91,10 +98,10 @@ int main()
         submitInfo.setWaitDstStageMask(waitStage);
         submitInfo.setCommandBuffers(cmdBuf);
         submitInfo.setSignalSemaphores(frameInfo.renderFinishedSemaphore);
-        context.getDevice().getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
+        context.getGraphicsQueue().submit(submitInfo, frameInfo.inFlightFence);
 
         // End
-        context.getSwapchain().endFrame(frameInfo.imageIndex);
+        swapchain.endFrame(frameInfo.imageIndex);
     }
     context.getDevice().waitIdle();
 }

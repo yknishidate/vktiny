@@ -29,13 +29,12 @@ namespace vkt
     vk::PresentModeKHR chooseSwapPresentMode(
         const std::vector<vk::PresentModeKHR>& availablePresentModes)
     {
-        return vk::PresentModeKHR::eMailbox;
-        //for (const auto& availablePresentMode : availablePresentModes) {
-        //    if (availablePresentMode == vk::PresentModeKHR::eFifoRelaxed) {
-        //        return availablePresentMode;
-        //    }
-        //}
-        //return vk::PresentModeKHR::eFifo;
+        for (const auto& availablePresentMode : availablePresentModes) {
+            if (availablePresentMode == vk::PresentModeKHR::eFifoRelaxed) {
+                return availablePresentMode;
+            }
+        }
+        return vk::PresentModeKHR::eFifo;
     }
 
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
@@ -44,16 +43,12 @@ namespace vkt
         if (capabilities.currentExtent.width != UINT32_MAX) {
             return capabilities.currentExtent;
         } else {
-            vk::Extent2D actualExtent{
-                static_cast<uint32_t>(width),
-                static_cast<uint32_t>(height) };
+            vk::Extent2D extent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
             vk::Extent2D minExtent = capabilities.minImageExtent;
             vk::Extent2D maxExtent = capabilities.maxImageExtent;
-            actualExtent.width = std::clamp(actualExtent.width,
-                                            minExtent.width, maxExtent.width);
-            actualExtent.height = std::clamp(actualExtent.height,
-                                             minExtent.height, maxExtent.height);
-            return actualExtent;
+            extent.width = std::clamp(extent.width, minExtent.width, maxExtent.width);
+            extent.height = std::clamp(extent.height, minExtent.height, maxExtent.height);
+            return extent;
         }
     }
 
@@ -69,18 +64,18 @@ namespace vkt
     Swapchain::~Swapchain()
     {
         for (size_t i = 0; i < maxFramesInFlight; i++) {
-            device->get().destroyFence(inFlightFences[i]);
+            context->getDevice().destroyFence(inFlightFences[i]);
         }
     }
 
-    void Swapchain::initialize(const Device& device,
-                               const PhysicalDevice& physicalDevice,
-                               const Surface& surface,
-                               int width, int height)
+    void Swapchain::initialize(const Context& context, int width, int height)
     {
-        this->device = &device;
+        this->context = &context;
 
-        auto swapChainSupport = querySwapChainSupport(physicalDevice.get(), surface.get());
+        vk::Device device = context.getDevice();
+        vk::PhysicalDevice physicalDevice = context.getPhysicalDevice();
+        vk::SurfaceKHR surface = context.getSurface();
+        auto swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
         vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -94,7 +89,7 @@ namespace vkt
 
         using vkIU = vk::ImageUsageFlagBits;
         vk::SwapchainCreateInfoKHR createInfo;
-        createInfo.setSurface(surface.get());
+        createInfo.setSurface(surface);
         createInfo.setMinImageCount(imageCount);
         createInfo.setImageFormat(surfaceFormat.format);
         createInfo.setImageColorSpace(surfaceFormat.colorSpace);
@@ -107,14 +102,14 @@ namespace vkt
         createInfo.setPresentMode(presentMode);
         createInfo.setClipped(VK_TRUE);
 
-        if (device.getGraphicsFamily() != device.getPresentFamily()) {
-            std::array familyIndices{ device.getGraphicsFamily(), device.getPresentFamily() };
+        if (context.getGraphicsFamily() != context.getPresentFamily()) {
+            std::array familyIndices{ context.getGraphicsFamily(), context.getPresentFamily() };
             createInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
             createInfo.setQueueFamilyIndices(familyIndices);
         }
 
-        swapchain = device.get().createSwapchainKHRUnique(createInfo);
-        images = device.get().getSwapchainImagesKHR(*swapchain);
+        swapchain = device.createSwapchainKHRUnique(createInfo);
+        images = device.getSwapchainImagesKHR(*swapchain);
         imageFormat = surfaceFormat.format;
         imageExtent = extent;
         createViews();
@@ -124,33 +119,33 @@ namespace vkt
     std::vector<vk::UniqueCommandBuffer> Swapchain::allocateDrawComamndBuffers() const
     {
         vk::CommandBufferAllocateInfo allocInfo;
-        allocInfo.setCommandPool(device->getGraphicsCommandPool());
+        allocInfo.setCommandPool(context->getGraphicsCommandPool());
         allocInfo.setLevel(vk::CommandBufferLevel::ePrimary);
         allocInfo.setCommandBufferCount(images.size());
-        return device->get().allocateCommandBuffersUnique(allocInfo);
+        return context->getDevice().allocateCommandBuffersUnique(allocInfo);
     }
 
     uint32_t Swapchain::acquireNextImageIndex() const
     {
-        auto res = device->get().acquireNextImageKHR(*swapchain, UINT64_MAX,
-                                                     *imageAvailableSemaphores[currentFrame]);
-        if (res.result == vk::Result::eSuccess) {
-            return res.value;
+        vk::Semaphore semaphore = *imageAvailableSemaphores[currentFrame];
+        auto res = context->getDevice().acquireNextImageKHR(*swapchain, UINT64_MAX, semaphore);
+        if (res.result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to acquire next image!");
         }
-        throw std::runtime_error("failed to acquire next image!");
+        return res.value;
     }
 
     FrameInfo Swapchain::beginFrame()
     {
-        device->get().waitForFences(inFlightFences[currentFrame], true, UINT64_MAX);
+        context->getDevice().waitForFences(inFlightFences[currentFrame], true, UINT64_MAX);
 
         uint32_t imageIndex = acquireNextImageIndex();
 
         if (imagesInFlight[imageIndex]) {
-            device->get().waitForFences(imagesInFlight[imageIndex], true, UINT64_MAX);
+            context->getDevice().waitForFences(imagesInFlight[imageIndex], true, UINT64_MAX);
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-        device->get().resetFences(inFlightFences[currentFrame]);
+        context->getDevice().resetFences(inFlightFences[currentFrame]);
 
         FrameInfo frameInfo;
         frameInfo.imageIndex = imageIndex;
@@ -163,7 +158,7 @@ namespace vkt
 
     void Swapchain::endFrame(uint32_t imageIndex)
     {
-        device->getPresentQueue().presentKHR(
+        context->getPresentQueue().presentKHR(
             vk::PresentInfoKHR{}
             .setWaitSemaphores(*renderFinishedSemaphores[currentFrame])
             .setSwapchains(*swapchain)
@@ -183,7 +178,7 @@ namespace vkt
             createInfo.setViewType(vk::ImageViewType::e2D);
             createInfo.setFormat(imageFormat);
             createInfo.setSubresourceRange(subresourceRange);
-            imageViews[i] = device->get().createImageViewUnique(createInfo);
+            imageViews[i] = context->getDevice().createImageViewUnique(createInfo);
         }
     }
 
@@ -194,10 +189,11 @@ namespace vkt
         inFlightFences.resize(maxFramesInFlight);
         imagesInFlight.resize(images.size());
 
+        vk::Device device = context->getDevice();
         for (size_t i = 0; i < maxFramesInFlight; i++) {
-            imageAvailableSemaphores[i] = device->get().createSemaphoreUnique({});
-            renderFinishedSemaphores[i] = device->get().createSemaphoreUnique({});
-            inFlightFences[i] = device->get().createFence({ vk::FenceCreateFlagBits::eSignaled });
+            imageAvailableSemaphores[i] = device.createSemaphoreUnique({});
+            renderFinishedSemaphores[i] = device.createSemaphoreUnique({});
+            inFlightFences[i] = device.createFence({ vk::FenceCreateFlagBits::eSignaled });
         }
     }
 }

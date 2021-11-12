@@ -3,7 +3,7 @@
 
 namespace vkt
 {
-    void Image::initialize(const Context &context,
+    void Image::initialize(const Context& context,
                            vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage)
     {
         this->context = &context;
@@ -18,23 +18,23 @@ namespace vkt
     {
         vk::ImageCreateInfo createInfo;
         createInfo.setImageType(vk::ImageType::e2D);
-        createInfo.setExtent({extent.width, extent.height, 1});
+        createInfo.setExtent({ extent.width, extent.height, 1 });
         createInfo.setMipLevels(1);
         createInfo.setArrayLayers(1);
         createInfo.setFormat(format);
         createInfo.setTiling(vk::ImageTiling::eOptimal);
         createInfo.setUsage(usage);
-        image = context->getVkDevice().createImageUnique(createInfo);
+        image = context->getDevice().createImageUnique(createInfo);
     }
 
     void Image::allocate()
     {
-        auto requirements = context->getVkDevice().getImageMemoryRequirements(*image);
-        auto memoryType = context->getPhysicalDevice().findMemoryType(
+        auto requirements = context->getDevice().getImageMemoryRequirements(*image);
+        auto memoryType = context->findMemoryType(
             requirements.memoryTypeBits,
             vk::MemoryPropertyFlagBits::eDeviceLocal);
-        memory = context->getVkDevice().allocateMemoryUnique({requirements.size, memoryType});
-        context->getVkDevice().bindImageMemory(*image, *memory, 0);
+        memory = context->getDevice().allocateMemoryUnique({ requirements.size, memoryType });
+        context->getDevice().bindImageMemory(*image, *memory, 0);
     }
 
     void Image::createImageView()
@@ -43,8 +43,8 @@ namespace vkt
         createInfo.setImage(*image);
         createInfo.setViewType(vk::ImageViewType::e2D);
         createInfo.setFormat(format);
-        createInfo.setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-        view = context->getVkDevice().createImageViewUnique(createInfo);
+        createInfo.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+        view = context->getDevice().createImageViewUnique(createInfo);
     }
 
     void Image::createSampler()
@@ -61,18 +61,18 @@ namespace vkt
         samplerInfo.maxAnisotropy = 1.0;
         samplerInfo.anisotropyEnable = false;
         samplerInfo.maxLod = 1.0f;
-        sampler = context->getVkDevice().createSamplerUnique(samplerInfo);
+        sampler = context->getDevice().createSamplerUnique(samplerInfo);
     }
 
     vk::DescriptorImageInfo Image::getDescInfo()
     {
-        imageInfo = vk::DescriptorImageInfo{*sampler, *view, imageLayout};
+        imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
         return imageInfo;
     }
 
     vk::WriteDescriptorSet Image::createWrite()
     {
-        imageInfo = vk::DescriptorImageInfo{*sampler, *view, imageLayout};
+        imageInfo = vk::DescriptorImageInfo{ *sampler, *view, imageLayout };
 
         vk::WriteDescriptorSet imageWrite;
         imageWrite.setDescriptorCount(1);
@@ -85,26 +85,25 @@ namespace vkt
     {
         using vkIL = vk::ImageLayout;
         vk::ImageCopy copyRegion{};
-        copyRegion.setSrcSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
-        copyRegion.setDstSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
-        copyRegion.setExtent({extent.width, extent.height, 1});
+        copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+        copyRegion.setDstSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
+        copyRegion.setExtent({ extent.width, extent.height, 1 });
         cmdBuf.copyImage(srcImage, vkIL::eTransferSrcOptimal,
                          dstImage, vkIL::eTransferDstOptimal, copyRegion);
     }
 
-    void Image::copyBuffer(const Buffer &buffer)
+    void Image::copyBuffer(const Buffer& buffer)
     {
-        vk::UniqueCommandBuffer cmdBuf = context->getDevice().beginGraphicsCommand();
-
-        vk::BufferImageCopy region{};
-        region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-        region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount = 1;
-        region.imageExtent = vk::Extent3D{extent.width, extent.height, 1};
-        cmdBuf->copyBufferToImage(buffer.get(), *image, vk::ImageLayout::eTransferDstOptimal, region);
-
-        context->getDevice().endGraphicsCommand(*cmdBuf);
+        context->OneTimeSubmitGraphics(
+            [&](vk::CommandBuffer cmdBuf) {
+                vk::BufferImageCopy region{};
+                region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                region.imageSubresource.mipLevel = 0;
+                region.imageSubresource.baseArrayLayer = 0;
+                region.imageSubresource.layerCount = 1;
+                region.imageExtent = vk::Extent3D{ extent.width, extent.height, 1 };
+                cmdBuf.copyBufferToImage(buffer.get(), *image, vk::ImageLayout::eTransferDstOptimal, region);
+            });
     }
 
     void Image::transitionLayout(vk::CommandBuffer cmdBuf, vk::Image image,
@@ -119,50 +118,48 @@ namespace vkt
         barrier.setImage(image);
         barrier.setOldLayout(oldLayout);
         barrier.setNewLayout(newLayout);
-        barrier.setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        barrier.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
         using vkAF = vk::AccessFlagBits;
-        switch (oldLayout)
-        {
-        case vk::ImageLayout::eTransferSrcOptimal:
-            barrier.srcAccessMask = vkAF::eTransferRead;
-            break;
-        case vk::ImageLayout::eTransferDstOptimal:
-            barrier.srcAccessMask = vkAF::eTransferWrite;
-            break;
-        case vk::ImageLayout::eShaderReadOnlyOptimal:
-            barrier.srcAccessMask = vkAF::eShaderRead;
-            break;
-        default:
-            break;
+        switch (oldLayout) {
+            case vk::ImageLayout::eTransferSrcOptimal:
+                barrier.srcAccessMask = vkAF::eTransferRead;
+                break;
+            case vk::ImageLayout::eTransferDstOptimal:
+                barrier.srcAccessMask = vkAF::eTransferWrite;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                barrier.srcAccessMask = vkAF::eShaderRead;
+                break;
+            default:
+                break;
         }
 
-        switch (newLayout)
-        {
-        case vk::ImageLayout::eTransferDstOptimal:
-            barrier.dstAccessMask = vkAF::eTransferWrite;
-            break;
-        case vk::ImageLayout::eTransferSrcOptimal:
-            barrier.dstAccessMask = vkAF::eTransferRead;
-            break;
-        case vk::ImageLayout::eShaderReadOnlyOptimal:
-            if (barrier.srcAccessMask == vk::AccessFlags{})
-            {
-                barrier.srcAccessMask = vkAF::eHostWrite | vkAF::eTransferWrite;
-            }
-            barrier.dstAccessMask = vkAF::eShaderRead;
-            break;
-        default:
-            break;
+        switch (newLayout) {
+            case vk::ImageLayout::eTransferDstOptimal:
+                barrier.dstAccessMask = vkAF::eTransferWrite;
+                break;
+            case vk::ImageLayout::eTransferSrcOptimal:
+                barrier.dstAccessMask = vkAF::eTransferRead;
+                break;
+            case vk::ImageLayout::eShaderReadOnlyOptimal:
+                if (barrier.srcAccessMask == vk::AccessFlags{}) {
+                    barrier.srcAccessMask = vkAF::eHostWrite | vkAF::eTransferWrite;
+                }
+                barrier.dstAccessMask = vkAF::eShaderRead;
+                break;
+            default:
+                break;
         }
         cmdBuf.pipelineBarrier(srcStageMask, dstStageMask, {}, {}, {}, barrier);
     }
 
     void Image::transitionLayout(vk::ImageLayout newLayout)
     {
-        vk::UniqueCommandBuffer cmdBuf = context->getDevice().beginGraphicsCommand();
-        Image::transitionLayout(*cmdBuf, *image, imageLayout, newLayout);
-        context->getDevice().endGraphicsCommand(*cmdBuf);
+        context->OneTimeSubmitGraphics(
+            [&](vk::CommandBuffer cmdBuf) {
+                Image::transitionLayout(cmdBuf, *image, imageLayout, newLayout);
+            });
         imageLayout = newLayout;
     }
 }

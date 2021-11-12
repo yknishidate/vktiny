@@ -2,64 +2,59 @@
 
 namespace vkt
 {
-    void Buffer::initialize(const Context &context,
+    void Buffer::initialize(const Context& context,
                             vk::DeviceSize size,
                             vk::BufferUsageFlags usage,
                             vk::MemoryPropertyFlags properties,
-                            void *data)
+                            void* data)
     {
         this->context = &context;
         this->size = size;
         create(size, usage);
         allocate(usage, properties);
-        if (data)
-        {
+        if (data) {
             copy(data);
         }
     }
 
-    void Buffer::copy(void *data)
+    void Buffer::copy(void* data)
     {
-        if (!mapped)
-        {
-            mapped = context->getVkDevice().mapMemory(*memory, 0, size);
+        if (!mapped) {
+            mapped = context->getDevice().mapMemory(*memory, 0, size);
         }
         memcpy(mapped, data, static_cast<size_t>(size));
     }
 
     void Buffer::create(vk::DeviceSize size, vk::BufferUsageFlags usage)
     {
-        buffer = context->getVkDevice().createBufferUnique({{}, size, usage});
+        buffer = context->getDevice().createBufferUnique({ {}, size, usage });
     }
 
     void Buffer::allocate(vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
     {
-        auto requirements = context->getVkDevice().getBufferMemoryRequirements(*buffer);
-        auto memoryTypeIndex = context->getPhysicalDevice().findMemoryType(
+        auto requirements = context->getDevice().getBufferMemoryRequirements(*buffer);
+        auto memoryTypeIndex = context->findMemoryType(
             requirements.memoryTypeBits, properties);
-        vk::MemoryAllocateInfo allocInfo{requirements.size, memoryTypeIndex};
+        vk::MemoryAllocateInfo allocInfo{ requirements.size, memoryTypeIndex };
 
-        if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress)
-        {
-            vk::MemoryAllocateFlagsInfo flagsInfo{vk::MemoryAllocateFlagBits::eDeviceAddress};
+        if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
+            vk::MemoryAllocateFlagsInfo flagsInfo{ vk::MemoryAllocateFlagBits::eDeviceAddress };
             allocInfo.pNext = &flagsInfo;
 
-            memory = context->getVkDevice().allocateMemoryUnique(allocInfo);
-            context->getVkDevice().bindBufferMemory(*buffer, *memory, 0);
+            memory = context->getDevice().allocateMemoryUnique(allocInfo);
+            context->getDevice().bindBufferMemory(*buffer, *memory, 0);
 
-            vk::BufferDeviceAddressInfoKHR bufferDeviceAddressInfo{*buffer};
-            deviceAddress = context->getVkDevice().getBufferAddressKHR(&bufferDeviceAddressInfo);
-        }
-        else
-        {
-            memory = context->getVkDevice().allocateMemoryUnique(allocInfo);
-            context->getVkDevice().bindBufferMemory(*buffer, *memory, 0);
+            vk::BufferDeviceAddressInfoKHR bufferDeviceAddressInfo{ *buffer };
+            deviceAddress = context->getDevice().getBufferAddressKHR(&bufferDeviceAddressInfo);
+        } else {
+            memory = context->getDevice().allocateMemoryUnique(allocInfo);
+            context->getDevice().bindBufferMemory(*buffer, *memory, 0);
         }
     }
 
     vk::WriteDescriptorSet Buffer::createWrite()
     {
-        bufferInfo = vk::DescriptorBufferInfo{*buffer, 0, size};
+        bufferInfo = vk::DescriptorBufferInfo{ *buffer, 0, size };
 
         vk::WriteDescriptorSet bufferWrite;
         bufferWrite.setDescriptorCount(1);

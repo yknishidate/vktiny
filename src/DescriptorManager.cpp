@@ -2,17 +2,16 @@
 
 namespace vkt
 {
-    void DescriptorManager::initialize(const Context &context)
+    void DescriptorManager::initialize(const Context& context)
     {
-        this->device = &context.getDevice();
-        this->physicalDevice = &context.getPhysicalDevice();
+        this->context = &context;
     }
 
     void DescriptorManager::prepare(uint32_t maxSets)
     {
         createDescriptorPool(maxSets);
         createDescSetLayout();
-        descSets = device->get().allocateDescriptorSetsUnique({*descPool, *descSetLayout});
+        descSets = context->getDevice().allocateDescriptorSetsUnique({ *descPool, *descSetLayout });
         updateDescSets();
     }
 
@@ -22,12 +21,9 @@ namespace vkt
                                            uint32_t count)
     {
         // Count desc type
-        if (descCount.contains(type))
-        {
+        if (descCount.contains(type)) {
             descCount[type] += count;
-        }
-        else
-        {
+        } else {
             descCount[type] = count;
         }
 
@@ -43,8 +39,7 @@ namespace vkt
     void DescriptorManager::createDescriptorPool(uint32_t maxSets)
     {
         std::vector<vk::DescriptorPoolSize> sizes;
-        for (auto &[type, count] : descCount)
-        {
+        for (auto& [type, count] : descCount) {
             sizes.emplace_back(type, count);
         }
 
@@ -52,22 +47,21 @@ namespace vkt
         poolInfo.setPoolSizes(sizes);
         poolInfo.setMaxSets(maxSets);
         poolInfo.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-        descPool = device->get().createDescriptorPoolUnique(poolInfo);
+        descPool = context->getDevice().createDescriptorPoolUnique(poolInfo);
     }
 
     void DescriptorManager::createDescSetLayout()
     {
         vk::DescriptorSetLayoutCreateInfo layoutInfo;
         layoutInfo.setBindings(bindings);
-        descSetLayout = device->get().createDescriptorSetLayoutUnique(layoutInfo);
+        descSetLayout = context->getDevice().createDescriptorSetLayoutUnique(layoutInfo);
     }
 
     void DescriptorManager::updateDescSets(uint32_t descSetIndex)
     {
-        for (auto &write : descWrites)
-        {
+        for (auto& write : descWrites) {
             write.setDstSet(*descSets[descSetIndex]);
         }
-        device->get().updateDescriptorSets(descWrites, nullptr);
+        context->getDevice().updateDescriptorSets(descWrites, nullptr);
     }
 }

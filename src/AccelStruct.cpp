@@ -15,7 +15,9 @@ void vkt::AccelStruct::initialize(const Context& context)
     this->context = &context;
 }
 
-void vkt::AccelStruct::build(vk::AccelerationStructureGeometryKHR& geometry, const vk::AccelerationStructureTypeKHR& type, uint32_t primitiveCount)
+void vkt::AccelStruct::build(vk::AccelerationStructureGeometryKHR& geometry,
+                             const vk::AccelerationStructureTypeKHR& type,
+                             uint32_t primitiveCount)
 {
     this->type = type;
     this->primitiveCount = primitiveCount;
@@ -39,11 +41,12 @@ void vkt::AccelStruct::build(vk::AccelerationStructureGeometryKHR& geometry, con
         .setFirstVertex(0)
         .setTransformOffset(0);
 
-    auto cmdBuf = context->getDevice().beginGraphicsCommand();
-    cmdBuf->buildAccelerationStructuresKHR(buildGeometryInfo, &buildRangeInfo);
-    context->getDevice().endGraphicsCommand(*cmdBuf);
+    context->OneTimeSubmitGraphics(
+        [&](vk::CommandBuffer cmdBuf) {
+            cmdBuf.buildAccelerationStructuresKHR(buildGeometryInfo, &buildRangeInfo);
+        });
 
-    deviceAddress = context->getVkDevice().getAccelerationStructureAddressKHR({ *accelStruct });
+    deviceAddress = context->getDevice().getAccelerationStructureAddressKHR({ *accelStruct });
 }
 
 void vkt::AccelStruct::createBuffer()
@@ -59,7 +62,7 @@ void vkt::AccelStruct::createAccelStruct()
     createInfo.setBuffer(buffer.get());
     createInfo.setSize(size);
     createInfo.setType(type);
-    accelStruct = context->getVkDevice().createAccelerationStructureKHRUnique(createInfo);
+    accelStruct = context->getDevice().createAccelerationStructureKHRUnique(createInfo);
 }
 
 void vkt::AccelStruct::createScratchBuffer()
@@ -72,7 +75,7 @@ void vkt::AccelStruct::createScratchBuffer()
 
 void vkt::AccelStruct::getSizes()
 {
-    auto buildSizesInfo = context->getVkDevice().getAccelerationStructureBuildSizesKHR(
+    auto buildSizesInfo = context->getDevice().getAccelerationStructureBuildSizesKHR(
         vk::AccelerationStructureBuildTypeKHR::eDevice, buildGeometryInfo, primitiveCount);
     size = buildSizesInfo.accelerationStructureSize;
     scratchSize = buildSizesInfo.buildScratchSize;

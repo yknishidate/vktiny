@@ -1,54 +1,16 @@
 #include "vktiny/Context.hpp"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 namespace vkt
 {
-    Context::~Context()
+    VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData,
+        void* /*pUserData*/)
     {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-    }
-
-    void Context::initialize(uint32_t apiVersion,
-                             bool enableValidationLayer,
-                             int width, int height,
-                             std::vector<const char*> deviceExtensions,
-                             vk::PhysicalDeviceFeatures features,
-                             void* deviceCreatePNext)
-    {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        window = glfwCreateWindow(width, height, "Window", nullptr, nullptr);
-
-        // instance extensions
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        std::vector<const char*> instanceExtensions(glfwExtensions,
-                                                    glfwExtensions + glfwExtensionCount);
-
-        // layers
-        std::vector<const char*> layers;
-        if (enableValidationLayer) {
-            layers.push_back("VK_LAYER_KHRONOS_validation");
-            instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-
-        instance.initialize(apiVersion, layers, instanceExtensions);
-        messenger.initialize(instance);
-        surface.initialize(instance, window);
-        physicalDevice.initialize(instance);
-        device.initialize(instance, physicalDevice, surface, layers,
-                          deviceExtensions, features, deviceCreatePNext);
-        swapchain.initialize(device, physicalDevice, surface, width, height);
-    }
-
-    bool Context::running() const
-    {
-        return !glfwWindowShouldClose(window);
-    }
-
-    void Context::pollEvents()
-    {
-        glfwPollEvents();
+        std::cerr << pCallbackData->pMessage << std::endl;
+        return VK_FALSE;
     }
 }

@@ -7,30 +7,29 @@ namespace vkt
     {
     public:
         Buffer() = default;
-        Buffer(const Buffer &) = delete;
-        Buffer(Buffer &&) = default;
-        Buffer &operator=(const Buffer &) = delete;
-        Buffer &operator=(Buffer &&) = default;
+        Buffer(const Buffer&) = delete;
+        Buffer(Buffer&&) = default;
+        Buffer& operator=(const Buffer&) = delete;
+        Buffer& operator=(Buffer&&) = default;
 
         vk::Buffer get() const { return *buffer; }
 
-        void initialize(const Context &context,
+        void initialize(const Context& context,
                         vk::DeviceSize size, vk::BufferUsageFlags usage,
                         vk::MemoryPropertyFlags properties,
-                        void *data = nullptr);
+                        void* data = nullptr);
 
-        void copy(void *data);
+        void copy(void* data);
 
-        void copyOnHost(void *data)
+        void copyOnHost(void* data)
         {
-            if (!mapped)
-            {
-                mapped = context->getVkDevice().mapMemory(*memory, 0, size);
+            if (!mapped) {
+                mapped = context->getDevice().mapMemory(*memory, 0, size);
             }
             memcpy(mapped, data, static_cast<size_t>(size));
         }
 
-        void copyOnDevice(void *data)
+        void copyOnDevice(void* data)
         {
             //Buffer stagingBuffer;
             //stagingBuffer.initialize(*context, size, vk::BufferUsageFlagBits::eTransferSrc, // TODO: add usage?
@@ -45,12 +44,12 @@ namespace vkt
         void create(vk::DeviceSize size, vk::BufferUsageFlags usage);
         void allocate(vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 
-        const Context *context;
+        const Context* context;
 
         vk::UniqueBuffer buffer;
         vk::UniqueDeviceMemory memory;
         vk::DeviceSize size;
-        void *mapped = nullptr;
+        void* mapped = nullptr;
 
         uint64_t deviceAddress;
         vk::DescriptorBufferInfo bufferInfo;

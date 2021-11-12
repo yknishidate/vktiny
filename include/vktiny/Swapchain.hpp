@@ -2,8 +2,8 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
-#include "vktiny/Device.hpp"
 #include <utility>
+#include "Context.hpp"
 
 namespace vkt
 {
@@ -20,23 +20,20 @@ namespace vkt
     {
     public:
         Swapchain() = default;
-        Swapchain(const Swapchain &) = delete;
-        Swapchain(Swapchain &&) = default;
-        Swapchain &operator=(const Swapchain &) = delete;
-        Swapchain &operator=(Swapchain &&) = default;
+        Swapchain(const Swapchain&) = delete;
+        Swapchain(Swapchain&&) = default;
+        Swapchain& operator=(const Swapchain&) = delete;
+        Swapchain& operator=(Swapchain&&) = default;
 
         ~Swapchain();
-        void initialize(const Device &device,
-                        const PhysicalDevice &physicalDevice,
-                        const Surface &surface,
-                        int width, int height);
+        void initialize(const Context& context, int width, int height);
 
         vk::SwapchainKHR get() const { return swapchain.get(); }
 
         auto getExtent() const { return imageExtent; }
         auto getFormat() const { return imageFormat; }
         auto getChainSize() const { return images.size(); }
-        const auto &getImages() const { return images; }
+        const auto& getImages() const { return images; }
 
         std::vector<vk::UniqueCommandBuffer> allocateDrawComamndBuffers() const;
 
@@ -50,7 +47,7 @@ namespace vkt
         void createViews();
         void createSyncObjects();
 
-        const Device *device;
+        const Context* context;
 
         vk::UniqueSwapchainKHR swapchain;
         std::vector<vk::Image> images;
