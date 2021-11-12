@@ -6,6 +6,7 @@
 namespace vkt
 {
     class Context;
+    class DescriptorSetLayout;
 
     class Pipeline
     {
@@ -30,7 +31,7 @@ namespace vkt
     {
     public:
         ComputePipeline(const Context& context,
-                        vk::DescriptorSetLayout descSetLayout,
+                        const DescriptorSetLayout& descSetLayout,
                         const ShaderModule& shaderModule);
 
         vk::PipelineBindPoint getBindPoint() const override

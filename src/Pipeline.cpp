@@ -1,11 +1,13 @@
 #include "vktiny/Pipeline.hpp"
 #include "vktiny/Context.hpp"
+#include "vktiny/DescriptorSetLayout.hpp"
 
 vkt::ComputePipeline::ComputePipeline(const Context& context,
-                                      vk::DescriptorSetLayout descSetLayout,
+                                      const DescriptorSetLayout& descSetLayout,
                                       const ShaderModule& shaderModule)
 {
-    layout = context.getDevice().createPipelineLayoutUnique({ {}, descSetLayout });
+    vk::DescriptorSetLayout setLayout = descSetLayout.get();
+    layout = context.getDevice().createPipelineLayoutUnique({ {}, setLayout });
 
     vk::ComputePipelineCreateInfo pipelineInfo;
     pipelineInfo.setStage(shaderModule.getStageInfo());

@@ -40,14 +40,13 @@ int main()
     imageBinding.setDescriptorType(vk::DescriptorType::eStorageImage);
     imageBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
-    vk::UniqueDescriptorSetLayout descSetLayout = descPool.createDescSetLayout({ imageBinding });
-    //vkt::DescriptorSet descSet = descPool.createDescSet(*descSetLayout);
+    vkt::DescriptorSetLayout descSetLayout(context, { imageBinding });
     vkt::DescriptorSet descSet(context, descPool.get(), descSetLayout.get());
 
     descSet.update(renderImage, imageBinding);
 
     vkt::ShaderModule shaderModule(context, shader, vk::ShaderStageFlagBits::eCompute);
-    vkt::ComputePipeline pipeline(context, *descSetLayout, shaderModule);
+    vkt::ComputePipeline pipeline(context, descSetLayout, shaderModule);
 
     size_t bufferCount = swapchain.getImagesSize();
     auto drawCommandBuffers = context.allocateGraphicsCommandBuffers(bufferCount);

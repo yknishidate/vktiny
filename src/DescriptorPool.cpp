@@ -14,15 +14,4 @@ namespace vkt
         poolInfo.setPoolSizes(poolSizes);
         descPool = context.getDevice().createDescriptorPoolUnique(poolInfo);
     }
-
-    vk::UniqueDescriptorSetLayout DescriptorPool::createDescSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
-    {
-        return context->getDevice().createDescriptorSetLayoutUnique({ {}, bindings });
-    }
-
-    //DescriptorSet DescriptorPool::createDescSet(vk::DescriptorSetLayout layout)
-    //{
-    //    DescriptorSet descSet(*context, *descPool, layout);
-    //    return std::move(descSet);
-    //}
 }

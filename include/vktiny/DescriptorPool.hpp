@@ -19,11 +19,6 @@ namespace vkt
         DescriptorPool& operator=(const DescriptorPool&) = delete;
         DescriptorPool& operator=(DescriptorPool&&) = default;
 
-        vk::UniqueDescriptorSetLayout createDescSetLayout(
-            const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
-
-        //DescriptorSet createDescSet(vk::DescriptorSetLayout layout);
-
         vk::DescriptorPool get() const { return *descPool; }
 
     private:
