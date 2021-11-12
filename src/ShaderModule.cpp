@@ -1,3 +1,4 @@
+#include "vktiny/Context.hpp"
 #include "vktiny/ShaderModule.hpp"
 #include <fstream>
 #include <SPIRV/GlslangToSpv.h>
@@ -92,5 +93,21 @@ namespace vkt
         glslang::FinalizeProcess();
 
         return spvShader;
+    }
+    ShaderModule::ShaderModule(const Context& context, const std::string& shaderText, vk::ShaderStageFlagBits shaderStage)
+        : shaderStage(shaderStage)
+    {
+        std::vector<unsigned int> shaderSPV = compileToSPV(shaderStage, shaderText);
+        vk::ShaderModuleCreateInfo createInfo{ {}, shaderSPV };
+        shaderModule = context.getDevice().createShaderModuleUnique(createInfo);
+    }
+
+    vk::PipelineShaderStageCreateInfo ShaderModule::getStageInfo() const
+    {
+        vk::PipelineShaderStageCreateInfo stageInfo;
+        stageInfo.setStage(shaderStage);
+        stageInfo.setModule(*shaderModule);
+        stageInfo.setPName("main");
+        return stageInfo;
     }
 }

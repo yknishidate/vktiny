@@ -56,6 +56,20 @@ namespace vkt
         Context& operator=(const Context&) = delete;
         Context& operator=(Context&&) = default;
 
+        std::vector<CommandBuffer> allocateGraphicsCommandBuffers(uint32_t count)
+        {
+            vk::CommandBufferAllocateInfo allocInfo;
+            allocInfo.setCommandPool(*graphicsCommandPool);
+            allocInfo.setCommandBufferCount(count);
+            auto vkCommandBuffers = device->allocateCommandBuffersUnique(allocInfo);
+
+            std::vector<CommandBuffer> commandBuffers;
+            for (int i = 0; i < count; ++i) {
+                commandBuffers.emplace_back(std::move(vkCommandBuffers[i]));
+            }
+            return commandBuffers;
+        }
+
         template <typename Func>
         void OneTimeSubmitGraphics(const Func& func) const
         {
@@ -76,8 +90,7 @@ namespace vkt
             commandBuffer.submit();
         }
 
-        uint32_t findMemoryType(uint32_t typeFilter,
-                                vk::MemoryPropertyFlags properties) const
+        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const
         {
             vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
             for (uint32_t i = 0; i != memProperties.memoryTypeCount; ++i) {

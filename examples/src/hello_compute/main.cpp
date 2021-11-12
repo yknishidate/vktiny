@@ -41,31 +41,34 @@ int main()
     imageBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
     vk::UniqueDescriptorSetLayout descSetLayout = descPool.createDescSetLayout({ imageBinding });
-    vkt::DescriptorSet descSet = descPool.createDescSet(*descSetLayout);
+    //vkt::DescriptorSet descSet = descPool.createDescSet(*descSetLayout);
+    vkt::DescriptorSet descSet(context, descPool.get(), descSetLayout.get());
+
     descSet.update(renderImage, imageBinding);
 
-    vkt::ShaderModule shaderModule{ context, shader, vk::ShaderStageFlagBits::eCompute };
-    vkt::ComputePipeline pipeline{ context, *descSetLayout, shaderModule };
+    vkt::ShaderModule shaderModule(context, shader, vk::ShaderStageFlagBits::eCompute);
+    vkt::ComputePipeline pipeline(context, *descSetLayout, shaderModule);
 
-    auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();
-    for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
-        const auto& cmdBuf = drawCommandBuffers[i].get();
+    size_t bufferCount = swapchain.getImagesSize();
+    auto drawCommandBuffers = context.allocateGraphicsCommandBuffers(bufferCount);
+    for (int32_t i = 0; i < bufferCount; ++i) {
+        vkt::CommandBuffer& cmdBuf = drawCommandBuffers[i];
         const auto& swapchainImage = swapchain.getImages()[i];
         const auto& extent = swapchain.getExtent();
 
-        cmdBuf.begin(vk::CommandBufferBeginInfo{});
-        pipeline.bind(cmdBuf);
-        descSet.bind(cmdBuf, pipeline);
+        cmdBuf.begin();
+        cmdBuf.bindPipeline(pipeline);
+        cmdBuf.bindDescriptorSets(descSet, pipeline);
         cmdBuf.dispatch(width, height, 1);
 
-        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
+        vkt::Image::transitionLayout(cmdBuf.get(), renderImage.get(),
                                      vkIL::eUndefined, vkIL::eTransferSrcOptimal);
-        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
+        vkt::Image::transitionLayout(cmdBuf.get(), swapchainImage,
                                      vkIL::eUndefined, vkIL::eTransferDstOptimal);
-        vkt::Image::copyImage(cmdBuf, renderImage.get(), swapchainImage, extent);
-        vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
+        vkt::Image::copyImage(cmdBuf.get(), renderImage.get(), swapchainImage, extent);
+        vkt::Image::transitionLayout(cmdBuf.get(), renderImage.get(),
                                      vkIL::eTransferSrcOptimal, vkIL::eGeneral);
-        vkt::Image::transitionLayout(cmdBuf, swapchainImage,
+        vkt::Image::transitionLayout(cmdBuf.get(), swapchainImage,
                                      vkIL::eTransferDstOptimal, vkIL::ePresentSrcKHR);
         cmdBuf.end();
     }
@@ -75,7 +78,7 @@ int main()
 
         // Begin
         vkt::FrameInfo frameInfo = swapchain.beginFrame();
-        const auto& cmdBuf = *drawCommandBuffers[frameInfo.imageIndex];
+        vk::CommandBuffer cmdBuf = drawCommandBuffers[frameInfo.imageIndex].get();
 
         // Render
         vk::PipelineStageFlags waitStage{ vk::PipelineStageFlagBits::eComputeShader };

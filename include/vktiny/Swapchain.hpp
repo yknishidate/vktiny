@@ -28,13 +28,6 @@ namespace vkt
 
         ~Swapchain();
 
-        vk::SwapchainKHR get() const { return swapchain.get(); }
-
-        auto getExtent() const { return imageExtent; }
-        auto getFormat() const { return imageFormat; }
-        auto getChainSize() const { return images.size(); }
-        const auto& getImages() const { return images; }
-
         std::vector<vk::UniqueCommandBuffer> allocateDrawComamndBuffers() const;
 
         uint32_t acquireNextImageIndex() const;
@@ -42,6 +35,13 @@ namespace vkt
         FrameInfo beginFrame();
 
         void endFrame(uint32_t imageIndex);
+
+        vk::SwapchainKHR get() const { return swapchain.get(); }
+
+        auto getExtent() const { return imageExtent; }
+        auto getFormat() const { return imageFormat; }
+        auto getImagesSize() const { return images.size(); }
+        const auto& getImages() const { return images; }
 
     private:
         void createViews();

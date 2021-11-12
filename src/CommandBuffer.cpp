@@ -12,12 +12,12 @@ namespace vkt
         commandBuffer = std::move(device.allocateCommandBuffersUnique(allocInfo).front());
     }
 
-    void CommandBuffer::begin(vk::CommandBufferBeginInfo beginInfo)
+    void CommandBuffer::begin(vk::CommandBufferBeginInfo beginInfo) const
     {
         commandBuffer->begin(beginInfo);
     }
 
-    void CommandBuffer::end()
+    void CommandBuffer::end() const
     {
         commandBuffer->end();
     }

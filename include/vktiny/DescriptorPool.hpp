@@ -1,43 +1,30 @@
 #pragma once
-#include "vktiny/Buffer.hpp"
-#include "vktiny/Image.hpp"
-#include "vktiny/Context.hpp"
-#include "vktiny/DescriptorSet.hpp"
+
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
 #include <unordered_map>
 
 namespace vkt
 {
+    class Context;
+
     class DescriptorPool
     {
     public:
         DescriptorPool(const Context& context,
                        uint32_t maxSets,
-                       std::vector<vk::DescriptorPoolSize> poolSizes)
-            : context(&context)
-        {
-            vk::DescriptorPoolCreateInfo poolInfo;
-            poolInfo.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-            poolInfo.setMaxSets(maxSets);
-            poolInfo.setPoolSizes(poolSizes);
-            descPool = context.getDevice().createDescriptorPoolUnique(poolInfo);
-        }
+                       std::vector<vk::DescriptorPoolSize> poolSizes);
         DescriptorPool(const DescriptorPool&) = delete;
         DescriptorPool(DescriptorPool&&) = default;
         DescriptorPool& operator=(const DescriptorPool&) = delete;
         DescriptorPool& operator=(DescriptorPool&&) = default;
 
         vk::UniqueDescriptorSetLayout createDescSetLayout(
-            const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
-        {
-            return context->getDevice().createDescriptorSetLayoutUnique({ {}, bindings });
-        }
+            const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
 
-        DescriptorSet createDescSet(vk::DescriptorSetLayout layout)
-        {
-            DescriptorSet descSet;
-            descSet.initialize(*context, *descPool, layout);
-            return std::move(descSet);
-        }
+        //DescriptorSet createDescSet(vk::DescriptorSetLayout layout);
+
+        vk::DescriptorPool get() const { return *descPool; }
 
     private:
         const Context* context;

@@ -1,11 +1,12 @@
 #pragma once
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-#include "vktiny/ShaderModule.hpp"
-#include "vktiny/Context.hpp"
+#include "ShaderModule.hpp"
 
 namespace vkt
 {
+    class Context;
+
     class Pipeline
     {
     public:
@@ -16,11 +17,6 @@ namespace vkt
         Pipeline& operator=(Pipeline&&) = default;
 
         virtual vk::PipelineBindPoint getBindPoint() const = 0;
-
-        void bind(vk::CommandBuffer commandBuffer) const
-        {
-            commandBuffer.bindPipeline(getBindPoint(), *pipeline);
-        }
 
         vk::Pipeline get() const { return pipeline.get(); }
         vk::PipelineLayout getLayout() const { return layout.get(); }
@@ -35,15 +31,7 @@ namespace vkt
     public:
         ComputePipeline(const Context& context,
                         vk::DescriptorSetLayout descSetLayout,
-                        const ShaderModule& shaderModule)
-        {
-            layout = context.getDevice().createPipelineLayoutUnique({ {}, descSetLayout });
-
-            vk::ComputePipelineCreateInfo pipelineInfo;
-            pipelineInfo.setStage(shaderModule.getStageInfo());
-            pipelineInfo.setLayout(*layout);
-            pipeline = context.getDevice().createComputePipelineUnique(nullptr, pipelineInfo);
-        }
+                        const ShaderModule& shaderModule);
 
         vk::PipelineBindPoint getBindPoint() const override
         {

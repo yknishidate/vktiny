@@ -1,5 +1,5 @@
 #pragma once
-#include "vktiny/Context.hpp"
+#include "Context.hpp"
 
 namespace vkt
 {
