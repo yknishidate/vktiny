@@ -41,8 +41,7 @@ int main()
     imageBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
     vkt::DescriptorSetLayout descSetLayout(context, { imageBinding });
-    vkt::DescriptorSet descSet(context, descPool.get(), descSetLayout.get());
-
+    vkt::DescriptorSet descSet(context, descPool, descSetLayout);
     descSet.update(renderImage, imageBinding);
 
     vkt::ShaderModule shaderModule(context, shader, vk::ShaderStageFlagBits::eCompute);

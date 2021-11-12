@@ -6,6 +6,8 @@
 namespace vkt
 {
     class Context;
+    class DescriptorPool;
+    class DescriptorSetLayout;
     class Buffer;
     class Image;
 
@@ -13,15 +15,14 @@ namespace vkt
     {
     public:
         DescriptorSet(const Context& context,
-                      vk::DescriptorPool descPool,
-                      vk::DescriptorSetLayout layout);
+                      const DescriptorPool& descPool,
+                      const DescriptorSetLayout& layout);
         DescriptorSet(const DescriptorSet&) = delete;
         DescriptorSet(DescriptorSet&&) = default;
         DescriptorSet& operator=(const DescriptorSet&) = delete;
         DescriptorSet& operator=(DescriptorSet&&) = default;
 
-        //void update(const Buffer& buffer, vk::DescriptorSetLayoutBinding binding);
-
+        void update(const Buffer& buffer, vk::DescriptorSetLayoutBinding binding);
         void update(const Image& image, vk::DescriptorSetLayoutBinding binding);
 
         vk::DescriptorSet get() const { return *descSet; }
