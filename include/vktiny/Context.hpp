@@ -4,6 +4,7 @@
 #include <iostream>
 #include <set>
 #include "Window.hpp"
+#include "CommandBuffer.hpp"
 
 namespace vkt
 {
@@ -55,58 +56,24 @@ namespace vkt
         Context& operator=(const Context&) = delete;
         Context& operator=(Context&&) = default;
 
-        vk::UniqueCommandBuffer allocateGraphicsCommandBuffer() const
-        {
-            vk::CommandBufferAllocateInfo allocInfo;
-            allocInfo.setCommandPool(*graphicsCommandPool);
-            allocInfo.setCommandBufferCount(1);
-            return std::move(device->allocateCommandBuffersUnique(allocInfo).front());
-        }
-
-        vk::UniqueCommandBuffer allocateComputeCommandBuffer() const
-        {
-            vk::CommandBufferAllocateInfo allocInfo;
-            allocInfo.setCommandPool(*computeCommandPool);
-            allocInfo.setCommandBufferCount(1);
-            return std::move(device->allocateCommandBuffersUnique(allocInfo).front());
-        }
-
-        void submitGraphicsCommandBuffer(const vk::UniqueCommandBuffer& commandBuffer) const
-        {
-            vk::SubmitInfo submitInfo{ nullptr, nullptr, *commandBuffer };
-            graphicsQueue.submit(submitInfo, nullptr);
-            graphicsQueue.waitIdle();
-        }
-
-        void submitComputeCommandBuffer(const vk::UniqueCommandBuffer& commandBuffer) const
-        {
-            vk::SubmitInfo submitInfo{ nullptr, nullptr, *commandBuffer };
-            computeQueue.submit(submitInfo, nullptr);
-            computeQueue.waitIdle();
-        }
-
         template <typename Func>
         void OneTimeSubmitGraphics(const Func& func) const
         {
-            vk::UniqueCommandBuffer commandBuffer = allocateGraphicsCommandBuffer();
-
-            commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
-            func(*commandBuffer);
-            commandBuffer->end();
-
-            submitGraphicsCommandBuffer(commandBuffer);
+            CommandBuffer commandBuffer(*device, *graphicsCommandPool, graphicsQueue);
+            commandBuffer.begin();
+            func(commandBuffer.get());
+            commandBuffer.end();
+            commandBuffer.submit();
         }
 
         template <typename Func>
         void OneTimeSubmitCompute(const Func& func) const
         {
-            vk::UniqueCommandBuffer commandBuffer = allocateComputeCommandBuffer();
-
-            commandBuffer->begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
-            func(*commandBuffer);
-            commandBuffer->end();
-
-            submitComputeCommandBuffer(commandBuffer);
+            CommandBuffer commandBuffer(*device, *computeCommandPool, computeQueue);
+            commandBuffer.begin();
+            func(commandBuffer.get());
+            commandBuffer.end();
+            commandBuffer.submit();
         }
 
         uint32_t findMemoryType(uint32_t typeFilter,

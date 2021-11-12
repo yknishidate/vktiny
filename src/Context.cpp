@@ -1,4 +1,5 @@
 #include "vktiny/Context.hpp"
+#include "vktiny/CommandBuffer.hpp"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
