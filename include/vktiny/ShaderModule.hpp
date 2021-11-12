@@ -30,4 +30,14 @@ namespace vkt
         vk::UniqueShaderModule shaderModule;
         vk::ShaderStageFlagBits shaderStage;
     };
+
+    class ComputeShaderModule : public ShaderModule
+    {
+    public:
+        ComputeShaderModule(const Context& context,
+                            const std::string& shaderText)
+            : ShaderModule(context, shaderText, vk::ShaderStageFlagBits::eCompute)
+        {
+        }
+    };
 }

@@ -1,14 +1,8 @@
-# vktiny
+# vktiny [WIP]
 
-tiny vulkan wrapper
+Thin Vulkan C++ wrapper on [vulkan.hpp](https://github.com/KhronosGroup/Vulkan-Hpp)
 
-## features
-
-- Full C++ API
-- Vulkan Ray Tracing Pipeline
-- glTF loader
-
-## build
+## Build
 
 ```
 git clone --recursive https://github.com/nishidate-yuki/vktiny.git
@@ -17,16 +11,41 @@ cmake -DVKTINY_EXAMPLES=ON . -Bbuild
 .\build\vktiny.sln
 ```
 
-## dependencies
+## Dependencies
 
 - [glfw](https://github.com/glfw/glfw.git)
-- [glm](https://github.com/g-truc/glm.git)
 - [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers.git)
-- [spdlog](https://github.com/gabime/spdlog.git)
-- [tinygltf](https://github.com/syoyo/tinygltf.git)
+- [glslang](https://github.com/KhronosGroup/glslang.git)
 
-## examples
+## Examples
 
+- [x] hello_compute
+- [ ] ~~camera~~
+- [ ] ~~gltf_loading~~
+- [ ] ~~pathtracing~~
+- [ ] ~~raytracing_triangle~~
+- [ ] ~~sponza~~
+
+## Usage
+
+```cpp
+/* Example: Compute pipeline creation */
+const std::string shader = R"(
+#version 460
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(binding = 0, rgba8) uniform image2D renderImage;
+
+void main()
+{
+	imageStore(renderImage, ivec2(gl_GlobalInvocationID.xy), vec4(1));
+}
+)";
+
+vkt::ComputeShaderModule shaderModule{ context, shader };
+vkt::ComputePipeline pipeline{ context, descSetLayout, shaderModule };
+```
+
+<!--
 ![vktiny](https://user-images.githubusercontent.com/30839669/130312423-1ed40a68-d7ad-4512-bf08-63be05bb3444.png)
 
 ## usage
@@ -82,4 +101,4 @@ context.getInput().setOnMouseButton(
         vkt::log::info("{} {} {}", button, action, mods);
     }
 );
-```
+``` -->

@@ -47,7 +47,7 @@ int main()
     descSet.update(renderImage, imageBinding);
 
     // Create pipeline
-    vkt::ShaderModule shaderModule{ context, shader, vk::ShaderStageFlagBits::eCompute };
+    vkt::ComputeShaderModule shaderModule{ context, shader };
     vkt::ComputePipeline pipeline{ context, descSetLayout, shaderModule };
 
     size_t bufferCount = swapchain.getImagesSize();

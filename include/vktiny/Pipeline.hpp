@@ -32,7 +32,7 @@ namespace vkt
     public:
         ComputePipeline(const Context& context,
                         const DescriptorSetLayout& descSetLayout,
-                        const ShaderModule& shaderModule);
+                        const ComputeShaderModule& shaderModule);
 
         vk::PipelineBindPoint getBindPoint() const override
         {

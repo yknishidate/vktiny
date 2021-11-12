@@ -4,7 +4,7 @@
 
 vkt::ComputePipeline::ComputePipeline(const Context& context,
                                       const DescriptorSetLayout& descSetLayout,
-                                      const ShaderModule& shaderModule)
+                                      const ComputeShaderModule& shaderModule)
 {
     vk::DescriptorSetLayout setLayout = descSetLayout.get();
     layout = context.getDevice().createPipelineLayoutUnique({ {}, setLayout });
