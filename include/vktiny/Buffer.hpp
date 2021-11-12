@@ -12,8 +12,6 @@ namespace vkt
         Buffer& operator=(const Buffer&) = delete;
         Buffer& operator=(Buffer&&) = default;
 
-        vk::Buffer get() const { return *buffer; }
-
         void initialize(const Context& context,
                         vk::DeviceSize size, vk::BufferUsageFlags usage,
                         vk::MemoryPropertyFlags properties,
@@ -36,6 +34,9 @@ namespace vkt
             //                         vkMP::eHostVisible | vkMP::eHostCoherent, data);
             //copyFrom(stagingBuffer);
         }
+
+        vk::Buffer get() const { return *buffer; }
+        vk::DeviceSize getSize() const { return size; }
 
         vk::WriteDescriptorSet createWrite(); // TODO: remove this
         uint64_t getDeviceAddress() const { return deviceAddress; }

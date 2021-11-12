@@ -1,7 +1,6 @@
 #pragma once
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-#include "vktiny/DescriptorManager.hpp"
 #include "vktiny/ShaderModule.hpp"
 #include "vktiny/Context.hpp"
 
@@ -16,6 +15,13 @@ namespace vkt
         Pipeline& operator=(const Pipeline&) = delete;
         Pipeline& operator=(Pipeline&&) = default;
 
+        virtual vk::PipelineBindPoint getBindPoint() const = 0;
+
+        void bind(vk::CommandBuffer commandBuffer) const
+        {
+            commandBuffer.bindPipeline(getBindPoint(), *pipeline);
+        }
+
         vk::Pipeline get() const { return pipeline.get(); }
         vk::PipelineLayout getLayout() const { return layout.get(); }
 
@@ -23,54 +29,6 @@ namespace vkt
         vk::UniquePipeline pipeline;
         vk::UniquePipelineLayout layout;
     };
-
-    //class RayTracingPipeline : public Pipeline
-    //{
-    //public:
-    //    void initialize(const Context& context) override;
-
-    //    void setMaxRecursion(uint32_t maxRecursion) { this->maxRecursion = maxRecursion; }
-
-    //    void prepare(const DescriptorManager& descriptorManager);
-
-    //    // shader mamager
-    //    void addRaygenShader(const std::string filepath)
-    //    {
-    //        rtShaderManager.addRaygenShader(filepath);
-    //    }
-    //    void addMissShader(const std::string filepath)
-    //    {
-    //        rtShaderManager.addMissShader(filepath);
-    //    }
-    //    void addChitShader(const std::string filepath)
-    //    {
-    //        rtShaderManager.addChitShader(filepath);
-    //    }
-    //    void addAhitShader(const std::string filepath)
-    //    {
-    //        rtShaderManager.addAhitShader(filepath);
-    //    }
-    //    void addChitAndAhitShader(const std::string chitFilepath, const std::string ahitFilepath)
-    //    {
-    //        rtShaderManager.addChitAndAhitShader(chitFilepath, ahitFilepath);
-    //    }
-
-    //    const auto& getRtGroups() const { return rtShaderManager.getRtGroups(); }
-    //    const auto& getRaygenRegion() const { return rtShaderManager.getRaygenRegion(); }
-    //    const auto& getMissRegion() const { return rtShaderManager.getMissRegion(); }
-    //    const auto& getHitRegion() const { return rtShaderManager.getHitRegion(); }
-
-    //private:
-    //    RayTracingShaderManager rtShaderManager;
-    //    uint32_t maxRecursion = 4;
-    //};
-
-    //class GraphicsPipeline : public Pipeline
-    //{
-    //    void prepare()
-    //    {
-    //    }
-    //};
 
     class ComputePipeline : public Pipeline
     {
@@ -85,6 +43,11 @@ namespace vkt
             pipelineInfo.setStage(shaderModule.getStageInfo());
             pipelineInfo.setLayout(*layout);
             pipeline = context.getDevice().createComputePipelineUnique(nullptr, pipelineInfo);
+        }
+
+        vk::PipelineBindPoint getBindPoint() const override
+        {
+            return vk::PipelineBindPoint::eCompute;
         }
     };
 }

@@ -44,11 +44,19 @@ int main()
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
-    // Add descriptor bindings
-    vkt::DescriptorManager descManager;
-    descManager.initialize(context);
-    descManager.addStorageImage(renderImage, 0);
-    descManager.prepare();
+    // Create desc set
+    vkt::DescriptorPool descPool;
+    descPool.initialize(context, 1, { {vk::DescriptorType::eStorageImage, 10} });
+
+    vk::DescriptorSetLayoutBinding imageBinding;
+    imageBinding.setBinding(0);
+    imageBinding.setDescriptorCount(1);
+    imageBinding.setDescriptorType(vk::DescriptorType::eStorageImage);
+    imageBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+    vk::UniqueDescriptorSetLayout descSetLayout = descPool.createDescSetLayout({ imageBinding });
+    vkt::DescriptorSet descSet = descPool.createDescSet(*descSetLayout);
+    descSet.update(renderImage, imageBinding);
 
     // Load shaders
     vkt::ShaderModule shaderModule;
@@ -56,7 +64,7 @@ int main()
 
     // Create pipeline
     vkt::ComputePipeline pipeline;
-    pipeline.initialize(context, descManager.getDescSetLayout(), shaderModule);
+    pipeline.initialize(context, *descSetLayout, shaderModule);
 
     // Build draw command buffers
     auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();
@@ -67,10 +75,9 @@ int main()
 
         cmdBuf.begin(vk::CommandBufferBeginInfo{});
 
-        cmdBuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline.get());
+        pipeline.bind(cmdBuf);
 
-        cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline.getLayout(), 0,
-                                  descManager.getDescSet(), nullptr);
+        descSet.bind(cmdBuf, pipeline);
 
         cmdBuf.dispatch(width, height, 1);
 

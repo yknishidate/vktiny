@@ -9,12 +9,12 @@ namespace vkt
     {
     public:
         Image() = default;
-        Image(const Image &) = delete;
-        Image(Image &&) = default;
-        Image &operator=(const Image &) = delete;
-        Image &operator=(Image &&) = default;
+        Image(const Image&) = delete;
+        Image(Image&&) = default;
+        Image& operator=(const Image&) = delete;
+        Image& operator=(Image&&) = default;
 
-        void initialize(const Context &context,
+        void initialize(const Context& context,
                         vk::Extent2D extent,
                         vk::Format format,
                         vk::ImageUsageFlags usage);
@@ -30,7 +30,7 @@ namespace vkt
                               vk::Image dstImage,
                               vk::Extent2D extent);
 
-        void copyBuffer(const Buffer &buffer);
+        void copyBuffer(const Buffer& buffer);
 
         static void transitionLayout(vk::CommandBuffer cmdBuf,
                                      vk::Image image,
@@ -40,12 +40,14 @@ namespace vkt
         void transitionLayout(vk::ImageLayout newLayout);
 
         vk::Image get() const { return *image; }
+        vk::ImageView getView() const { return *view; }
+        vk::ImageLayout getLayout() const { return imageLayout; }
 
     private:
         void create(vk::ImageUsageFlags usage);
         void allocate();
 
-        const Context *context;
+        const Context* context;
         vk::UniqueImage image;
         vk::UniqueImageView view;
         vk::UniqueSampler sampler;
