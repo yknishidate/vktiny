@@ -51,10 +51,12 @@ int main()
     descManager.prepare();
 
     // Load shaders
+    vkt::ShaderModule shaderModule;
+    shaderModule.initialize(context, shader, vk::ShaderStageFlagBits::eCompute);
+
+    // Create pipeline
     vkt::ComputePipeline pipeline;
-    pipeline.initialize(context);
-    pipeline.addComputeShaderFromText(shader);
-    pipeline.prepare(descManager);
+    pipeline.initialize(context, descManager.getDescSetLayout(), shaderModule);
 
     // Build draw command buffers
     auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();
