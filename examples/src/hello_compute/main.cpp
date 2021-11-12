@@ -29,7 +29,7 @@ int main()
 
     // Create resources
     vkt::Image renderImage{ context, swapchain.getExtent(), swapchain.getFormat(),
-                           vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst };
+                           vkIU::eStorage | vkIU::eTransferSrc };
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 

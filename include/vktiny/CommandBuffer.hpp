@@ -50,15 +50,14 @@ namespace vkt
 
         void copyImage(vk::Image srcImage, vk::Image dstImage, vk::Extent2D extent)
         {
-            using vkIL = vk::ImageLayout;
-
             vk::ImageCopy copyRegion{};
             copyRegion.setSrcSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
             copyRegion.setDstSubresource({ vk::ImageAspectFlagBits::eColor, 0, 0, 1 });
             copyRegion.setExtent({ extent.width, extent.height, 1 });
 
-            commandBuffer->copyImage(srcImage, vkIL::eTransferSrcOptimal,
-                                     dstImage, vkIL::eTransferDstOptimal, copyRegion);
+            auto srcLayout = vk::ImageLayout::eTransferSrcOptimal;
+            auto dstLayout = vk::ImageLayout::eTransferDstOptimal;
+            commandBuffer->copyImage(srcImage, srcLayout, dstImage, dstLayout, copyRegion);
         }
 
         void transitionImageLayout(vk::Image image,
