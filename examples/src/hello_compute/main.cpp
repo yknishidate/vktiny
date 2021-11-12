@@ -20,23 +20,18 @@ int main()
     int width = 1280;
     int height = 720;
 
-    // Init window
     vkt::Window window{ width, height, "Window" };
 
-    // Init vulkan context
     vkt::ContextCreateInfo contextInfo{ .enableValidationLayer = true };
     vkt::Context context{ contextInfo, window };
 
-    // Init swapchain
     vkt::Swapchain swapchain{ context, width, height };
 
-    // Create render image
     vkt::Image renderImage{ context, swapchain.getExtent(), swapchain.getFormat(),
                            vkIU::eStorage | vkIU::eTransferSrc | vkIU::eTransferDst };
     renderImage.createImageView();
     renderImage.transitionLayout(vk::ImageLayout::eGeneral);
 
-    // Create desc set
     vkt::DescriptorPool descPool{ context, 1, { {vk::DescriptorType::eStorageImage, 10} } };
 
     vk::DescriptorSetLayoutBinding imageBinding;
@@ -49,13 +44,9 @@ int main()
     vkt::DescriptorSet descSet = descPool.createDescSet(*descSetLayout);
     descSet.update(renderImage, imageBinding);
 
-    // Load shaders
     vkt::ShaderModule shaderModule{ context, shader, vk::ShaderStageFlagBits::eCompute };
-
-    // Create pipeline
     vkt::ComputePipeline pipeline{ context, *descSetLayout, shaderModule };
 
-    // Build draw command buffers
     auto drawCommandBuffers = swapchain.allocateDrawComamndBuffers();
     for (int32_t i = 0; i < drawCommandBuffers.size(); ++i) {
         const auto& cmdBuf = drawCommandBuffers[i].get();
@@ -63,11 +54,8 @@ int main()
         const auto& extent = swapchain.getExtent();
 
         cmdBuf.begin(vk::CommandBufferBeginInfo{});
-
         pipeline.bind(cmdBuf);
-
         descSet.bind(cmdBuf, pipeline);
-
         cmdBuf.dispatch(width, height, 1);
 
         vkt::Image::transitionLayout(cmdBuf, renderImage.get(),
