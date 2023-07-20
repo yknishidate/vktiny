@@ -1,0 +1,10 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "reactive",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "glfw3",
+        "glm",
+        "tinygltf"
+    ]
+}

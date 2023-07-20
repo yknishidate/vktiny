@@ -75,10 +75,10 @@ struct InstanceData
 
 namespace
 {
-    void keyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods);
-    void cursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos);
-    void mouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods);
-    void scrollCallback(GLFWwindow* window, const double xoffset, const double yoffset);
+void keyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods);
+void cursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos);
+void mouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods);
+void scrollCallback(GLFWwindow* window, const double xoffset, const double yoffset);
 }
 
 class Application
@@ -205,7 +205,7 @@ private:
 
     void buildAccelStruct()
     {
-        model.loadFromFile(*device, "samples/assets/Sponza/Sponza.gltf");
+        model.loadFromFile(*device, "D:/Documents/repos/rtcamp/asset/cube.gltf");
 
         const std::vector<vkr::Node>& nodes = model.getNodes();
         const std::vector<vkr::Mesh>& meshes = model.getMeshes();
@@ -227,9 +227,9 @@ private:
     void loadShaders()
     {
         shaderManager = std::make_unique<vkr::ShaderManager>(*device);
-        shaderManager->addShader("samples/03_gltf_scene/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/03_gltf_scene/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
-        shaderManager->addShader("samples/03_gltf_scene/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
+        shaderManager->addShader("D:/Documents/repos/vulkan/vktiny/samples/03_gltf_scene/raygen.rgen.spv", vkss::eRaygenKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("D:/Documents/repos/vulkan/vktiny/samples/03_gltf_scene/miss.rmiss.spv", vkss::eMissKHR, "main", vksgt::eGeneral);
+        shaderManager->addShader("D:/Documents/repos/vulkan/vktiny/samples/03_gltf_scene/closesthit.rchit.spv", vkss::eClosestHitKHR, "main", vksgt::eTrianglesHitGroup);
     }
 
     void createDescSets()
@@ -305,14 +305,17 @@ private:
 
         for (const auto& node : nodes) {
             const auto& mesh = meshes[node.meshIndex];
-            const auto& material = materials[mesh.materialIndex];
 
             InstanceData data;
             data.meshIndex = node.meshIndex;
             data.worldMatrix = node.worldMatrix;
-            data.baseColorTextureIndex = material.baseColorTextureIndex;
-            data.normalTextureIndex = material.normalTextureIndex;
-            data.occlusionTextureIndex = material.occlusionTextureIndex;
+
+            if (mesh.materialIndex != -1) {
+                const auto& material = materials[mesh.materialIndex];
+                data.baseColorTextureIndex = material.baseColorTextureIndex;
+                data.normalTextureIndex = material.normalTextureIndex;
+                data.occlusionTextureIndex = material.occlusionTextureIndex;
+            }
 
             instanceDataBuffers.push_back(std::make_unique<vkr::Buffer>(*device, size, usage, prop, &data));
         }
@@ -332,36 +335,36 @@ private:
 
 namespace
 {
-    void keyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
-    {
-        auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
-    }
+void keyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
+{
+    auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
+}
 
-    void cursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
-    {
-        auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        if (this_->nowPressed) {
-            this_->camera.processMouseMotion(xpos - this_->lastCursorPos.x, ypos - this_->lastCursorPos.y);
-            this_->lastCursorPos = glm::vec2(xpos, ypos);
-        }
+void cursorPositionCallback(GLFWwindow* window, const double xpos, const double ypos)
+{
+    auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (this_->nowPressed) {
+        this_->camera.processMouseMotion(xpos - this_->lastCursorPos.x, ypos - this_->lastCursorPos.y);
+        this_->lastCursorPos = glm::vec2(xpos, ypos);
     }
+}
 
-    void mouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
-    {
-        auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        if (button == 0) {
-            this_->nowPressed = bool(action);
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            this_->lastCursorPos = glm::vec2(xpos, ypos);
-        }
+void mouseButtonCallback(GLFWwindow* window, const int button, const int action, const int mods)
+{
+    auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (button == 0) {
+        this_->nowPressed = bool(action);
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        this_->lastCursorPos = glm::vec2(xpos, ypos);
     }
+}
 
-    void scrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
-    {
-        auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
-        this_->camera.processMouseWheel(float(yoffset));
-    }
+void scrollCallback(GLFWwindow* window, const double xoffset, const double yoffset)
+{
+    auto* const this_ = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    this_->camera.processMouseWheel(float(yoffset));
+}
 }
 
 int main()
